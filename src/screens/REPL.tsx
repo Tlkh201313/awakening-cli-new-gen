@@ -28,7 +28,6 @@ import { sendNotification } from '../services/notifier.js';
 import { startPreventSleep, stopPreventSleep } from '../services/preventSleep.js';
 import { useTerminalNotification } from '../ink/useTerminalNotification.js';
 import { hasCursorUpViewportYankBug } from '../ink/terminal.js';
-import { useAnimationFrame } from '../ink/hooks/use-animation-frame.js';
 import { useSettings } from '../hooks/useSettings.js';
 import { createFileStateCacheWithSizeLimit, mergeFileStateCaches, READ_FILE_STATE_CACHE_SIZE } from '../utils/fileStateCache.js';
 import { updateLastInteractionTime, getLastInteractionTime, getOriginalCwd, getProjectRoot, getSessionId, switchSession, setCostStateForRestore, getTurnHookDurationMs, getTurnHookCount, resetTurnHookDuration, getTurnToolDurationMs, getTurnToolCount, resetTurnToolDuration, getTurnClassifierDurationMs, getTurnClassifierCount, resetTurnClassifierDuration } from '../bootstrap/state.js';
@@ -708,8 +707,7 @@ export function REPL({
   const TRANSITION_DURATION_MS = 150
   const [transitionState, setTransitionState] = useState<'idle' | 'fading-out' | 'fading-in'>('idle')
   const [pendingScreen, setPendingScreen] = useState<Screen | null>(null)
-  const transitionStartRef = useRef<number>(-1)
-  const [, time] = useAnimationFrame(16)
+  const transitionTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const settings = useSettings()
   const [showAllInTranscript, setShowAllInTranscript] = useState(false);
   // [ forces the dump-to-scrollback path inside transcript mode. Separate
@@ -4440,32 +4438,22 @@ export function REPL({
       return
     }
     if (transitionState !== 'idle') return
+    // Clear any lingering timers
+    for (const t of transitionTimersRef.current) clearTimeout(t)
+    transitionTimersRef.current = []
     setPendingScreen(newScreen)
     setTransitionState('fading-out')
-    transitionStartRef.current = -1
-  }, [screen, settings.prefersReducedMotion, transitionState])
-
-  useEffect(() => {
-    if (transitionState === 'fading-out') {
-      if (transitionStartRef.current === -1) {
-        transitionStartRef.current = time
-        return
-      }
-      const elapsed = time - transitionStartRef.current
-      if (elapsed >= TRANSITION_DURATION_MS) {
-        setScreen(pendingScreen!)
-        setTransitionState('fading-in')
-        transitionStartRef.current = time
-      }
-    } else if (transitionState === 'fading-in') {
-      const elapsed = time - transitionStartRef.current
-      if (elapsed >= TRANSITION_DURATION_MS) {
+    // After fade-out duration, swap screen and start fade-in
+    transitionTimersRef.current.push(setTimeout(() => {
+      setScreen(newScreen)
+      setTransitionState('fading-in')
+      // After fade-in duration, return to idle
+      transitionTimersRef.current.push(setTimeout(() => {
         setTransitionState('idle')
         setPendingScreen(null)
-        transitionStartRef.current = -1
-      }
-    }
-  }, [time, transitionState, pendingScreen])
+      }, TRANSITION_DURATION_MS))
+    }, TRANSITION_DURATION_MS))
+  }, [screen, settings.prefersReducedMotion, transitionState])
 
   const globalKeybindingProps = {
     screen,
