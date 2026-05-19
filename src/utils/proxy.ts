@@ -26,13 +26,38 @@ import {
 // Under Node/undici, keepalive is a no-op for pooling, but undici
 // naturally evicts dead sockets from the pool on ECONNRESET.
 let keepAliveDisabled = false
+let keepAliveCooldownTimer: ReturnType<typeof setTimeout> | null = null
 
 export function disableKeepAlive(): void {
   keepAliveDisabled = true
 }
 
+/**
+ * Re-enable keep-alive after a cooldown period.
+ * Call this after ECONNRESET to allow reconnection with keep-alive later.
+ */
+export function resetKeepAliveAfterCooldown(
+  cooldownMs: number = 30_000,
+): void {
+  if (keepAliveCooldownTimer) {
+    clearTimeout(keepAliveCooldownTimer)
+  }
+  keepAliveCooldownTimer = setTimeout(() => {
+    keepAliveDisabled = false
+    keepAliveCooldownTimer = null
+  }, cooldownMs)
+}
+
+export function isKeepAliveDisabled(): boolean {
+  return keepAliveDisabled
+}
+
 export function _resetKeepAliveForTesting(): void {
   keepAliveDisabled = false
+  if (keepAliveCooldownTimer) {
+    clearTimeout(keepAliveCooldownTimer)
+    keepAliveCooldownTimer = null
+  }
 }
 
 /**
