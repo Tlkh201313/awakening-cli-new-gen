@@ -4,6 +4,7 @@ import {
   resetKeepAliveAfterCooldown,
   isKeepAliveDisabled,
   _resetKeepAliveForTesting,
+  shouldBypassProxy,
 } from '../../src/utils/proxy.js'
 
 describe('keep-alive cooldown', () => {
@@ -38,5 +39,25 @@ describe('keep-alive cooldown', () => {
         resolve()
       }, 50)
     })
+  })
+})
+
+describe('shouldBypassProxy caching', () => {
+  it('should return consistent results for repeated URLs', () => {
+    const url = 'https://api.example.com/v1/test'
+    const noProxy = '.example.com'
+
+    const result1 = shouldBypassProxy(url, noProxy)
+    const result2 = shouldBypassProxy(url, noProxy)
+
+    expect(result1).toBe(true)
+    expect(result2).toBe(true)
+  })
+
+  it('should handle different URLs correctly', () => {
+    const noProxy = '.example.com'
+
+    expect(shouldBypassProxy('https://api.example.com/v1', noProxy)).toBe(true)
+    expect(shouldBypassProxy('https://other.com/v1', noProxy)).toBe(false)
   })
 })

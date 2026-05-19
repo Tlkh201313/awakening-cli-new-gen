@@ -100,6 +100,9 @@ export function getNoProxy(env: EnvLike = process.env): string | undefined {
   return env.no_proxy || env.NO_PROXY
 }
 
+const BYPASS_CACHE_MAX = 256
+const bypassCache = new Map<string, boolean>()
+
 /**
  * Check if a URL should bypass the proxy based on NO_PROXY environment variable
  * Supports:
@@ -117,7 +120,31 @@ export function shouldBypassProxy(
 ): boolean {
   if (!noProxy) return false
 
-  // Handle wildcard
+  const cacheKey = `${urlString}|${noProxy}`
+  const cached = bypassCache.get(cacheKey)
+  if (cached !== undefined) {
+    bypassCache.delete(cacheKey)
+    bypassCache.set(cacheKey, cached)
+    return cached
+  }
+
+  const result = shouldBypassProxyUncached(urlString, noProxy)
+
+  if (bypassCache.size >= BYPASS_CACHE_MAX) {
+    const firstKey = bypassCache.keys().next().value
+    if (firstKey !== undefined) {
+      bypassCache.delete(firstKey)
+    }
+  }
+  bypassCache.set(cacheKey, result)
+
+  return result
+}
+
+function shouldBypassProxyUncached(
+  urlString: string,
+  noProxy: string,
+): boolean {
   if (noProxy === '*') return true
 
   try {
@@ -128,30 +155,23 @@ export function shouldBypassProxy(
     )
     const hostWithPort = `${hostname}:${port}`
 
-    // Split by comma or space and trim each entry
     const noProxyList = noProxy.split(/[,\s]+/).filter(Boolean)
 
     return noProxyList.some(pattern => {
       pattern = pattern.toLowerCase().trim()
 
-      // Check for port-specific match
       if (pattern.includes(':')) {
         return hostWithPort === pattern
       }
 
-      // Check for domain suffix match (with or without leading dot)
       if (pattern.startsWith('.')) {
-        // Pattern ".example.com" should match "sub.example.com" and "example.com"
-        // but NOT "notexample.com"
         const suffix = pattern
         return hostname === pattern.substring(1) || hostname.endsWith(suffix)
       }
 
-      // Check for exact hostname match or IP address
       return hostname === pattern
     })
   } catch {
-    // If URL parsing fails, don't bypass proxy
     return false
   }
 }
