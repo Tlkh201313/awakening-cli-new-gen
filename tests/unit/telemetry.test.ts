@@ -45,3 +45,42 @@ describe('telemetry storage', () => {
     expect(lines.length).toBe(2)
   })
 })
+
+describe('telemetry metrics', () => {
+  it('should export metric types', async () => {
+    const mod = await import('../../src/services/telemetry/metrics.js')
+    expect(mod.METRIC_EVENTS).toBeDefined()
+    expect(mod.METRIC_EVENTS.API_CALL).toBe('api_call')
+    expect(mod.METRIC_EVENTS.TOOL_USE).toBe('tool_use')
+    expect(mod.METRIC_EVENTS.ERROR).toBe('error')
+  })
+})
+
+describe('telemetry collector', () => {
+  it('should export recordApiCall', async () => {
+    const mod = await import('../../src/services/telemetry/collector.js')
+    expect(typeof mod.recordApiCall).toBe('function')
+  })
+
+  it('should export recordToolUse', async () => {
+    const mod = await import('../../src/services/telemetry/collector.js')
+    expect(typeof mod.recordToolUse).toBe('function')
+  })
+
+  it('should export recordError', async () => {
+    const mod = await import('../../src/services/telemetry/collector.js')
+    expect(typeof mod.recordError).toBe('function')
+  })
+
+  it('should be disabled by default', async () => {
+    const mod = await import('../../src/services/telemetry/collector.js')
+    expect(mod.isTelemetryEnabled()).toBe(false)
+  })
+})
+
+describe('telemetry integration', () => {
+  it('should have recordApiCall available for API client', async () => {
+    const telemetry = await import('../../src/services/telemetry/collector.js')
+    expect(typeof telemetry.recordApiCall).toBe('function')
+  })
+})
