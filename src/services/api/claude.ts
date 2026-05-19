@@ -95,6 +95,7 @@ import {
 } from '../../utils/systemPromptType.js'
 import { tokenCountFromLastAPIResponse } from '../../utils/tokens.js'
 import { getDynamicConfig_BLOCKS_ON_INIT } from '../analytics/growthbook.js'
+import { recordApiCall } from '../telemetry/collector.js'
 import {
   currentLimits,
   extractQuotaStatusFromError,
@@ -2929,6 +2930,16 @@ async function* queryModel(
       fastMode: isFastModeRequest,
       previousRequestId,
       betas: lastRequestBetas,
+    })
+
+    // Record telemetry for API call
+    recordApiCall({
+      provider: getAPIProvider(),
+      model: newMessages[0]?.message.model ?? partialMessage?.model ?? options.model,
+      ttft: ttftMs,
+      tokens: usage?.input_tokens + usage?.output_tokens ?? 0,
+      cacheHit: usage?.cache_read_input_tokens ?? 0,
+      duration: Date.now() - start,
     })
   })
 
