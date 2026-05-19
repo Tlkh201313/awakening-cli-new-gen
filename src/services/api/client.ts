@@ -611,6 +611,25 @@ export async function getAnthropicClient({
   return client
 }
 
+/**
+ * Pre-warm connection to the configured provider.
+ * Call during init to avoid TTFT penalty on first request.
+ * Non-blocking — errors are silently ignored.
+ *
+ * This complements preconnectAnthropicApi() which handles first-party
+ * Anthropic connections. This function warms non-Anthropic providers
+ * (OpenAI-compatible, etc.) by instantiating the client early.
+ */
+export async function prewarmConnection(): Promise<void> {
+  try {
+    await getAnthropicClient({ maxRetries: 0 })
+    logForDebugging('[API:prewarm] Connection pre-warming initiated')
+  } catch {
+    // Pre-warming is best-effort — don't fail startup
+    logForDebugging('[API:prewarm] Pre-warming skipped (no credentials)')
+  }
+}
+
 async function configureApiKeyHeaders(
   headers: Record<string, string>,
   isNonInteractiveSession: boolean,

@@ -16,6 +16,7 @@ import {
   isEligibleForRemoteManagedSettings,
   waitForRemoteManagedSettingsToLoad,
 } from '../services/remoteManagedSettings/index.js'
+import { prewarmConnection } from '../services/api/client.js'
 import { preconnectAnthropicApi } from '../utils/apiPreconnect.js'
 import { applyExtraCACertsFromConfig } from '../utils/caCertsConfig.js'
 import { registerCleanup } from '../utils/cleanupRegistry.js'
@@ -132,6 +133,10 @@ export const init = memoize(async (): Promise<void> => {
     // proxy/mTLS/unix/cloud-provider where the SDK's dispatcher wouldn't
     // reuse the global pool.
     preconnectAnthropicApi()
+
+    // Pre-warm non-Anthropic provider connections (OpenAI-compatible, etc.)
+    // Best-effort — errors don't block startup
+    prewarmConnection().catch(() => {})
 
     // CCR upstreamproxy: start the local CONNECT relay so agent subprocesses
     // can reach org-configured upstreams with credential injection. Gated on
