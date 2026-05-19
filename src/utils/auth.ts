@@ -2037,3 +2037,34 @@ export async function validateForceLoginOrg(): Promise<OrgValidationResult> {
 }
 
 class GcpCredentialsTimeoutError extends Error {}
+
+let tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null
+
+/**
+ * Schedule a background token refresh when the current token is 80% through
+ * its lifetime. Non-blocking — doesn't delay requests.
+ */
+export function scheduleTokenRefresh(
+  tokenLifetimeMs: number,
+  refreshFn: () => Promise<void>,
+): void {
+  if (tokenRefreshTimer) {
+    clearTimeout(tokenRefreshTimer)
+  }
+
+  const refreshAt = tokenLifetimeMs * 0.8
+  tokenRefreshTimer = setTimeout(async () => {
+    try {
+      await refreshFn()
+    } catch {
+      // Pre-fetch is best-effort
+    }
+  }, refreshAt)
+}
+
+export function cancelScheduledRefresh(): void {
+  if (tokenRefreshTimer) {
+    clearTimeout(tokenRefreshTimer)
+    tokenRefreshTimer = null
+  }
+}

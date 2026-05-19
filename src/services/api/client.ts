@@ -8,6 +8,7 @@ import {
   isClaudeAISubscriber,
   refreshAndGetAwsCredentials,
   refreshGcpCredentialsIfNeeded,
+  scheduleTokenRefresh,
 } from 'src/utils/auth.js'
 import {
   convertEffortValueToLevel,
@@ -332,6 +333,7 @@ export async function getAnthropicClient({
     logForDebugging('[API:auth] OAuth token check starting')
     await checkAndRefreshOAuthTokenIfNeeded()
     logForDebugging('[API:auth] OAuth token check complete')
+// Schedule background token refresh at 80% of token lifetime    const oauthTokens = getClaudeAIOAuthTokens()    if (oauthTokens?.expiresAt) {      const lifetimeMs = oauthTokens.expiresAt - Date.now()      if (lifetimeMs > 0) {        scheduleTokenRefresh(lifetimeMs, checkAndRefreshOAuthTokenIfNeeded)      }    }
   }
 
   const isClaudeAiSubscriber =
