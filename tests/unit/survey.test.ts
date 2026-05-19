@@ -42,3 +42,10 @@ describe('survey scheduler', () => {
     expect(scheduler.shouldShowSurvey()).toBe(false)
   })
 })
+
+describe('SurveyPrompt', () => {
+  it('should export SurveyPrompt component', async () => {
+    const mod = await import('../../src/components/SurveyPrompt.js')
+    expect(mod.SurveyPrompt).toBeDefined()
+  })
+})
