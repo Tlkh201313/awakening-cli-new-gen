@@ -10,6 +10,7 @@ import { isEmptyMessageText, NO_RESPONSE_REQUESTED } from '../../utils/messages.
 import { getUpgradeMessage } from '../../utils/model/contextWindowUpgradeCheck.js';
 import { getDefaultSonnetModel, renderModelName } from '../../utils/model/model.js';
 import { isMacOsKeychainLocked } from '../../utils/secureStorage/macOsKeychainStorage.js';
+import { useStreamingReveal } from '../../hooks/useStreamingReveal.js';
 import { CtrlOToExpand } from '../CtrlOToExpand.js';
 import { InterruptedByUser } from '../InterruptedByUser.js';
 import { Markdown } from '../Markdown.js';
@@ -23,6 +24,7 @@ type Props = {
   shouldShowDot: boolean;
   verbose: boolean;
   width?: number | string;
+  isStreaming?: boolean;
   onOpenRateLimitOptions?: () => void;
 };
 function InvalidApiKeyMessage() {
@@ -51,12 +53,14 @@ export function AssistantTextMessage(t0) {
     addMargin,
     shouldShowDot,
     verbose,
+    isStreaming,
     onOpenRateLimitOptions
   } = t0;
   const {
     text
   } = t1;
   const isSelected = useContext(MessageActionsSelectedContext);
+  const { displayText, ref: revealRef } = useStreamingReveal(text, isStreaming ?? false);
   if (isEmptyMessageText(text)) {
     return null;
   }
@@ -237,9 +241,9 @@ export function AssistantTextMessage(t0) {
           t4 = $[24];
         }
         let t5;
-        if ($[25] !== text) {
-          t5 = <Box flexDirection="column"><Markdown>{text}</Markdown></Box>;
-          $[25] = text;
+        if ($[25] !== displayText) {
+          t5 = <Box flexDirection="column" ref={revealRef}><Markdown>{displayText}</Markdown></Box>;
+          $[25] = displayText;
           $[26] = t5;
         } else {
           t5 = $[26];
