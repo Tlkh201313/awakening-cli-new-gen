@@ -111,8 +111,27 @@ import { feature } from 'bun:bundle'
 
 // Tool schema cache — avoids rebuilding schemas on every API call
 const _toolSchemaCache = new Map<string, unknown>()
-let _toolSchemaCacheKey = ''
-let _toolSchemaCacheTime = 0
+
+/**
+ * Generate a stable cache key from the tool set.
+ * Sorts tool names to ensure order-independent keys.
+ */
+export function getToolSchemaCacheKey(tools: { name: string }[]): string {
+  const names = tools.map(t => t.name).sort()
+  return names.join('|')
+}
+
+export function getToolSchema<T>(key: string): T | undefined {
+  return _toolSchemaCache.get(key) as T | undefined
+}
+
+export function setToolSchema(key: string, schema: unknown): void {
+  _toolSchemaCache.set(key, schema)
+}
+
+export function clearToolSchemaCache(): void {
+  _toolSchemaCache.clear()
+}
 import type { ClientOptions } from '@anthropic-ai/sdk'
 import {
   APIConnectionTimeoutError,
@@ -1251,23 +1270,11 @@ async function* queryModel(
   // Note: We pass the full `tools` list (not filteredTools) to toolToAPISchema so that
   // ToolSearchTool's prompt can list ALL available MCP tools. The filtering only affects
   // which tools are actually sent to the API, not what the model sees in tool descriptions.
-  // Cache tool schemas for 60s to avoid rebuilding on every API call.
-  const toolSchemaCacheKey = filteredTools.map(t => t.name).join(',')
-  const now = Date.now()
-  if (
-    _toolSchemaCache.size > 0 &&
-    _toolSchemaCacheKey === toolSchemaCacheKey &&
-    now - _toolSchemaCacheTime < 60_000
-  ) {
-    // Cache hit — reuse schemas
-  } else {
-    _toolSchemaCache.clear()
-    _toolSchemaCacheKey = toolSchemaCacheKey
-    _toolSchemaCacheTime = now
-  }
+  // Cache tool schemas using stable key from sorted tool names
   const toolSchemas = await Promise.all(
     filteredTools.map(async tool => {
-      const cached = _toolSchemaCache.get(tool.name)
+      const cacheKey = `${getToolSchemaCacheKey(filteredTools)}|${tool.name}`
+      const cached = getToolSchema(cacheKey)
       if (cached) return cached
       const schema = await toolToAPISchema(tool, {
         getToolPermissionContext: options.getToolPermissionContext,
@@ -1277,7 +1284,7 @@ async function* queryModel(
         model: options.model,
         deferLoading: willDefer(tool),
       })
-      _toolSchemaCache.set(tool.name, schema)
+      setToolSchema(cacheKey, schema)
       return schema
     }),
   )
