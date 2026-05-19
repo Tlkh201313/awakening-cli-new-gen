@@ -49,3 +49,52 @@ export function getStreamStats(state: StreamState): StreamStats {
     durationMs,
   }
 }
+
+export interface ChunkBatcher {
+  push(chunk: string): void
+  flush(): void
+  destroy(): void
+}
+
+/**
+ * Create a chunk batcher that accumulates chunks within a time window
+ * and flushes them as a single batch.
+ *
+ * @param onFlush - Called with accumulated chunks when batch window expires
+ * @param windowMs - Batch window in milliseconds (default: 16ms = one frame at 60fps)
+ */
+export function createChunkBatcher(
+  onFlush: (batch: string) => void,
+  windowMs: number = 16,
+): ChunkBatcher {
+  let buffer = ''
+  let timer: ReturnType<typeof setTimeout> | null = null
+
+  function flush(): void {
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+    if (buffer) {
+      onFlush(buffer)
+      buffer = ''
+    }
+  }
+
+  return {
+    push(chunk: string): void {
+      buffer += chunk
+      if (!timer) {
+        timer = setTimeout(flush, windowMs)
+      }
+    },
+    flush,
+    destroy(): void {
+      if (timer) {
+        clearTimeout(timer)
+        timer = null
+      }
+      buffer = ''
+    },
+  }
+}
