@@ -5522,3 +5522,48 @@ export function wrapCommandText(
       return `The user sent a new message while you were working:\n${raw}\n\nIMPORTANT: After completing your current task, you MUST address the user's message above. Do not ignore it.`
   }
 }
+
+const normalizationCache = new Map<string, UserMessage | AssistantMessage>()
+let lastNormalizedCount = 0
+
+/**
+ * Incremental normalization — only normalizes new messages since last call.
+ * Falls back to full normalization on compact/interruption.
+ */
+export function normalizeMessagesIncremental(
+  messages: Message[],
+  tools: Tools = [],
+): (UserMessage | AssistantMessage)[] {
+  // If cache is invalid (fewer messages than before), do full normalization
+  if (messages.length < lastNormalizedCount) {
+    normalizationCache.clear()
+    lastNormalizedCount = 0
+  }
+
+  // Normalize only new messages
+  const newMessages = messages.slice(lastNormalizedCount)
+  const normalizedNew = normalizeMessagesForAPI(newMessages, tools)
+
+  // Cache normalized results
+  for (let i = 0; i < normalizedNew.length; i++) {
+    const original = messages[lastNormalizedCount + i]
+    if (original) {
+      normalizationCache.set(original.uuid, normalizedNew[i]!)
+    }
+  }
+
+  lastNormalizedCount = messages.length
+
+  // Build result from cache
+  return messages
+    .map(m => normalizationCache.get(m.uuid))
+    .filter((m): m is UserMessage | AssistantMessage => m !== undefined)
+}
+
+/**
+ * Clear normalization cache. Call on compact/interruption.
+ */
+export function clearNormalizationCache(): void {
+  normalizationCache.clear()
+  lastNormalizedCount = 0
+}
