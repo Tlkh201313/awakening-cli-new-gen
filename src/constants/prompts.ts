@@ -3,7 +3,7 @@ import { type as osType, version as osVersion, release as osRelease } from 'os'
 import { env } from '../utils/env.js'
 import { getIsGit } from '../utils/git.js'
 import { getCwd } from '../utils/cwd.js'
-import { getIsNonInteractiveSession } from '../bootstrap/state.js'
+import { getIsNonInteractiveSession, getSystemPromptSectionCache } from '../bootstrap/state.js'
 import { getCurrentWorktreeSession } from '../utils/worktree.js'
 import { getSessionStartDate } from './common.js'
 import { getInitialSettings } from '../utils/settings/settings.js'
@@ -439,6 +439,23 @@ function getSimpleToneAndStyleSection(): string {
   ].filter(item => item !== null)
 
   return [`# Tone and style`, ...prependBullets(items)].join(`\n`)
+}
+
+let lastConfigHash = ''
+
+function getConfigHash(): string {
+  const settings = getInitialSettings()
+  return `${settings.language}|${settings.theme}|${process.env.CLAUDE_CODE_SIMPLE || ''}`
+}
+
+/**
+ * Invalidate prompt section cache when config changes.
+ * Call this when settings are modified.
+ */
+export function invalidatePromptCache(): void {
+  const cache = getSystemPromptSectionCache()
+  cache.clear()
+  lastConfigHash = getConfigHash()
 }
 
 export async function getSystemPrompt(
