@@ -5,7 +5,7 @@ const feedback = {
   name: 'feedback',
   description: `Submit feedback about Awakened`,
   argumentHint: '[report]',
-  isEnabled: () => false,
+  isEnabled: () => true,
   load: () => import('./feedback.js'),
 } satisfies Command
 
