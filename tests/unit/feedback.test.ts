@@ -59,3 +59,10 @@ describe('feedback storage', () => {
     expect(files.length).toBe(2)
   })
 })
+
+describe('feedback collector', () => {
+  it('should export collectFeedback', async () => {
+    const mod = await import('../../src/services/feedback/collector.js')
+    expect(typeof mod.collectFeedback).toBe('function')
+  })
+})
