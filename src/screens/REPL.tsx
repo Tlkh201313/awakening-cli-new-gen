@@ -28,6 +28,8 @@ import { sendNotification } from '../services/notifier.js';
 import { startPreventSleep, stopPreventSleep } from '../services/preventSleep.js';
 import { useTerminalNotification } from '../ink/useTerminalNotification.js';
 import { hasCursorUpViewportYankBug } from '../ink/terminal.js';
+import { useAnimationFrame } from '../ink/hooks/use-animation-frame.js';
+import { useSettings } from '../hooks/useSettings.js';
 import { createFileStateCacheWithSizeLimit, mergeFileStateCaches, READ_FILE_STATE_CACHE_SIZE } from '../utils/fileStateCache.js';
 import { updateLastInteractionTime, getLastInteractionTime, getOriginalCwd, getProjectRoot, getSessionId, switchSession, setCostStateForRestore, getTurnHookDurationMs, getTurnHookCount, resetTurnHookDuration, getTurnToolDurationMs, getTurnToolCount, resetTurnToolDuration, getTurnClassifierDurationMs, getTurnClassifierCount, resetTurnClassifierDuration } from '../bootstrap/state.js';
 import { asSessionId, asAgentId } from '../types/ids.js';
@@ -702,6 +704,13 @@ export function REPL({
     setDynamicMcpConfig(config);
   }, [setDynamicMcpConfig]);
   const [screen, setScreen] = useState<Screen>('prompt');
+  // Screen transition state machine: fade out → swap → fade in
+  const TRANSITION_DURATION_MS = 150
+  const [transitionState, setTransitionState] = useState<'idle' | 'fading-out' | 'fading-in'>('idle')
+  const [pendingScreen, setPendingScreen] = useState<Screen | null>(null)
+  const transitionStartRef = useRef<number>(-1)
+  const [, time] = useAnimationFrame(16)
+  const settings = useSettings()
   const [showAllInTranscript, setShowAllInTranscript] = useState(false);
   // [ forces the dump-to-scrollback path inside transcript mode. Separate
   // from CLAUDE_CODE_NO_FLICKER=0 (which is process-lifetime) — this is
@@ -4420,9 +4429,47 @@ export function REPL({
     // persists at its last screen coords after ctrl-c exits transcript.
     if (!inTranscript) setPositions(null);
   }, [inTranscript, searchQuery, setHighlight, setPositions]);
+
+  // Screen transition: requestScreenSwitch wraps setScreen with fade animation
+  const isTransitioning = transitionState !== 'idle'
+  const requestScreenSwitch: React.Dispatch<React.SetStateAction<Screen>> = useCallback((action) => {
+    const newScreen = typeof action === 'function' ? action(screen) : action
+    if (newScreen === screen) return
+    if (settings.prefersReducedMotion) {
+      setScreen(newScreen)
+      return
+    }
+    if (transitionState !== 'idle') return
+    setPendingScreen(newScreen)
+    setTransitionState('fading-out')
+    transitionStartRef.current = -1
+  }, [screen, settings.prefersReducedMotion, transitionState])
+
+  useEffect(() => {
+    if (transitionState === 'fading-out') {
+      if (transitionStartRef.current === -1) {
+        transitionStartRef.current = time
+        return
+      }
+      const elapsed = time - transitionStartRef.current
+      if (elapsed >= TRANSITION_DURATION_MS) {
+        setScreen(pendingScreen!)
+        setTransitionState('fading-in')
+        transitionStartRef.current = time
+      }
+    } else if (transitionState === 'fading-in') {
+      const elapsed = time - transitionStartRef.current
+      if (elapsed >= TRANSITION_DURATION_MS) {
+        setTransitionState('idle')
+        setPendingScreen(null)
+        transitionStartRef.current = -1
+      }
+    }
+  }, [time, transitionState, pendingScreen])
+
   const globalKeybindingProps = {
     screen,
-    setScreen,
+    setScreen: requestScreenSwitch,
     showAllInTranscript,
     setShowAllInTranscript,
     messageCount: messages.length,
@@ -4542,12 +4589,13 @@ export function REPL({
     // normal mode's wrap below so React reconciles and the alt buffer
     // stays entered across toggle. The 30-cap dump branch stays
     // unwrapped — it wants native terminal scrollback.
+    const dimmedTranscript = isTransitioning ? <Text dimColor>{transcriptReturn}</Text> : transcriptReturn;
     if (transcriptScrollRef) {
       return <AlternateScreen mouseTracking={isMouseTrackingEnabled()}>
-        {transcriptReturn}
+        {dimmedTranscript}
       </AlternateScreen>;
     }
-    return transcriptReturn;
+    return dimmedTranscript;
   }
 
   // Get viewed agent task (inlined from selectors for explicit data flow).
@@ -4623,7 +4671,7 @@ export function REPL({
     {feature('MESSAGE_ACTIONS') && isFullscreenEnvEnabled() && !disableMessageActions ? <MessageActionsKeybindings handlers={messageActionHandlers} isActive={cursor !== null} /> : null}
     <CancelRequestHandler {...cancelRequestProps} />
     <MCPConnectionManager key={remountKey} dynamicMcpConfig={dynamicMcpConfig} isStrictMcpConfig={strictMcpConfig}>
-      <FullscreenLayout scrollRef={scrollRef} overlay={toolPermissionOverlay} bottomFloat={isBuddyEnabled() && companionVisible && !companionNarrow ? <CompanionFloatingBubble /> : undefined} modal={centeredModal} modalScrollRef={modalScrollRef} dividerYRef={dividerYRef} hidePill={!!viewedAgentTask} hideSticky={!!viewedTeammateTask} newMessageCount={unseenDivider?.count ?? 0} onPillClick={() => {
+      <FullscreenLayout scrollRef={scrollRef} overlay={toolPermissionOverlay} bottomFloat={isBuddyEnabled() && companionVisible && !companionNarrow ? <CompanionFloatingBubble /> : undefined} modal={centeredModal} modalScrollRef={modalScrollRef} dividerYRef={dividerYRef} hidePill={!!viewedAgentTask} hideSticky={!!viewedTeammateTask} newMessageCount={unseenDivider?.count ?? 0} totalMessageCount={displayedMessages.length} onPillClick={() => {
         setCursor(null);
         jumpToNew(scrollRef.current);
       }} scrollable={<>
@@ -5057,10 +5105,11 @@ export function REPL({
       </Box>} />
     </MCPConnectionManager>
   </KeybindingSetup>;
+  const displayReturn = isTransitioning ? <Text dimColor>{mainReturn}</Text> : mainReturn;
   if (isFullscreenEnvEnabled()) {
     return <AlternateScreen mouseTracking={isMouseTrackingEnabled()}>
-      {mainReturn}
+      {displayReturn}
     </AlternateScreen>;
   }
-  return mainReturn;
+  return displayReturn;
 }
