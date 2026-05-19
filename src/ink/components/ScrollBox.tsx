@@ -19,6 +19,13 @@ export type ScrollBoxHandle = {
    */
   scrollToElement: (el: DOMElement, offset?: number) => void;
   scrollToBottom: () => void;
+  /**
+   * Animated scroll to an absolute Y position using an ease-out cubic curve
+   * over ~300ms (18 frames at 60fps). Uses the pendingScrollDelta drain
+   * mechanism so intermediate frames are rendered. Falls back to instant
+   * `scrollTo` when delta is negligible (<1 row).
+   */
+  smoothScrollTo: (targetY: number) => void;
   getScrollTop: () => number;
   getPendingDelta: () => number;
   getScrollHeight: () => number;
@@ -158,6 +165,30 @@ function ScrollBox({
       markDirty(el);
       notify();
       forceRender(n => n + 1);
+    },
+    smoothScrollTo(targetY: number) {
+      const el = domRef.current;
+      if (!el) return;
+      const currentY = el.scrollTop ?? 0;
+      const totalDelta = targetY - currentY;
+      if (Math.abs(totalDelta) < 1) return;
+
+      el.stickyScroll = false;
+      el.scrollAnchor = undefined;
+
+      const FRAME_COUNT = 18;
+      let prevEased = 0;
+
+      for (let i = 1; i <= FRAME_COUNT; i++) {
+        const t = i / FRAME_COUNT;
+        // Ease-out cubic: 1 - (1-t)^3
+        const eased = 1 - Math.pow(1 - t, 3);
+        const cumulative = Math.round(totalDelta * eased);
+        const delta = cumulative - prevEased;
+        el.pendingScrollDelta = (el.pendingScrollDelta ?? 0) + delta;
+        prevEased = cumulative;
+      }
+      scrollMutated(el);
     },
     getScrollTop() {
       return domRef.current?.scrollTop ?? 0;
