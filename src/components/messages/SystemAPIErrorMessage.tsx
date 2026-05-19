@@ -7,13 +7,14 @@ import type { SystemAPIErrorMessage } from 'src/types/message.js';
 import { useInterval } from 'usehooks-ts';
 import { CtrlOToExpand } from '../CtrlOToExpand.js';
 import { MessageResponse } from '../MessageResponse.js';
+import { useErrorShake } from '../../hooks/useErrorShake.js';
 const MAX_API_ERROR_CHARS = 1000;
 type Props = {
   message: SystemAPIErrorMessage;
   verbose: boolean;
 };
 export function SystemAPIErrorMessage(t0) {
-  const $ = _c(33);
+  const $ = _c(38);
   const {
     message: t1,
     verbose
@@ -35,6 +36,7 @@ export function SystemAPIErrorMessage(t0) {
     t2 = $[0];
   }
   useInterval(t2, hidden || done ? null : 1000);
+  const { offsetX, flashIntensity, ref: shakeRef } = useErrorShake(true);
   if (hidden) {
     return null;
   }
@@ -82,56 +84,67 @@ export function SystemAPIErrorMessage(t0) {
     t6 = $[11];
     truncated = $[12];
   }
-  let t7;
-  if ($[13] !== T0 || $[14] !== t4 || $[15] !== t5) {
-    t7 = <T0 color={t4}>{t5}</T0>;
-    $[13] = T0;
+  let errorColor;
+  if ($[13] !== flashIntensity || $[14] !== t4) {
+    errorColor = flashIntensity > 0 ? "red" : t4;
+    $[13] = flashIntensity;
     $[14] = t4;
-    $[15] = t5;
-    $[16] = t7;
+    $[15] = errorColor;
   } else {
-    t7 = $[16];
+    errorColor = $[15];
+  }
+  let t7;
+  if ($[16] !== T0 || $[17] !== errorColor || $[18] !== t5 || $[19] !== offsetX) {
+    t7 = <T0 color={errorColor}>{(' '.repeat(Math.max(0, offsetX)))}{t5}</T0>;
+    $[16] = T0;
+    $[17] = errorColor;
+    $[18] = t5;
+    $[19] = offsetX;
+    $[20] = t7;
+  } else {
+    t7 = $[20];
   }
   let t8;
-  if ($[17] !== truncated) {
+  if ($[21] !== truncated) {
     t8 = truncated && <CtrlOToExpand />;
-    $[17] = truncated;
-    $[18] = t8;
+    $[21] = truncated;
+    $[22] = t8;
   } else {
-    t8 = $[18];
+    t8 = $[22];
   }
   const t9 = retryInSecondsLive === 1 ? "second" : "seconds";
   let t10;
-  if ($[19] !== maxRetries || $[20] !== retryAttempt || $[21] !== retryInSecondsLive || $[22] !== t9) {
+  if ($[23] !== maxRetries || $[24] !== retryAttempt || $[25] !== retryInSecondsLive || $[26] !== t9) {
     t10 = <Text dimColor={true}>Retrying in {retryInSecondsLive}{" "}{t9}… (attempt{" "}{retryAttempt}/{maxRetries}){process.env.API_TIMEOUT_MS ? ` · API_TIMEOUT_MS=${process.env.API_TIMEOUT_MS}ms, try increasing it` : ""}</Text>;
-    $[19] = maxRetries;
-    $[20] = retryAttempt;
-    $[21] = retryInSecondsLive;
-    $[22] = t9;
-    $[23] = t10;
+    $[23] = maxRetries;
+    $[24] = retryAttempt;
+    $[25] = retryInSecondsLive;
+    $[26] = t9;
+    $[27] = t10;
   } else {
-    t10 = $[23];
+    t10 = $[27];
   }
   let t11;
-  if ($[24] !== T1 || $[25] !== t10 || $[26] !== t6 || $[27] !== t7 || $[28] !== t8) {
+  if ($[28] !== T1 || $[29] !== t10 || $[30] !== t6 || $[31] !== t7 || $[32] !== t8) {
     t11 = <T1 flexDirection={t6}>{t7}{t8}{t10}</T1>;
-    $[24] = T1;
-    $[25] = t10;
-    $[26] = t6;
-    $[27] = t7;
-    $[28] = t8;
-    $[29] = t11;
+    $[28] = T1;
+    $[29] = t10;
+    $[30] = t6;
+    $[31] = t7;
+    $[32] = t8;
+    $[33] = t11;
   } else {
-    t11 = $[29];
+    t11 = $[33];
   }
   let t12;
-  if ($[30] !== T2 || $[31] !== t11) {
-    t12 = <T2>{t11}</T2>;
-    $[30] = T2;
-    $[31] = t11;
-    $[32] = t12;
+  if ($[34] !== T2 || $[35] !== t11 || $[36] !== shakeRef) {
+    t12 = <T2 ref={shakeRef}>{t11}</T2>;
+    $[34] = T2;
+    $[35] = t11;
+    $[36] = shakeRef;
+    $[37] = t12;
   } else {
-    t12 = $[32];
+    t12 = $[37];
   }
   return t12;
 }

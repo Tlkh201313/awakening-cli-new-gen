@@ -16,7 +16,7 @@ export function useErrorShake(hasError: boolean): ErrorShakeResult {
   const settings = useSettings()
   const [ref, time] = useAnimationFrame(16)
   const errorTimeRef = useRef<number | null>(null)
-  const prevErrorRef = useRef(hasError)
+  const prevErrorRef = useRef(false)
 
   // Detect error transition
   if (hasError && !prevErrorRef.current) {
