@@ -35,37 +35,38 @@ export function useStreamingReveal(
     streamEndRef.current = time
   }
 
-  if (settings.prefersReducedMotion || !isStreaming) {
+  // Reduced motion: always return full text, no cursor
+  if (settings.prefersReducedMotion) {
     return { displayText: text, showCursor: false, ref }
   }
 
+  // Not streaming: show cursor briefly after stream ends, then hide
+  if (!isStreaming) {
+    const showCursor =
+      streamEndRef.current > 0 && time - streamEndRef.current < CURSOR_HIDE_DELAY_MS
+    return { displayText: text + (showCursor ? CURSOR : ''), showCursor, ref }
+  }
+
+  // Streaming: typewriter reveal with cursor
   if (startTimeRef.current === null) {
     startTimeRef.current = time
   }
 
-  // Segment into graphemes
   const segmenter = getGraphemeSegmenter()
   const graphemes = [...segmenter.segment(text)]
   const totalGraphemes = graphemes.length
 
-  // Advance reveal index based on elapsed time
   const elapsed = time - startTimeRef.current
   const targetIndex = Math.min(Math.floor(elapsed / CHAR_REVEAL_MS), totalGraphemes)
 
-  // Build display text from graphemes
   let displayText = ''
   for (let i = 0; i < targetIndex && i < totalGraphemes; i++) {
     displayText += graphemes[i]!.segment
   }
 
-  // Show cursor while streaming or briefly after
-  const showCursor =
-    isStreaming ||
-    (streamEndRef.current > 0 && time - streamEndRef.current < CURSOR_HIDE_DELAY_MS)
-
   return {
-    displayText: displayText + (showCursor ? CURSOR : ''),
-    showCursor,
+    displayText: displayText + CURSOR,
+    showCursor: true,
     ref,
   }
 }
