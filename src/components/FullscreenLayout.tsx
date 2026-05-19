@@ -14,6 +14,7 @@ import { isFullscreenEnvEnabled } from '../utils/fullscreen.js';
 import { plural } from '../utils/stringUtils.js';
 import { isNullRenderingAttachment } from './messages/nullRenderingAttachments.js';
 import PromptInputFooterSuggestions from './PromptInput/PromptInputFooterSuggestions.js';
+import { ScrollIndicator, useScrollIndicator } from './ScrollIndicator.js';
 import type { StickyPrompt } from './VirtualMessageList.js';
 
 /** Rows of transcript context kept visible above the modal pane's ▔ divider. */
@@ -64,6 +65,8 @@ type Props = {
   newMessageCount?: number;
   /** Called when the user clicks the "N new" pill. */
   onPillClick?: () => void;
+  /** Total number of messages for scroll position indicator. */
+  totalMessageCount?: number;
 };
 
 /**
@@ -281,7 +284,8 @@ export function FullscreenLayout(t0) {
     hidePill: t1,
     hideSticky: t2,
     newMessageCount: t3,
-    onPillClick
+    onPillClick,
+    totalMessageCount
   } = t0;
   const hidePill = t1 === undefined ? false : t1;
   const hideSticky = t2 === undefined ? false : t2;
@@ -327,6 +331,7 @@ export function FullscreenLayout(t0) {
     t6 = $[5];
   }
   const pillVisible = useSyncExternalStore(subscribe, t6);
+  const scrollIndicator = useScrollIndicator(scrollRef, totalMessageCount ?? 0);
   let t7;
   if ($[6] === Symbol.for("react.memo_cache_sentinel")) {
     t7 = [];
@@ -387,13 +392,19 @@ export function FullscreenLayout(t0) {
     } else {
       t13 = $[23];
     }
+    const scrollIndicatorEl = totalMessageCount != null && totalMessageCount > 0
+      ? <Box position="absolute" bottom={1} left={0} right={0} flexDirection="row" justifyContent="center">
+          <ScrollIndicator messageCount={scrollIndicator.messagesAbove} isAtBottom={scrollIndicator.isAtBottom} />
+        </Box>
+      : null;
     let t14;
-    if ($[24] !== t11 || $[25] !== t12 || $[26] !== t13 || $[27] !== t8) {
-      t14 = <Box flexGrow={1} flexDirection="column" overflow="hidden">{t8}{t11}{t12}{t13}</Box>;
+    if ($[24] !== t11 || $[25] !== t12 || $[26] !== t13 || $[27] !== t8 || $[42] !== scrollIndicatorEl) {
+      t14 = <Box flexGrow={1} flexDirection="column" overflow="hidden">{t8}{t11}{t12}{t13}{scrollIndicatorEl}</Box>;
       $[24] = t11;
       $[25] = t12;
       $[26] = t13;
       $[27] = t8;
+      $[42] = scrollIndicatorEl;
       $[28] = t14;
     } else {
       t14 = $[28];
