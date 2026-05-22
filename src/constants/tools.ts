@@ -8,6 +8,7 @@ import { ASK_USER_QUESTION_TOOL_NAME } from '../tools/AskUserQuestionTool/prompt
 import { TASK_STOP_TOOL_NAME } from '../tools/TaskStopTool/prompt.js'
 import { FILE_READ_TOOL_NAME } from '../tools/FileReadTool/prompt.js'
 import { BATCH_READ_TOOL_NAME } from '../tools/BatchReadTool/constants.js'
+import { GIT_SNAPSHOT_TOOL_NAME } from '../tools/GitSnapshotTool/constants.js'
 import { WEB_SEARCH_TOOL_NAME } from '../tools/WebSearchTool/prompt.js'
 import { TODO_WRITE_TOOL_NAME } from '../tools/TodoWriteTool/constants.js'
 import { GREP_TOOL_NAME } from '../tools/GrepTool/prompt.js'
@@ -54,6 +55,7 @@ export const CUSTOM_AGENT_DISALLOWED_TOOLS = new Set([
 export const ASYNC_AGENT_ALLOWED_TOOLS = new Set([
   FILE_READ_TOOL_NAME,
   BATCH_READ_TOOL_NAME,
+  GIT_SNAPSHOT_TOOL_NAME,
   WEB_SEARCH_TOOL_NAME,
   TODO_WRITE_TOOL_NAME,
   GREP_TOOL_NAME,

@@ -6,6 +6,7 @@ import { BashTool } from './tools/BashTool/BashTool.js'
 import { FileEditTool } from './tools/FileEditTool/FileEditTool.js'
 import { FileReadTool } from './tools/FileReadTool/FileReadTool.js'
 import { BatchReadTool } from './tools/BatchReadTool/BatchReadTool.js'
+import { GitSnapshotTool } from './tools/GitSnapshotTool/GitSnapshotTool.js'
 import { FileWriteTool } from './tools/FileWriteTool/FileWriteTool.js'
 import { GlobTool } from './tools/GlobTool/GlobTool.js'
 import { NotebookEditTool } from './tools/NotebookEditTool/NotebookEditTool.js'
@@ -192,6 +193,7 @@ export function getAllBaseTools(): Tools {
     ExitPlanModeV2Tool,
     FileReadTool,
     BatchReadTool,
+    GitSnapshotTool,
     FileEditTool,
     FileWriteTool,
     NotebookEditTool,
