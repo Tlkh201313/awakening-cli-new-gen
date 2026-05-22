@@ -17,7 +17,7 @@ let tempDir: string
 
 beforeEach(async () => {
   await acquireSharedMutationLock('env.test.ts')
-  tempDir = mkdtempSync(join(tmpdir(), 'Awakened-env-test-'))
+  tempDir = mkdtempSync(join(tmpdir(), 'openclaude-env-test-'))
   process.env.CLAUDE_CONFIG_DIR = tempDir
   delete process.env.CLAUDE_CODE_CUSTOM_OAUTH_URL
   delete process.env.USER_TYPE
@@ -52,9 +52,9 @@ async function importFreshEnvModule() {
 
 // getGlobalClaudeFile — default path plus explicit override compatibility
 
-test('getGlobalClaudeFile: new install returns .Awakened.json when neither file exists', async () => {
+test('getGlobalClaudeFile: new install returns .openclaude.json when neither file exists', async () => {
   const { getGlobalClaudeFile } = await importFreshEnvModule()
-  expect(getGlobalClaudeFile()).toBe(join(tempDir, '.Awakened.json'))
+  expect(getGlobalClaudeFile()).toBe(join(tempDir, '.openclaude.json'))
 })
 
 test('getGlobalClaudeFile: explicit config dir keeps .claude.json fallback when only legacy file exists', async () => {
@@ -63,11 +63,11 @@ test('getGlobalClaudeFile: explicit config dir keeps .claude.json fallback when 
   expect(getGlobalClaudeFile()).toBe(join(tempDir, '.claude.json'))
 })
 
-test('getGlobalClaudeFile: migrated user uses .Awakened.json when both files exist', async () => {
+test('getGlobalClaudeFile: migrated user uses .openclaude.json when both files exist', async () => {
   writeFileSync(join(tempDir, '.claude.json'), '{}')
-  writeFileSync(join(tempDir, '.Awakened.json'), '{}')
+  writeFileSync(join(tempDir, '.openclaude.json'), '{}')
   const { getGlobalClaudeFile } = await importFreshEnvModule()
-  expect(getGlobalClaudeFile()).toBe(join(tempDir, '.Awakened.json'))
+  expect(getGlobalClaudeFile()).toBe(join(tempDir, '.openclaude.json'))
 })
 
 test('resolveGlobalClaudeFile: failed default migration keeps legacy file when new file is missing', async () => {

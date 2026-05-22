@@ -1388,24 +1388,8 @@ export function resetSdkInitState(): void {
   STATE.registeredHooks = null
 }
 
-const MAX_PLAN_SLUG_CACHE = 50 // Cap to prevent unbounded growth across many /resume cycles
-
 export function getPlanSlugCache(): Map<string, string> {
   return STATE.planSlugCache
-}
-
-export function setPlanSlugCacheEntry(sessionId: string, slug: string): void {
-  if (
-    STATE.planSlugCache.size >= MAX_PLAN_SLUG_CACHE &&
-    !STATE.planSlugCache.has(sessionId)
-  ) {
-    // FIFO eviction — oldest entry least likely to be resumed soon
-    const oldestKey = STATE.planSlugCache.keys().next().value
-    if (oldestKey !== undefined) {
-      STATE.planSlugCache.delete(oldestKey)
-    }
-  }
-  STATE.planSlugCache.set(sessionId, slug)
 }
 
 export function getSessionCreatedTeams(): Set<string> {
@@ -1446,8 +1430,6 @@ export type InvokedSkillInfo = {
   agentId: string | null
 }
 
-const MAX_INVOKED_SKILLS = 200 // Cap to prevent unbounded growth in very long sessions
-
 export function addInvokedSkill(
   skillName: string,
   skillPath: string,
@@ -1455,20 +1437,6 @@ export function addInvokedSkill(
   agentId: string | null = null,
 ): void {
   const key = `${agentId ?? ''}:${skillName}`
-  // Evict oldest entries if at capacity (FIFO eviction — oldest invokedAt)
-  if (STATE.invokedSkills.size >= MAX_INVOKED_SKILLS && !STATE.invokedSkills.has(key)) {
-    let oldestKey: string | null = null
-    let oldestTime = Infinity
-    for (const [k, v] of STATE.invokedSkills) {
-      if (v.invokedAt < oldestTime) {
-        oldestTime = v.invokedAt
-        oldestKey = k
-      }
-    }
-    if (oldestKey !== null) {
-      STATE.invokedSkills.delete(oldestKey)
-    }
-  }
   STATE.invokedSkills.set(key, {
     skillName,
     skillPath,
@@ -1561,22 +1529,10 @@ export function getSystemPromptSectionCache(): Map<string, string | null> {
   return STATE.systemPromptSectionCache
 }
 
-const MAX_PROMPT_SECTION_CACHE = 50 // Cap to prevent unbounded growth in very long sessions
-
 export function setSystemPromptSectionCacheEntry(
   name: string,
   value: string | null,
 ): void {
-  if (
-    STATE.systemPromptSectionCache.size >= MAX_PROMPT_SECTION_CACHE &&
-    !STATE.systemPromptSectionCache.has(name)
-  ) {
-    // FIFO eviction — sections are stable, oldest is least likely to be reused
-    const oldestKey = STATE.systemPromptSectionCache.keys().next().value
-    if (oldestKey !== undefined) {
-      STATE.systemPromptSectionCache.delete(oldestKey)
-    }
-  }
   STATE.systemPromptSectionCache.set(name, value)
 }
 

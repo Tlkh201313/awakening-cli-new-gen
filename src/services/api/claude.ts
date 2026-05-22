@@ -95,7 +95,6 @@ import {
 } from '../../utils/systemPromptType.js'
 import { tokenCountFromLastAPIResponse } from '../../utils/tokens.js'
 import { getDynamicConfig_BLOCKS_ON_INIT } from '../analytics/growthbook.js'
-import { recordApiCall } from '../telemetry/collector.js'
 import {
   currentLimits,
   extractQuotaStatusFromError,
@@ -109,30 +108,6 @@ const autoModeStateModule = feature('TRANSCRIPT_CLASSIFIER')
   : null
 
 import { feature } from 'bun:bundle'
-
-// Tool schema cache — avoids rebuilding schemas on every API call
-const _toolSchemaCache = new Map<string, unknown>()
-
-/**
- * Generate a stable cache key from the tool set.
- * Sorts tool names to ensure order-independent keys.
- */
-export function getToolSchemaCacheKey(tools: { name: string }[]): string {
-  const names = tools.map(t => t.name).sort()
-  return names.join('|')
-}
-
-export function getToolSchema<T>(key: string): T | undefined {
-  return _toolSchemaCache.get(key) as T | undefined
-}
-
-export function setToolSchema(key: string, schema: unknown): void {
-  _toolSchemaCache.set(key, schema)
-}
-
-export function clearToolSchemaCache(): void {
-  _toolSchemaCache.clear()
-}
 import type { ClientOptions } from '@anthropic-ai/sdk'
 import {
   APIConnectionTimeoutError,
@@ -1271,23 +1246,17 @@ async function* queryModel(
   // Note: We pass the full `tools` list (not filteredTools) to toolToAPISchema so that
   // ToolSearchTool's prompt can list ALL available MCP tools. The filtering only affects
   // which tools are actually sent to the API, not what the model sees in tool descriptions.
-  // Cache tool schemas using stable key from sorted tool names
   const toolSchemas = await Promise.all(
-    filteredTools.map(async tool => {
-      const cacheKey = `${getToolSchemaCacheKey(filteredTools)}|${tool.name}`
-      const cached = getToolSchema(cacheKey)
-      if (cached) return cached
-      const schema = await toolToAPISchema(tool, {
+    filteredTools.map(tool =>
+      toolToAPISchema(tool, {
         getToolPermissionContext: options.getToolPermissionContext,
         tools,
         agents: options.agents,
         allowedAgentTypes: options.allowedAgentTypes,
         model: options.model,
         deferLoading: willDefer(tool),
-      })
-      setToolSchema(cacheKey, schema)
-      return schema
-    }),
+      }),
+    ),
   )
 
   if (useToolSearch) {
@@ -2930,16 +2899,6 @@ async function* queryModel(
       fastMode: isFastModeRequest,
       previousRequestId,
       betas: lastRequestBetas,
-    })
-
-    // Record telemetry for API call
-    recordApiCall({
-      provider: getAPIProvider(),
-      model: newMessages[0]?.message.model ?? partialMessage?.model ?? options.model,
-      ttft: ttftMs,
-      tokens: usage?.input_tokens + usage?.output_tokens ?? 0,
-      cacheHit: usage?.cache_read_input_tokens ?? 0,
-      duration: Date.now() - start,
     })
   })
 

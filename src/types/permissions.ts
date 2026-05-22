@@ -18,7 +18,6 @@ export const EXTERNAL_PERMISSION_MODES = [
   'bypassPermissions',
   'default',
   'dontAsk',
-  'pilot',
   'plan',
 ] as const
 

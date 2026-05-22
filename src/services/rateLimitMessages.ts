@@ -279,7 +279,7 @@ function getWarningUpsellText(
 
     // Pro/Max users: prompt to upgrade
     if (subscriptionType === 'pro' || subscriptionType === 'max') {
-      return '/upgrade to keep using Awakened'
+      return '/upgrade to keep using OpenClaude'
     }
   }
 

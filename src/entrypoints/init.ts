@@ -3,9 +3,7 @@ import '../bootstrap/state.js'
 import '../utils/config.js'
 import memoize from 'lodash-es/memoize.js'
 import { getIsNonInteractiveSession } from 'src/bootstrap/state.js'
-// LSP manager shutdown is lazy-loaded — only needed when process exits,
-// not during init. Defers ~LSPServerManager module evaluation.
-// import { shutdownLspServerManager } from '../services/lsp/manager.js'
+import { shutdownLspServerManager } from '../services/lsp/manager.js'
 import { populateOAuthAccountInfoIfNeeded } from '../services/oauth/client.js'
 import {
   initializePolicyLimitsLoadingPromise,
@@ -16,7 +14,6 @@ import {
   isEligibleForRemoteManagedSettings,
   waitForRemoteManagedSettingsToLoad,
 } from '../services/remoteManagedSettings/index.js'
-import { prewarmConnection } from '../services/api/client.js'
 import { preconnectAnthropicApi } from '../utils/apiPreconnect.js'
 import { applyExtraCACertsFromConfig } from '../utils/caCertsConfig.js'
 import { registerCleanup } from '../utils/cleanupRegistry.js'
@@ -134,10 +131,6 @@ export const init = memoize(async (): Promise<void> => {
     // reuse the global pool.
     preconnectAnthropicApi()
 
-    // Pre-warm non-Anthropic provider connections (OpenAI-compatible, etc.)
-    // Best-effort — errors don't block startup
-    prewarmConnection().catch(() => {})
-
     // CCR upstreamproxy: start the local CONNECT relay so agent subprocesses
     // can reach org-configured upstreams with credential injection. Gated on
     // CLAUDE_CODE_REMOTE + GrowthBook; fail-open on any error. Lazy import so
@@ -166,11 +159,7 @@ export const init = memoize(async (): Promise<void> => {
     setShellIfWindows()
 
     // Register LSP manager cleanup (initialization happens in main.tsx after --plugin-dir is processed)
-    // Lazy-imported to defer LSPServerManager module evaluation from startup
-    registerCleanup(async () => {
-      const { shutdownLspServerManager } = await import('../services/lsp/manager.js')
-      await shutdownLspServerManager()
-    })
+    registerCleanup(shutdownLspServerManager)
 
     // gh-32730: teams created by subagents (or main agent without
     // explicit TeamDelete) were left on disk forever. Register cleanup

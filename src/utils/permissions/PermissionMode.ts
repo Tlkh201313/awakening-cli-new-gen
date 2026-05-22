@@ -77,13 +77,6 @@ const PERMISSION_MODE_CONFIG: Partial<
     color: 'error',
     external: 'dontAsk',
   },
-  pilot: {
-    title: 'Pilot',
-    shortTitle: 'Pilot',
-    symbol: '✈',
-    color: 'warning',
-    external: 'pilot',
-  },
   ...(feature('TRANSCRIPT_CLASSIFIER')
     ? {
         auto: {

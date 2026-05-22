@@ -6,7 +6,7 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "esModuleInterop": true,

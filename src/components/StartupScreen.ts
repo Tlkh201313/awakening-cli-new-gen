@@ -1,112 +1,9 @@
 /**
- * AWAKENED startup screen — adaptive gold/amber animated logo.
+ * OpenClaude startup screen — filled-block text logo with sunset gradient.
+ * Called once at CLI startup before the Ink UI renders.
+ *
+ * Addresses: https://github.com/Gitlawb/openclaude/issues/55
  */
-
-const GOLD_GRADIENT: readonly [number, number, number][] = [
-  [255, 210, 90],
-  [255, 184, 61],
-  [255, 145, 0],
-  [255, 115, 0],
-]
-
-function waveOffset(index: number, frame: number): number {
-  return Math.sin((index + frame) * 0.55) * 0.12
-}
-
-export function paintAnimatedLine(
-  text: string,
-  stops: readonly [number, number, number][],
-  lineT: number,
-  frame = 0,
-): string {
-  let out = ''
-
-  for (let i = 0; i < text.length; i++) {
-    const anim = waveOffset(i, frame)
-    const t = Math.max(
-      0,
-      Math.min(
-        1,
-        lineT * 0.45 + (i / Math.max(1, text.length - 1)) * 0.55 + anim,
-      ),
-    )
-
-    const scaled = t * (stops.length - 1)
-    const idx = Math.floor(scaled)
-    const next = Math.min(stops.length - 1, idx + 1)
-    const blend = scaled - idx
-
-    const c1 = stops[idx]
-    const c2 = stops[next]
-
-    const r = Math.round(c1[0] + (c2[0] - c1[0]) * blend)
-    const g = Math.round(c1[1] + (c2[1] - c1[1]) * blend)
-    const b = Math.round(c1[2] + (c2[2] - c1[2]) * blend)
-
-    out += `\x1b[38;2;${r};${g};${b}m${text[i]}`
-  }
-
-  return out + '\x1b[0m'
-}
-
-// Rebuilt AWAKENED logo — cleaner spacing + more readable proportions
-export const LOGO_AWAKENED = [
-` █████╗ ██╗    ██╗ █████╗ ██╗  ██╗███████╗███╗   ██╗███████╗██████╗ `,
-`██╔══██╗██║    ██║██╔══██╗██║ ██╔╝██╔════╝████╗  ██║██╔════╝██╔══██╗`,
-`███████║██║ █╗ ██║███████║█████╔╝ █████╗  ██╔██╗ ██║█████╗  ██║  ██║`,
-`██╔══██║██║███╗██║██╔══██║██╔═██╗ ██╔══╝  ██║╚██╗██║██╔══╝  ██║  ██║`,
-`██║  ██║╚███╔███╔╝██║  ██║██║  ██╗███████╗██║ ╚████║███████╗██████╔╝`,
-`╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝╚══════╝╚═════╝ `,
-]
-
-// Auto responsive centering
-export function renderResponsiveLogo(frame = 0): string[] {
-  const cols = process.stdout.columns || 80
-
-  const maxWidth = LOGO_AWAKENED.reduce(
-    (m, line) => Math.max(m, line.length),
-    0,
-  )
-
-  const scalePadding = Math.max(0, Math.floor((cols - maxWidth) / 2))
-
-  return LOGO_AWAKENED.map((line, idx) => {
-    const t = idx / Math.max(1, LOGO_AWAKENED.length - 1)
-    return (
-      ' '.repeat(scalePadding) +
-      paintAnimatedLine(line, GOLD_GRADIENT, t, frame)
-    )
-  })
-}
-
-// Tiny shimmer animation loop
-export function startLogoAnimation(): void {
-  if (!process.stdout.isTTY) return
-
-  let frame = 0
-
-  const draw = () => {
-    process.stdout.write('\x1b[2J\x1b[0f')
-
-    const rendered = renderResponsiveLogo(frame)
-
-    for (const line of rendered) {
-      process.stdout.write(line + '\n')
-    }
-
-    frame++
-  }
-
-  draw()
-
-  const interval = setInterval(draw, 90)
-
-  process.stdout.on('resize', draw)
-
-  process.on('exit', () => clearInterval(interval))
-}
-
-// ─── Provider detection ───────────────────────────────────────────────────────
 
 import { isLocalProviderUrl, resolveProviderRequest } from '../services/api/providerConfig.js'
 import {
@@ -118,6 +15,64 @@ import { getSettings_DEPRECATED } from '../utils/settings/settings.js'
 import { parseUserSpecifiedModel } from '../utils/model/model.js'
 import { DEFAULT_GEMINI_MODEL } from '../utils/providerProfile.js'
 import { getGlobalConfig } from '../utils/config.js'
+import { ANSI_DIM, ANSI_RESET, ansiRgb } from '../utils/terminalAnsi.js'
+import {
+  resolveLogoPalette,
+  type RGB,
+} from './StartupScreen.palettes.js'
+
+declare const MACRO: { VERSION: string; DISPLAY_VERSION?: string }
+
+const RESET = ANSI_RESET
+const DIM = ANSI_DIM
+
+function lerp(a: RGB, b: RGB, t: number): RGB {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ]
+}
+
+function gradAt(stops: readonly RGB[], t: number): RGB {
+  const c = Math.max(0, Math.min(1, t))
+  const s = c * (stops.length - 1)
+  const i = Math.floor(s)
+  if (i >= stops.length - 1) return stops[stops.length - 1]
+  return lerp(stops[i], stops[i + 1], s - i)
+}
+
+export function paintLine(text: string, stops: readonly RGB[], lineT: number): string {
+  let out = ''
+  for (let i = 0; i < text.length; i++) {
+    const t = text.length > 1 ? lineT * 0.5 + (i / (text.length - 1)) * 0.5 : lineT
+    const [r, g, b] = gradAt(stops, t)
+    out += `${ansiRgb(r, g, b)}${text[i]}`
+  }
+  return out + RESET
+}
+
+// ─── Filled Block Text Logo ───────────────────────────────────────────────────
+
+const LOGO_OPEN = [
+  `  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557  \u2588\u2588\u2557`,
+  `  \u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2551 \u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2551 \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u2550\u255d \u2588\u2588\u2588\u2557 \u2588\u2588\u2551`,
+  `  \u2588\u2588\u2551   \u2588\u2588\u2551 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551 \u2588\u2588\u2588\u2588\u2588\u2588\u2557   \u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551`,
+  `  \u2588\u2588\u2551   \u2588\u2588\u2551 \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u2550\u255d \u2588\u2588\u2554\u2550\u2550\u2550\u255d   \u2588\u2588\u2554\u2588\u2588\u2588\u2588\u2551`,
+  `  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551 \u2588\u2588\u2551       \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2551 \u255a\u2588\u2588\u2588\u2551`,
+  `  \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d \u255a\u2550\u255d       \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d \u255a\u2550\u255d  \u255a\u2550\u2550\u255d`,
+]
+
+const LOGO_CLAUDE = [
+  `  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557      \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557   \u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557`,
+  `  \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u2550\u255d \u2588\u2588\u2551      \u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2551 \u2588\u2588\u2551   \u2588\u2588\u2551 \u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2557 \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u2550\u255d`,
+  `  \u2588\u2588\u2551       \u2588\u2588\u2551      \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551 \u2588\u2588\u2551   \u2588\u2588\u2551 \u2588\u2588\u2551   \u2588\u2588\u2551 \u2588\u2588\u2588\u2588\u2588\u2588\u2557  `,
+  `  \u2588\u2588\u2551       \u2588\u2588\u2551      \u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2551 \u2588\u2588\u2551   \u2588\u2588\u2551 \u2588\u2588\u2551   \u2588\u2588\u2551 \u2588\u2588\u2554\u2550\u2550\u2550\u255d  `,
+  `  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551 \u255a\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255d \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255d \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557`,
+  `  \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d\u255a\u2550\u255d   \u255a\u2550\u255d  \u255a\u2550\u2550\u2550\u2550\u2550\u255d  \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u255d  \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d`,
+]
+
+// ─── Provider detection ───────────────────────────────────────────────────────
 
 export function detectProvider(modelOverride?: string): { name: string; model: string; baseUrl: string; isLocal: boolean } {
   const useGemini = process.env.CLAUDE_CODE_USE_GEMINI === '1' || process.env.CLAUDE_CODE_USE_GEMINI === 'true'
@@ -190,13 +145,13 @@ export function detectProvider(modelOverride?: string): { name: string; model: s
     else if (/bankr/i.test(baseUrl)) name = 'Bankr'
     else if (/bankr/i.test(rawModel)) name = 'Bankr'
     else if (isLocal) name = getLocalOpenAICompatibleProviderLabel(baseUrl)
-
+    
     // Resolve model alias to actual model name + reasoning effort
     let displayModel = resolvedRequest.resolvedModel
     if (resolvedRequest.reasoning?.effort) {
       displayModel = `${displayModel} (${resolvedRequest.reasoning.effort})`
     }
-
+    
     return { name, model: displayModel, baseUrl, isLocal }
   }
 
@@ -209,35 +164,78 @@ export function detectProvider(modelOverride?: string): { name: string; model: s
   return { name: 'Anthropic', model: resolvedModel, baseUrl, isLocal }
 }
 
-// ─── Backward-compatible one-shot startup screen ──────────────────────────────
+// ─── Box drawing ──────────────────────────────────────────────────────────────
 
-declare const MACRO: { VERSION: string; DISPLAY_VERSION?: string }
+function boxRow(content: string, width: number, rawLen: number, border: RGB): string {
+  const pad = Math.max(0, width - 2 - rawLen)
+  return `${ansiRgb(...border)}\u2502${RESET}${content}${' '.repeat(pad)}${ansiRgb(...border)}\u2502${RESET}`
+}
 
-export function printStartupScreen(_modelOverride?: string): void {
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+export function printStartupScreen(modelOverride?: string): void {
+  // Skip in non-interactive / CI / print mode
   if (process.env.CI || !process.stdout.isTTY) return
 
-  const draw = () => {
-    const rendered = renderResponsiveLogo()
-    process.stdout.write('\n')
-    for (const line of rendered) {
-      process.stdout.write(line + '\n')
+  const palette = resolveLogoPalette(getGlobalConfig().logoColor)
+  const ACCENT = palette.accent
+  const CREAM = palette.cream
+  const DIMCOL = palette.dim
+  const BORDER = palette.border
+  const GRAD = palette.gradient
+
+  const p = detectProvider(modelOverride)
+  const W = 62
+  const out: string[] = []
+
+  out.push('')
+
+  // Gradient logo
+  const allLogo = [...LOGO_OPEN, '', ...LOGO_CLAUDE]
+  const total = allLogo.length
+  for (let i = 0; i < total; i++) {
+    const t = total > 1 ? i / (total - 1) : 0
+    if (allLogo[i] === '') {
+      out.push('')
+    } else {
+      out.push(paintLine(allLogo[i], GRAD, t))
     }
-    process.stdout.write('\n')
   }
 
-  draw()
+  out.push('')
 
-  const onResize = () => {
-    process.stdout.write('\x1b[2J\x1b[0f')
-    draw()
+  // Tagline
+  out.push(`  ${ansiRgb(...ACCENT)}\u2726${RESET} ${ansiRgb(...CREAM)}Any model. Every tool. Zero limits.${RESET} ${ansiRgb(...ACCENT)}\u2726${RESET}`)
+  out.push('')
+
+  // Provider info box
+  out.push(`${ansiRgb(...BORDER)}\u2554${'\u2550'.repeat(W - 2)}\u2557${RESET}`)
+
+  const lbl = (k: string, v: string, c: RGB = CREAM): [string, number] => {
+    const padK = k.padEnd(9)
+    return [` ${DIM}${ansiRgb(...DIMCOL)}${padK}${RESET} ${ansiRgb(...c)}${v}${RESET}`, ` ${padK} ${v}`.length]
   }
 
-  process.stdout.on('resize', onResize)
+  const provC: RGB = p.isLocal ? [130, 175, 130] : ACCENT
+  let [r, l] = lbl('Provider', p.name, provC)
+  out.push(boxRow(r, W, l, BORDER))
+  ;[r, l] = lbl('Model', p.model)
+  out.push(boxRow(r, W, l, BORDER))
+  const ep = p.baseUrl.length > 38 ? p.baseUrl.slice(0, 35) + '...' : p.baseUrl
+  ;[r, l] = lbl('Endpoint', ep)
+  out.push(boxRow(r, W, l, BORDER))
 
-  // Clean up listener once REPL takes over (first stdin activity)
-  const cleanup = () => {
-    process.stdout.off('resize', onResize)
-    process.stdin.off('data', cleanup)
-  }
-  process.stdin.once('data', cleanup)
+  out.push(`${ansiRgb(...BORDER)}\u2560${'\u2550'.repeat(W - 2)}\u2563${RESET}`)
+
+  const sC: RGB = p.isLocal ? [130, 175, 130] : ACCENT
+  const sL = p.isLocal ? 'local' : 'cloud'
+  const sRow = ` ${ansiRgb(...sC)}\u25cf${RESET} ${DIM}${ansiRgb(...DIMCOL)}${sL}${RESET}    ${DIM}${ansiRgb(...DIMCOL)}Ready \u2014 type ${RESET}${ansiRgb(...ACCENT)}/help${RESET}${DIM}${ansiRgb(...DIMCOL)} to begin${RESET}`
+  const sLen = ` \u25cf ${sL}    Ready \u2014 type /help to begin`.length
+  out.push(boxRow(sRow, W, sLen, BORDER))
+
+  out.push(`${ansiRgb(...BORDER)}\u255a${'\u2550'.repeat(W - 2)}\u255d${RESET}`)
+  out.push(`  ${DIM}${ansiRgb(...DIMCOL)}openclaude ${RESET}${ansiRgb(...ACCENT)}v${MACRO.DISPLAY_VERSION ?? MACRO.VERSION}${RESET}`)
+  out.push('')
+
+  process.stdout.write(out.join('\n') + '\n')
 }

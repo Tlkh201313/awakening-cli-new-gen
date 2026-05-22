@@ -17,7 +17,7 @@ import { getFsImplementation } from './fsOperations.js'
 
 describe('KnowledgeGraph Phase 1 Stress & Edge Cases', () => {
   const originalConfigDir = process.env.CLAUDE_CONFIG_DIR
-  const originalOrama = process.env.Awakened_KNOWLEDGE_ORAMA
+  const originalOrama = process.env.OPENCLAUDE_KNOWLEDGE_ORAMA
   let configDir: string | undefined
 
   const removeDirWithRetry = (dir: string) => {
@@ -46,9 +46,9 @@ describe('KnowledgeGraph Phase 1 Stress & Edge Cases', () => {
 
   beforeEach(async () => {
     await acquireEnvMutex()
-    configDir = mkdtempSync(join(tmpdir(), 'Awakened-stress-'))
+    configDir = mkdtempSync(join(tmpdir(), 'openclaude-stress-'))
     process.env.CLAUDE_CONFIG_DIR = configDir
-    process.env.Awakened_KNOWLEDGE_ORAMA = '1'
+    process.env.OPENCLAUDE_KNOWLEDGE_ORAMA = '1'
     setClaudeConfigHomeDirForTesting(configDir)
     resetGlobalGraph()
   })
@@ -63,9 +63,9 @@ describe('KnowledgeGraph Phase 1 Stress & Edge Cases', () => {
         process.env.CLAUDE_CONFIG_DIR = originalConfigDir
       }
       if (originalOrama === undefined) {
-        delete process.env.Awakened_KNOWLEDGE_ORAMA
+        delete process.env.OPENCLAUDE_KNOWLEDGE_ORAMA
       } else {
-        process.env.Awakened_KNOWLEDGE_ORAMA = originalOrama
+        process.env.OPENCLAUDE_KNOWLEDGE_ORAMA = originalOrama
       }
       setClaudeConfigHomeDirForTesting(undefined)
     } finally {

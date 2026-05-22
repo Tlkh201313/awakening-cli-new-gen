@@ -19,7 +19,7 @@ export type LineEndingType = 'CRLF' | 'LF'
 
 export function detectEncodingForResolvedPath(
   resolvedPath: string,
-): { encoding: BufferEncoding; headContent?: string } {
+): BufferEncoding {
   const { buffer, bytesRead } = getFsImplementation().readSync(resolvedPath, {
     length: 4096,
   })
@@ -27,13 +27,11 @@ export function detectEncodingForResolvedPath(
   // Empty files should default to utf8, not ascii
   // This fixes a bug where writing emojis/CJK to empty files caused corruption
   if (bytesRead === 0) {
-    return { encoding: 'utf8' }
+    return 'utf8'
   }
 
-  let encoding: BufferEncoding = 'utf8'
-
   if (bytesRead >= 2) {
-    if (buffer[0] === 0xff && buffer[1] === 0xfe) encoding = 'utf16le'
+    if (buffer[0] === 0xff && buffer[1] === 0xfe) return 'utf16le'
   }
 
   if (
@@ -42,15 +40,12 @@ export function detectEncodingForResolvedPath(
     buffer[1] === 0xbb &&
     buffer[2] === 0xbf
   ) {
-    encoding = 'utf8'
+    return 'utf8'
   }
 
-  // For files that fit entirely in the 4KB buffer, decode the buffer directly
-  // instead of doing a second fs.readFileSync — saves one syscall + allocation.
-  const headContent =
-    bytesRead < 4096 ? buffer.toString(encoding, 0, bytesRead) : undefined
-
-  return { encoding, headContent }
+  // For non-empty files, default to utf8 since it's a superset of ascii
+  // and handles all Unicode characters properly
+  return 'utf8'
 }
 
 export function detectLineEndingsForString(content: string): LineEndingType {
@@ -89,18 +84,7 @@ export function readFileSyncWithMetadata(filePath: string): {
     logForDebugging(`Reading through symlink: ${filePath} -> ${resolvedPath}`)
   }
 
-  const { encoding, headContent } = detectEncodingForResolvedPath(resolvedPath)
-
-  // Small-file fast path: we already read the whole file into the 4KB buffer.
-  if (headContent !== undefined) {
-    const lineEndings = detectLineEndingsForString(headContent)
-    return {
-      content: headContent.replaceAll('\r\n', '\n'),
-      encoding,
-      lineEndings,
-    }
-  }
-
+  const encoding = detectEncodingForResolvedPath(resolvedPath)
   const raw = fs.readFileSync(resolvedPath, { encoding })
   // Detect line endings from the raw head before CRLF normalization erases
   // the distinction. 4096 code units is ≥ detectLineEndings's 4096-byte

@@ -12,7 +12,7 @@ describe('getDefaultCommitCoAuthorName', () => {
         apiProvider: 'openai',
         isInternalRepo: false,
       }),
-    ).toBe('Awakened (gpt-5.5)')
+    ).toBe('OpenClaude (gpt-5.5)')
   })
 
   it('does not apply internal Claude formatting to non-Claude providers', () => {
@@ -22,7 +22,7 @@ describe('getDefaultCommitCoAuthorName', () => {
         apiProvider: 'openai',
         isInternalRepo: true,
       }),
-    ).toBe('Awakened (gpt-5.5)')
+    ).toBe('OpenClaude (gpt-5.5)')
   })
 
   it('keeps the codename-safe fallback for unknown first-party models', () => {
@@ -55,12 +55,12 @@ describe('getDefaultCommitCoAuthorName', () => {
     ).toBe('Claude Opus 4.6')
   })
 
-  it('uses the Awakened email for commit attribution across providers', () => {
+  it('uses the OpenClaude email for commit attribution across providers', () => {
     expect(getDefaultCommitCoAuthorEmail('openai')).toBe(
-      'Awakened@gitlawb.com',
+      'openclaude@gitlawb.com',
     )
     expect(getDefaultCommitCoAuthorEmail('firstParty')).toBe(
-      'Awakened@gitlawb.com',
+      'openclaude@gitlawb.com',
     )
   })
 })

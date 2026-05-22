@@ -37,9 +37,6 @@ class FileReadCache {
 
     // Check if we have valid cached data
     if (cachedData && cachedData.mtime === stats.mtimeMs) {
-      // Promote to end of Map so deletion-by-first-key evicts oldest *unused*.
-      this.cache.delete(cacheKey)
-      this.cache.set(cacheKey, cachedData)
       return {
         content: cachedData.content,
         encoding: cachedData.encoding,

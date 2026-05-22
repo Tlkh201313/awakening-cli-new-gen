@@ -88,7 +88,7 @@ type Batch = { isConcurrencySafe: boolean; blocks: ToolUseBlock[] }
  * 1. A single non-read-only tool, or
  * 2. Multiple consecutive read-only tools
  */
-export function partitionToolCalls(
+function partitionToolCalls(
   toolUseMessages: ToolUseBlock[],
   toolUseContext: ToolUseContext,
 ): Batch[] {

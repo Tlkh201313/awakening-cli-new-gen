@@ -2,7 +2,7 @@ import { c as _c } from "react-compiler-runtime";
 import * as React from 'react';
 import { useExitOnCtrlCDWithKeybindings } from 'src/hooks/useExitOnCtrlCDWithKeybindings.js';
 import { useShortcutDisplay } from 'src/keybindings/useShortcutDisplay.js';
-import { builtInCommandNames, type Command, type CommandResultDisplay } from '../../commands.js';
+import { builtInCommandNames, type Command, type CommandResultDisplay, INTERNAL_ONLY_COMMANDS } from '../../commands.js';
 import { useIsInsideModal } from '../../context/modalContext.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { Box, Link, Text } from '../../ink.js';
@@ -140,7 +140,7 @@ export function HelpV2(t0) {
   const publicBuildVersion = getPublicBuildVersion();
   let t6;
   if ($[31] !== publicBuildVersion || $[32] !== tabs) {
-    t6 = <Tabs title={false ? "/help" : `Awakened v${publicBuildVersion}`} color="professionalBlue" defaultTab="general">{tabs}</Tabs>;
+    t6 = <Tabs title={false ? "/help" : `OpenClaude v${publicBuildVersion}`} color="professionalBlue" defaultTab="general">{tabs}</Tabs>;
     $[31] = publicBuildVersion;
     $[32] = tabs;
     $[33] = t6;
@@ -149,7 +149,7 @@ export function HelpV2(t0) {
   }
   let t7;
   if ($[34] === Symbol.for("react.memo_cache_sentinel")) {
-    t7 = <Box marginTop={1}><Text>For more help:{" "}<Link url="https://github.com/Gitlawb/Awakened" /></Text></Box>;
+    t7 = <Box marginTop={1}><Text>For more help:{" "}<Link url="https://github.com/Gitlawb/openclaude" /></Text></Box>;
     $[34] = t7;
   } else {
     t7 = $[34];

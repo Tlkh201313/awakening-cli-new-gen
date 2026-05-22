@@ -8,15 +8,6 @@ import type { BashTool } from './BashTool.js'
 import { checkReadOnlyConstraints } from './readOnlyValidation.js'
 import { checkDangerousRemovalPaths } from './pathValidation.js'
 
-/**
- * Commands that require user confirmation even in Pilot mode.
- * Pilot mode auto-approves everything except these destructive removal commands.
- */
-const PILOT_BLOCKED_COMMANDS = [
-  'rm',
-  'rmdir',
-] as const
-
 const ACCEPT_EDITS_WRITE_COMMANDS = [
   // Filesystem write commands
   'mkdir',
@@ -194,37 +185,6 @@ export function checkPermissionMode(
     }
   }
 
-  // Pilot mode: auto-approve everything EXCEPT removal commands (rm, rmdir).
-  // Check ALL subcommands first — if any is a removal, ask for the whole command.
-  if (toolPermissionContext.mode === 'pilot') {
-    const allCommands = splitCommand_DEPRECATED(input.command)
-    for (const cmd of allCommands) {
-      const trimmed = cmd.trim()
-      const [baseCmd] = trimmed.split(/\s+/)
-      if (
-        baseCmd &&
-        (PILOT_BLOCKED_COMMANDS as readonly string[]).includes(baseCmd)
-      ) {
-        return {
-          behavior: 'ask',
-          message: `Pilot mode requires confirmation for removal command: ${baseCmd}`,
-          decisionReason: {
-            type: 'mode',
-            mode: 'pilot',
-          },
-        }
-      }
-    }
-    return {
-      behavior: 'allow',
-      updatedInput: input,
-      decisionReason: {
-        type: 'mode',
-        mode: 'pilot',
-      },
-    }
-  }
-
   const commands = splitCommand_DEPRECATED(input.command)
 
   // Check each subcommand
@@ -247,12 +207,7 @@ export function checkPermissionMode(
 export function getAutoAllowedCommands(
   mode: ToolPermissionContext['mode'],
 ): readonly string[] {
-  if (mode === 'acceptEdits') {
-    return [...ACCEPT_EDITS_WRITE_COMMANDS, ...ACCEPT_EDITS_READ_ONLY_COMMANDS]
-  }
-  // Pilot mode allows all commands except blocked removal commands
-  if (mode === 'pilot') {
-    return ['*'] // Sentinel: pilot allows everything not in PILOT_BLOCKED_COMMANDS
-  }
-  return []
+  return mode === 'acceptEdits'
+    ? [...ACCEPT_EDITS_WRITE_COMMANDS, ...ACCEPT_EDITS_READ_ONLY_COMMANDS]
+    : []
 }

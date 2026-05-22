@@ -708,7 +708,7 @@ export function refreshAwsAuth(awsAuthRefresh: string): Promise<boolean> {
               'AWS auth refresh timed out after 3 minutes. Run your auth command manually in a separate terminal.',
             )
           : chalk.red(
-              'Error running awsAuthRefresh (in settings or ~/.Awakened.json):',
+              'Error running awsAuthRefresh (in settings or ~/.openclaude.json):',
             )
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(message)
@@ -786,7 +786,7 @@ async function getAwsCredsFromCredentialExport(): Promise<{
       }
     } catch (e) {
       const message = chalk.red(
-        'Error getting AWS credentials from awsCredentialExport (in settings or ~/.Awakened.json):',
+        'Error getting AWS credentials from awsCredentialExport (in settings or ~/.openclaude.json):',
       )
       if (e instanceof Error) {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
@@ -976,7 +976,7 @@ export function refreshGcpAuth(gcpAuthRefresh: string): Promise<boolean> {
               'GCP auth refresh timed out after 3 minutes. Run your auth command manually in a separate terminal.',
             )
           : chalk.red(
-              'Error running gcpAuthRefresh (in settings or ~/.Awakened.json):',
+              'Error running gcpAuthRefresh (in settings or ~/.openclaude.json):',
             )
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(message)
@@ -1471,22 +1471,10 @@ async function checkAndRefreshOAuthTokenIfNeededImpl(
 ): Promise<boolean> {
   const MAX_RETRIES = 5
 
-  // Fast path: check in-memory cached token SYNCHRONOUSLY before any disk I/O.
-  // If the token hasn't expired yet, there's no need to stat the credentials
-  // file or do any async work. This avoids ~1-5ms of blocking I/O on every
-  // API call when the token is still valid.
-  if (!force) {
-    const cachedTokens = getClaudeAIOAuthTokens()
-    if (!cachedTokens?.refreshToken || !isOAuthTokenExpired(cachedTokens.expiresAt)) {
-      return false
-    }
-  }
-
-  // Token appears expired in memory — do cross-process invalidation check
-  // (another CC instance may have refreshed the token on disk).
   await invalidateOAuthCacheIfDiskChanged()
 
-  // Re-check after disk invalidation (cache may have been cleared above)
+  // First check if token is expired with cached value
+  // Skip this check if force=true (server already told us token is bad)
   const tokens = getClaudeAIOAuthTokens()
   if (!force) {
     if (!tokens?.refreshToken || !isOAuthTokenExpired(tokens.expiresAt)) {
@@ -1986,7 +1974,7 @@ export async function validateForceLoginOrg(): Promise<OrgValidationResult> {
 
   // Always fetch the authoritative org UUID from the profile endpoint.
   // Even keychain-sourced tokens verify server-side: the cached org UUID
-  // in ~/.Awakened.json is user-writable and cannot be trusted.
+  // in ~/.openclaude.json is user-writable and cannot be trusted.
   const { source } = getAuthTokenSource()
   const isEnvVarToken =
     source === 'CLAUDE_CODE_OAUTH_TOKEN' ||
@@ -2001,8 +1989,8 @@ export async function validateForceLoginOrg(): Promise<OrgValidationResult> {
         `Unable to verify organization for the current authentication token.\n` +
         `This machine requires organization ${requiredOrgUuid} but the profile could not be fetched.\n` +
         `This may be a network error, or the token may lack the user:profile scope required for\n` +
-        `verification (tokens from 'Awakened setup-token' do not include this scope).\n` +
-        `Try again, or obtain a full-scope token via 'Awakened auth login'.`,
+        `verification (tokens from 'openclaude setup-token' do not include this scope).\n` +
+        `Try again, or obtain a full-scope token via 'openclaude auth login'.`,
     }
   }
 
@@ -2032,39 +2020,8 @@ export async function validateForceLoginOrg(): Promise<OrgValidationResult> {
     message:
       `Your authentication token belongs to organization ${tokenOrgUuid},\n` +
       `but this machine requires organization ${requiredOrgUuid}.\n\n` +
-      `Please log in with the correct organization: Awakened auth login`,
+      `Please log in with the correct organization: openclaude auth login`,
   }
 }
 
 class GcpCredentialsTimeoutError extends Error {}
-
-let tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null
-
-/**
- * Schedule a background token refresh when the current token is 80% through
- * its lifetime. Non-blocking — doesn't delay requests.
- */
-export function scheduleTokenRefresh(
-  tokenLifetimeMs: number,
-  refreshFn: () => Promise<void>,
-): void {
-  if (tokenRefreshTimer) {
-    clearTimeout(tokenRefreshTimer)
-  }
-
-  const refreshAt = tokenLifetimeMs * 0.8
-  tokenRefreshTimer = setTimeout(async () => {
-    try {
-      await refreshFn()
-    } catch {
-      // Pre-fetch is best-effort
-    }
-  }, refreshAt)
-}
-
-export function cancelScheduledRefresh(): void {
-  if (tokenRefreshTimer) {
-    clearTimeout(tokenRefreshTimer)
-    tokenRefreshTimer = null
-  }
-}

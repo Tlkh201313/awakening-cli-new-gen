@@ -52,7 +52,7 @@ import status from './commands/status/index.js'
 import tasks from './commands/tasks/index.js'
 import teleport from './commands/teleport/index.js'
 /* eslint-disable @typescript-eslint/no-require-imports */
-const getAgentsPlatform = () =>
+const agentsPlatform =
   process.env.USER_TYPE === 'ant'
     ? require('./commands/agents-platform/index.js').default
     : null
@@ -66,91 +66,75 @@ import logo from './commands/logo/index.js'
 import vim from './commands/vim/index.js'
 import { feature } from 'bun:bundle'
 import { isBuddyEnabled } from './buddy/feature.js'
-// Dead code elimination: feature-gated lazy factories — require() deferred
-// behind thunks so the module is only evaluated when the flag is true AND
-// the command is first accessed inside COMMANDS(). Keeps module-level cost
-// to a single boolean check per gate.
+// Dead code elimination: conditional imports
 /* eslint-disable @typescript-eslint/no-require-imports */
-const getProactiveCmd = () =>
+const proactive =
   feature('PROACTIVE') || feature('KAIROS')
-    ? [require('./commands/proactive.js').default]
+    ? require('./commands/proactive.js').default
     : null
-const getBriefCmd = () =>
+const briefCommand =
   feature('KAIROS') || feature('KAIROS_BRIEF')
-    ? [require('./commands/brief.js').default]
+    ? require('./commands/brief.js').default
     : null
-const getAssistantCmd = () =>
-  feature('KAIROS') ? [require('./commands/assistant/index.js').default] : null
-const getBridgeCmd = () =>
-  feature('BRIDGE_MODE')
-    ? [require('./commands/bridge/index.js').default]
-    : null
-const getRemoteControlServerCmd = () =>
+const assistantCommand = feature('KAIROS')
+  ? require('./commands/assistant/index.js').default
+  : null
+const bridge = feature('BRIDGE_MODE')
+  ? require('./commands/bridge/index.js').default
+  : null
+const remoteControlServerCommand =
   feature('DAEMON') && feature('BRIDGE_MODE')
-    ? [require('./commands/remoteControlServer/index.js').default]
+    ? require('./commands/remoteControlServer/index.js').default
     : null
-const getVoiceCmd = () =>
-  feature('VOICE_MODE')
-    ? [require('./commands/voice/index.js').default]
-    : null
-const getForceSnip = () =>
-  feature('HISTORY_SNIP')
-    ? [require('./commands/force-snip.js').default]
-    : null
-const getWorkflowsCmd = () =>
-  feature('WORKFLOW_SCRIPTS')
-    ? [
-        (require('./commands/workflows/index.js') as typeof import('./commands/workflows/index.js')).default,
-      ]
-    : null
-const getWebCmd = () =>
-  feature('CCR_REMOTE_SETUP')
-    ? [
-        (require('./commands/remote-setup/index.js') as typeof import('./commands/remote-setup/index.js')).default,
-      ]
-    : null
-const getClearSkillIndexCache = () =>
-  feature('EXPERIMENTAL_SKILL_SEARCH')
-    ? (require('./services/skillSearch/localSearch.js') as typeof import('./services/skillSearch/localSearch.js')).clearSkillIndexCache
-    : null
-const getSubscribePr = () =>
-  feature('KAIROS_GITHUB_WEBHOOKS')
-    ? [require('./commands/subscribe-pr.js').default]
-    : null
-const getUltraplan = () =>
-  feature('ULTRAPLAN')
-    ? [require('./commands/ultraplan.js').default]
-    : null
-const getTorch = () =>
-  feature('TORCH')
-    ? [require('./commands/torch.js').default]
-    : null
-const getPeersCmd = () =>
-  feature('UDS_INBOX')
-    ? [
-        (require('./commands/peers/index.js') as typeof import('./commands/peers/index.js')).default,
-      ]
-    : null
-const getForkCmd = () =>
-  feature('FORK_SUBAGENT')
-    ? [
-        (require('./commands/fork/index.js') as typeof import('./commands/fork/index.js')).default,
-      ]
-    : null
-const getBuddyCmd = () =>
-  isBuddyEnabled()
-    ? [
-        (require('./commands/buddy/index.js') as typeof import('./commands/buddy/index.js')).default,
-      ]
-    : null
+const voiceCommand = feature('VOICE_MODE')
+  ? require('./commands/voice/index.js').default
+  : null
+const forceSnip = feature('HISTORY_SNIP')
+  ? require('./commands/force-snip.js').default
+  : null
+const workflowsCmd = feature('WORKFLOW_SCRIPTS')
+  ? (
+      require('./commands/workflows/index.js') as typeof import('./commands/workflows/index.js')
+    ).default
+  : null
+const webCmd = feature('CCR_REMOTE_SETUP')
+  ? (
+      require('./commands/remote-setup/index.js') as typeof import('./commands/remote-setup/index.js')
+    ).default
+  : null
+const clearSkillIndexCache = feature('EXPERIMENTAL_SKILL_SEARCH')
+  ? (
+      require('./services/skillSearch/localSearch.js') as typeof import('./services/skillSearch/localSearch.js')
+    ).clearSkillIndexCache
+  : null
+const subscribePr = feature('KAIROS_GITHUB_WEBHOOKS')
+  ? require('./commands/subscribe-pr.js').default
+  : null
+const ultraplan = feature('ULTRAPLAN')
+  ? require('./commands/ultraplan.js').default
+  : null
+const torch = feature('TORCH') ? require('./commands/torch.js').default : null
+const peersCmd = feature('UDS_INBOX')
+  ? (
+      require('./commands/peers/index.js') as typeof import('./commands/peers/index.js')
+    ).default
+  : null
+const forkCmd = feature('FORK_SUBAGENT')
+  ? (
+      require('./commands/fork/index.js') as typeof import('./commands/fork/index.js')
+    ).default
+  : null
+const buddy = isBuddyEnabled()
+  ? (
+      require('./commands/buddy/index.js') as typeof import('./commands/buddy/index.js')
+    ).default
+  : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 import thinkback from './commands/thinkback/index.js'
 import thinkbackPlay from './commands/thinkback-play/index.js'
 import permissions from './commands/permissions/index.js'
-import pilot from './commands/pilot/index.js'
 import plan from './commands/plan/index.js'
 import fast from './commands/fast/index.js'
-import thinking from './commands/thinking/index.js'
 import passes from './commands/passes/index.js'
 import privacySettings from './commands/privacy-settings/index.js'
 import provider from './commands/provider/index.js'
@@ -195,7 +179,6 @@ import {
   clearPluginSkillsCache,
 } from './utils/plugins/loadPluginCommands.js'
 import memoize from 'lodash-es/memoize.js'
-import { memoizeWithLRU } from './utils/memoize.js'
 import { isUsing3PServices, isClaudeAISubscriber } from './utils/auth.js'
 import { isFirstPartyAnthropicBaseUrl } from './utils/model/providers.js'
 import env from './commands/env/index.js'
@@ -219,7 +202,7 @@ import stats from './commands/stats/index.js'
 const usageReport: Command = {
   type: 'prompt',
   name: 'insights',
-  description: 'Generate a report analyzing your Awakened sessions',
+  description: 'Generate a report analyzing your OpenClaude sessions',
   contentLength: 0,
   progressMessage: 'analyzing your sessions',
   source: 'builtin',
@@ -251,10 +234,41 @@ export type {
 } from './types/command.js'
 export { getCommandName, isCommandEnabled } from './types/command.js'
 
+// Commands that get eliminated from the external build
+export const INTERNAL_ONLY_COMMANDS = [
+  backfillSessions,
+  breakCache,
+  bughunter,
+  commit,
+  commitPushPr,
+  ctx_viz,
+  goodClaude,
+  issue,
+  initVerifiers,
+  ...(forceSnip ? [forceSnip] : []),
+  mockLimits,
+  bridgeKick,
+  version,
+  ...(ultraplan ? [ultraplan] : []),
+  ...(subscribePr ? [subscribePr] : []),
+  resetLimits,
+  resetLimitsNonInteractive,
+  onboarding,
+  share,
+  summary,
+  teleport,
+  antTrace,
+  perfIssue,
+  env,
+  oauthRefresh,
+  debugToolCall,
+  agentsPlatform,
+  autofixPr,
+].filter(Boolean)
+
 // Declared as a function so that we don't run this until getCommands is called,
 // since underlying functions read from config, which can't be read at module initialization time
-const COMMANDS = memoizeWithLRU(
-  (): Command[] => [
+const COMMANDS = memoize((): Command[] => [
   addDir,
   advisor,
   agents,
@@ -281,7 +295,6 @@ const COMMANDS = memoizeWithLRU(
   exit,
   fast,
   files,
-  thinking,
   heapDump,
   help,
   ide,
@@ -328,19 +341,18 @@ const COMMANDS = memoizeWithLRU(
   usageReport,
   vim,
   wiki,
-  ...(getWebCmd() ?? []),
-  ...(getForkCmd() ?? []),
-  ...(getBuddyCmd() ?? []),
-  ...(getProactiveCmd() ?? []),
-  ...(getBriefCmd() ?? []),
-  ...(getAssistantCmd() ?? []),
-  ...(getBridgeCmd() ?? []),
-  ...(getRemoteControlServerCmd() ?? []),
-  ...(getVoiceCmd() ?? []),
+  ...(webCmd ? [webCmd] : []),
+  ...(forkCmd ? [forkCmd] : []),
+  ...(buddy ? [buddy] : []),
+  ...(proactive ? [proactive] : []),
+  ...(briefCommand ? [briefCommand] : []),
+  ...(assistantCommand ? [assistantCommand] : []),
+  ...(bridge ? [bridge] : []),
+  ...(remoteControlServerCommand ? [remoteControlServerCommand] : []),
+  ...(voiceCommand ? [voiceCommand] : []),
   thinkback,
   thinkbackPlay,
   permissions,
-  pilot,
   plan,
   privacySettings,
   hooks,
@@ -348,52 +360,18 @@ const COMMANDS = memoizeWithLRU(
   sandboxToggle,
   ...(!isUsing3PServices() ? [logout, login()].filter(Boolean) : []),
   passes,
-  ...(getPeersCmd() ?? []),
+  ...(peersCmd ? [peersCmd] : []),
   tasks,
-  ...(getWorkflowsCmd() ?? []),
-  ...(getTorch() ?? []),
+  ...(workflowsCmd ? [workflowsCmd] : []),
+  ...(torch ? [torch] : []),
   ...(process.env.USER_TYPE === 'ant' && !process.env.IS_DEMO
-    ? [
-        backfillSessions,
-        breakCache,
-        bughunter,
-        commit,
-        commitPushPr,
-        ctx_viz,
-        goodClaude,
-        issue,
-        initVerifiers,
-        ...(getForceSnip() ?? []),
-        mockLimits,
-        bridgeKick,
-        version,
-        ...(getUltraplan() ?? []),
-        ...(getSubscribePr() ?? []),
-        resetLimits,
-        resetLimitsNonInteractive,
-        onboarding,
-        share,
-        summary,
-        teleport,
-        antTrace,
-        perfIssue,
-        env,
-        oauthRefresh,
-        debugToolCall,
-        getAgentsPlatform(),
-        autofixPr,
-      ]
+    ? INTERNAL_ONLY_COMMANDS
     : []),
-].filter(isCommand),
-  () => '',
-  10,
-)
+].filter(isCommand))
 
-export const builtInCommandNames = memoizeWithLRU(
+export const builtInCommandNames = memoize(
   (): Set<string> =>
     new Set(COMMANDS().flatMap(_ => [_.name, ...(_.aliases ?? [])])),
-  () => '',
-  10,
 )
 
 async function getSkills(cwd: string): Promise<{
@@ -444,12 +422,11 @@ async function getSkills(cwd: string): Promise<{
 }
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const getWorkflowCommandsFn = () =>
-  feature('WORKFLOW_SCRIPTS')
-    ? (
-        require('./tools/WorkflowTool/createWorkflowCommand.js') as typeof import('./tools/WorkflowTool/createWorkflowCommand.js')
-      ).getWorkflowCommands
-    : null
+const getWorkflowCommands = feature('WORKFLOW_SCRIPTS')
+  ? (
+      require('./tools/WorkflowTool/createWorkflowCommand.js') as typeof import('./tools/WorkflowTool/createWorkflowCommand.js')
+    ).getWorkflowCommands
+  : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 /**
@@ -501,10 +478,7 @@ const loadAllCommands = memoize(async (cwd: string): Promise<Command[]> => {
   ] = await Promise.all([
     getSkills(cwd),
     getPluginCommands(),
-    (() => {
-      const fn = getWorkflowCommandsFn()
-      return fn ? fn(cwd) : Promise.resolve([])
-    })(),
+    getWorkflowCommands ? getWorkflowCommands(cwd) : Promise.resolve([]),
   ])
 
   return [
@@ -578,7 +552,7 @@ export function clearCommandMemoizationCaches(): void {
   // built ON TOP of getSkillToolCommands/getCommands. Clearing only the inner
   // caches is a no-op for the outer — lodash memoize returns the cached result
   // without ever reaching the cleared inners. Must clear it explicitly.
-  getClearSkillIndexCache()?.()
+  clearSkillIndexCache?.()
 }
 
 export function clearCommandsCache(): void {
@@ -666,11 +640,25 @@ export const getSlashCommandToolSkills = memoize(
  * 1. Pre-filtering commands in main.tsx before REPL renders (prevents race with CCR init)
  * 2. Preserving local-only commands in REPL's handleRemoteInit after CCR filters
  */
-// Name-based to avoid referencing eagerly-loaded command objects.
-export const REMOTE_SAFE_COMMANDS: Set<string> = new Set([
-  'session', 'exit', 'clear', 'help', 'theme', 'logo', 'color', 'vim',
-  'cost', 'usage', 'copy', 'btw', 'feedback', 'plan', 'keybindings',
-  'statusline', 'stickers', 'mobile',
+export const REMOTE_SAFE_COMMANDS: Set<Command> = new Set([
+  session, // Shows QR code / URL for remote session
+  exit, // Exit the TUI
+  clear, // Clear screen
+  help, // Show help
+  theme, // Change terminal theme
+  logo, // Change startup logo color scheme
+  color, // Change agent color
+  vim, // Toggle vim mode
+  cost, // Show session cost (local cost tracking)
+  usage, // Show usage info
+  copy, // Copy last message
+  btw, // Quick note
+  feedback, // Send feedback
+  plan, // Plan mode toggle
+  keybindings, // Keybinding management
+  statusline, // Status line toggle
+  stickers, // Stickers
+  mobile, // Mobile QR code
 ])
 
 /**
@@ -685,10 +673,16 @@ export const REMOTE_SAFE_COMMANDS: Set<string> = new Set([
  * When adding a new 'local' command that should work from mobile, add it
  * here. Default is blocked.
  */
-// Name-based to avoid referencing eagerly-loaded command objects.
-export const BRIDGE_SAFE_COMMANDS: Set<string> = new Set([
-  'compact', 'clear', 'cost', 'summary', 'release-notes', 'files',
-])
+export const BRIDGE_SAFE_COMMANDS: Set<Command> = new Set(
+  [
+    compact, // Shrink context — useful mid-session from a phone
+    clear, // Wipe transcript
+    cost, // Show session cost
+    summary, // Summarize conversation
+    releaseNotes, // Show changelog
+    files, // List tracked files
+  ].filter((c): c is Command => c !== null),
+)
 
 /**
  * Whether a slash command is safe to execute when its input arrived over the
@@ -703,7 +697,7 @@ export const BRIDGE_SAFE_COMMANDS: Set<string> = new Set([
 export function isBridgeSafeCommand(cmd: Command): boolean {
   if (cmd.type === 'local-jsx') return false
   if (cmd.type === 'prompt') return true
-  return cmd.source === 'builtin' && BRIDGE_SAFE_COMMANDS.has(cmd.name)
+  return BRIDGE_SAFE_COMMANDS.has(cmd)
 }
 
 /**
@@ -713,9 +707,7 @@ export function isBridgeSafeCommand(cmd: Command): boolean {
  * the CCR init message arrives.
  */
 export function filterCommandsForRemoteMode(commands: Command[]): Command[] {
-  return commands.filter(
-    cmd => cmd.source === 'builtin' && REMOTE_SAFE_COMMANDS.has(cmd.name),
-  )
+  return commands.filter(cmd => REMOTE_SAFE_COMMANDS.has(cmd))
 }
 
 export function findCommand(

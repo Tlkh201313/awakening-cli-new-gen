@@ -118,18 +118,14 @@ result = await Bun.build({
   format: 'esm',
   splitting: false,
   sourcemap: 'external',
-  minify: {
-    whitespace: true,   // remove comments/whitespace — ~40% size reduction
-    identifiers: true,  // minify variable names — ~10-15% additional size reduction
-    syntax: true,       // dead code elim, const folding, unreachable pruning
-  },
+  minify: false,
   naming: 'cli.mjs',
   define: {
     // MACRO.* build-time constants
     // Keep the internal compatibility version high enough to pass
     // first-party minimum-version guards, but expose the real package
     // version separately in Open Claude branding.
-    'MACRO.VERSION': JSON.stringify(version),
+    'MACRO.VERSION': JSON.stringify('99.0.0'),
     'MACRO.DISPLAY_VERSION': JSON.stringify(version),
     'MACRO.BUILD_TIME': JSON.stringify(new Date().toISOString()),
     'MACRO.ISSUES_EXPLAINER':
@@ -431,11 +427,7 @@ sdkResult = await Bun.build({
   format: 'esm',
   splitting: false,
   sourcemap: 'external',
-  minify: {
-    whitespace: true,   // remove comments/whitespace — ~40% size reduction
-    identifiers: true,  // minify variable names — ~10-15% additional size reduction
-    syntax: true,       // dead code elim, const folding, unreachable pruning
-  },
+  minify: false,
   naming: 'sdk.mjs',
   define: {
     'MACRO.VERSION': JSON.stringify(version),

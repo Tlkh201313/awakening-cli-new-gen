@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Awakened — Claude Code with any LLM
+ * OpenClaude — Claude Code with any LLM
  *
- * Loads dist/cli.mjs if built. NODE_COMPILE_CACHE picked up from env if set.
- * To enable V8 bytecode cache (skips re-parse ~200ms after first run), add to
- * your PowerShell profile (~\Documents\PowerShell\Microsoft.PowerShell_profile.ps1):
- *   $env:NODE_COMPILE_CACHE = "$env:USERPROFILE\.cache\awakened\v8-compile-cache"
+ * If dist/cli.mjs exists (built), run that.
+ * Otherwise, tell the user to build first or use `bun run dev`.
  */
 
 import { existsSync } from 'fs'
@@ -16,9 +14,11 @@ import { fileURLToPath, pathToFileURL } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const distPath = join(__dirname, '..', 'dist', 'cli.mjs')
 
-if (!existsSync(distPath)) {
+if (existsSync(distPath)) {
+  await import(pathToFileURL(distPath).href)
+} else {
   console.error(`
-  awakened: dist/cli.mjs not found.
+  openclaude: dist/cli.mjs not found.
 
   Build first:
     bun run build
@@ -30,5 +30,3 @@ if (!existsSync(distPath)) {
 `)
   process.exit(1)
 }
-
-await import(pathToFileURL(distPath).href)

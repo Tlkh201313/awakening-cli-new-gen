@@ -63,12 +63,12 @@ test('keeps embedded mode for Bun-compiled standalone executables', () => {
     bundledMode: true,
     builtinCommand: null,
     systemExecutablePath: '/usr/bin/rg',
-    processExecPath: '/opt/Awakened/bin/Awakened',
+    processExecPath: '/opt/openclaude/bin/openclaude',
   })
 
   expect(config).toMatchObject({
     mode: 'embedded',
-    command: '/opt/Awakened/bin/Awakened',
+    command: '/opt/openclaude/bin/openclaude',
     args: ['--no-config'],
     argv0: 'rg',
   })

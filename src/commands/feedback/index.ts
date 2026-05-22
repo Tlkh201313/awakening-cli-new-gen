@@ -3,9 +3,9 @@ const feedback = {
   aliases: ['bug'],
   type: 'local-jsx',
   name: 'feedback',
-  description: `Submit feedback about Awakened`,
+  description: `Submit feedback about OpenClaude`,
   argumentHint: '[report]',
-  isEnabled: () => true,
+  isEnabled: () => false,
   load: () => import('./feedback.js'),
 } satisfies Command
 

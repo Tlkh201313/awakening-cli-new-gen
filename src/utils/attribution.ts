@@ -90,11 +90,11 @@ export function getDefaultCommitCoAuthorName({
   }
 
   const sanitizedModel = sanitizeCoAuthorNamePart(model)
-  return sanitizedModel ? `Awakened (${sanitizedModel})` : 'Awakened'
+  return sanitizedModel ? `OpenClaude (${sanitizedModel})` : 'OpenClaude'
 }
 
 export function getDefaultCommitCoAuthorEmail(_apiProvider: string): string {
-  return 'Awakened@gitlawb.com'
+  return 'openclaude@gitlawb.com'
 }
 
 /**
@@ -133,10 +133,10 @@ export function getAttributionTexts(): AttributionTexts {
     isInternalRepo: isInternalModelRepoCached(),
   })
   const defaultAttribution =
-    '🤖 Generated with [Awakened](https://github.com/Gitlawb/Awakened)'
+    '🤖 Generated with [OpenClaude](https://github.com/Gitlawb/openclaude)'
   const coAuthorEmail = getDefaultCommitCoAuthorEmail(apiProvider)
   const defaultCommit = isEnvTruthy(
-    process.env.Awakened_DISABLE_CO_AUTHORED_BY,
+    process.env.OPENCLAUDE_DISABLE_CO_AUTHORED_BY,
   )
     ? ''
     : `Co-Authored-By: ${modelName} <${coAuthorEmail}>`
@@ -388,7 +388,7 @@ export async function getEnhancedPRAttribution(
   }
 
   const defaultAttribution =
-    '🤖 Generated with [Awakened](https://github.com/Gitlawb/Awakened)'
+    '🤖 Generated with [OpenClaude](https://github.com/Gitlawb/openclaude)'
 
   // Get AppState first
   const appState = getAppState()
@@ -434,7 +434,7 @@ export async function getEnhancedPRAttribution(
     memoryAccessCount > 0
       ? `, ${memoryAccessCount} ${memoryAccessCount === 1 ? 'memory' : 'memories'} recalled`
       : ''
-  const summary = `🤖 Generated with [Awakened](https://github.com/Gitlawb/Awakened) (${claudePercent}% ${promptCount}-shotted by ${shortModelName}${memSuffix})`
+  const summary = `🤖 Generated with [OpenClaude](https://github.com/Gitlawb/openclaude) (${claudePercent}% ${promptCount}-shotted by ${shortModelName}${memSuffix})`
 
   // Append trailer lines for squash-merge survival. Only for allowlisted repos
   // (INTERNAL_MODEL_REPOS) and only in builds with COMMIT_ATTRIBUTION enabled —

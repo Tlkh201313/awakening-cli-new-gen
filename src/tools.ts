@@ -1,106 +1,17 @@
 // biome-ignore-all assist/source/organizeImports: internal-only import markers must not be reordered
-import { feature } from 'bun:bundle'
 import { toolMatchesName, type Tool, type Tools } from './Tool.js'
-import type { ToolPermissionContext } from './Tool.js'
-import { getDenyRuleForTool } from './utils/permissions/permissions.js'
-import { hasEmbeddedSearchTools } from './utils/embeddedTools.js'
-import { isEnvTruthy } from './utils/envUtils.js'
-import { isPowerShellToolEnabled } from './utils/shell/shellToolUtils.js'
-import { isAgentSwarmsEnabled } from './utils/agentSwarmsEnabled.js'
-import { isWorktreeModeEnabled } from './utils/worktreeModeEnabled.js'
-import {
-  REPL_TOOL_NAME,
-  REPL_ONLY_TOOLS,
-  isReplModeEnabled,
-} from './tools/REPLTool/constants.js'
-export { REPL_ONLY_TOOLS }
-import uniqBy from 'lodash-es/uniqBy.js'
-import { isToolSearchEnabledOptimistic } from './utils/toolSearch.js'
-import { isTodoV2Enabled } from './utils/tasks.js'
-export {
-  ALL_AGENT_DISALLOWED_TOOLS,
-  CUSTOM_AGENT_DISALLOWED_TOOLS,
-  ASYNC_AGENT_ALLOWED_TOOLS,
-  COORDINATOR_MODE_ALLOWED_TOOLS,
-} from './constants/tools.js'
-
-// ── Lazy tool loading ─────────────────────────────────────────────────────
-// All non-feature-gated tools are loaded synchronously via require() on first
-// call to getAllBaseTools()/getTools(), instead of eagerly at module evaluation.
-// This defers ~28 module evaluations (~50-100ms) until tools are actually needed.
-/* eslint-disable @typescript-eslint/no-require-imports */
-let _cache: {
-  AgentTool: typeof import('./tools/AgentTool/AgentTool.js').AgentTool
-  SkillTool: typeof import('./tools/SkillTool/SkillTool.js').SkillTool
-  BashTool: typeof import('./tools/BashTool/BashTool.js').BashTool
-  FileEditTool: typeof import('./tools/FileEditTool/FileEditTool.js').FileEditTool
-  FileReadTool: typeof import('./tools/FileReadTool/FileReadTool.js').FileReadTool
-  FileWriteTool: typeof import('./tools/FileWriteTool/FileWriteTool.js').FileWriteTool
-  GlobTool: typeof import('./tools/GlobTool/GlobTool.js').GlobTool
-  NotebookEditTool: typeof import('./tools/NotebookEditTool/NotebookEditTool.js').NotebookEditTool
-  WebFetchTool: typeof import('./tools/WebFetchTool/WebFetchTool.js').WebFetchTool
-  TaskStopTool: typeof import('./tools/TaskStopTool/TaskStopTool.js').TaskStopTool
-  BriefTool: typeof import('./tools/BriefTool/BriefTool.js').BriefTool
-  TaskOutputTool: typeof import('./tools/TaskOutputTool/TaskOutputTool.js').TaskOutputTool
-  WebSearchTool: typeof import('./tools/WebSearchTool/WebSearchTool.js').WebSearchTool
-  TodoWriteTool: typeof import('./tools/TodoWriteTool/TodoWriteTool.js').TodoWriteTool
-  ExitPlanModeV2Tool: typeof import('./tools/ExitPlanModeTool/ExitPlanModeV2Tool.js').ExitPlanModeV2Tool
-  TestingPermissionTool: typeof import('./tools/testing/TestingPermissionTool.js').TestingPermissionTool
-  GrepTool: typeof import('./tools/GrepTool/GrepTool.js').GrepTool
-  AskUserQuestionTool: typeof import('./tools/AskUserQuestionTool/AskUserQuestionTool.js').AskUserQuestionTool
-  LSPTool: typeof import('./tools/LSPTool/LSPTool.js').LSPTool
-  ListMcpResourcesTool: typeof import('./tools/ListMcpResourcesTool/ListMcpResourcesTool.js').ListMcpResourcesTool
-  ReadMcpResourceTool: typeof import('./tools/ReadMcpResourceTool/ReadMcpResourceTool.js').ReadMcpResourceTool
-  ToolSearchTool: typeof import('./tools/ToolSearchTool/ToolSearchTool.js').ToolSearchTool
-  EnterPlanModeTool: typeof import('./tools/EnterPlanModeTool/EnterPlanModeTool.js').EnterPlanModeTool
-  EnterWorktreeTool: typeof import('./tools/EnterWorktreeTool/EnterWorktreeTool.js').EnterWorktreeTool
-  ExitWorktreeTool: typeof import('./tools/ExitWorktreeTool/ExitWorktreeTool.js').ExitWorktreeTool
-  TaskCreateTool: typeof import('./tools/TaskCreateTool/TaskCreateTool.js').TaskCreateTool
-  TaskGetTool: typeof import('./tools/TaskGetTool/TaskGetTool.js').TaskGetTool
-  TaskUpdateTool: typeof import('./tools/TaskUpdateTool/TaskUpdateTool.js').TaskUpdateTool
-  TaskListTool: typeof import('./tools/TaskListTool/TaskListTool.js').TaskListTool
-  SYNTHETIC_OUTPUT_TOOL_NAME: string
-} | null = null
-
-function T() {
-  if (_cache) return _cache
-  _cache = {
-    AgentTool: require('./tools/AgentTool/AgentTool.js').AgentTool,
-    SkillTool: require('./tools/SkillTool/SkillTool.js').SkillTool,
-    BashTool: require('./tools/BashTool/BashTool.js').BashTool,
-    FileEditTool: require('./tools/FileEditTool/FileEditTool.js').FileEditTool,
-    FileReadTool: require('./tools/FileReadTool/FileReadTool.js').FileReadTool,
-    FileWriteTool: require('./tools/FileWriteTool/FileWriteTool.js').FileWriteTool,
-    GlobTool: require('./tools/GlobTool/GlobTool.js').GlobTool,
-    NotebookEditTool: require('./tools/NotebookEditTool/NotebookEditTool.js').NotebookEditTool,
-    WebFetchTool: require('./tools/WebFetchTool/WebFetchTool.js').WebFetchTool,
-    TaskStopTool: require('./tools/TaskStopTool/TaskStopTool.js').TaskStopTool,
-    BriefTool: require('./tools/BriefTool/BriefTool.js').BriefTool,
-    TaskOutputTool: require('./tools/TaskOutputTool/TaskOutputTool.js').TaskOutputTool,
-    WebSearchTool: require('./tools/WebSearchTool/WebSearchTool.js').WebSearchTool,
-    TodoWriteTool: require('./tools/TodoWriteTool/TodoWriteTool.js').TodoWriteTool,
-    ExitPlanModeV2Tool: require('./tools/ExitPlanModeTool/ExitPlanModeV2Tool.js').ExitPlanModeV2Tool,
-    TestingPermissionTool: require('./tools/testing/TestingPermissionTool.js').TestingPermissionTool,
-    GrepTool: require('./tools/GrepTool/GrepTool.js').GrepTool,
-    AskUserQuestionTool: require('./tools/AskUserQuestionTool/AskUserQuestionTool.js').AskUserQuestionTool,
-    LSPTool: require('./tools/LSPTool/LSPTool.js').LSPTool,
-    ListMcpResourcesTool: require('./tools/ListMcpResourcesTool/ListMcpResourcesTool.js').ListMcpResourcesTool,
-    ReadMcpResourceTool: require('./tools/ReadMcpResourceTool/ReadMcpResourceTool.js').ReadMcpResourceTool,
-    ToolSearchTool: require('./tools/ToolSearchTool/ToolSearchTool.js').ToolSearchTool,
-    EnterPlanModeTool: require('./tools/EnterPlanModeTool/EnterPlanModeTool.js').EnterPlanModeTool,
-    EnterWorktreeTool: require('./tools/EnterWorktreeTool/EnterWorktreeTool.js').EnterWorktreeTool,
-    ExitWorktreeTool: require('./tools/ExitWorktreeTool/ExitWorktreeTool.js').ExitWorktreeTool,
-    TaskCreateTool: require('./tools/TaskCreateTool/TaskCreateTool.js').TaskCreateTool,
-    TaskGetTool: require('./tools/TaskGetTool/TaskGetTool.js').TaskGetTool,
-    TaskUpdateTool: require('./tools/TaskUpdateTool/TaskUpdateTool.js').TaskUpdateTool,
-    TaskListTool: require('./tools/TaskListTool/TaskListTool.js').TaskListTool,
-    SYNTHETIC_OUTPUT_TOOL_NAME: require('./tools/SyntheticOutputTool/SyntheticOutputTool.js').SYNTHETIC_OUTPUT_TOOL_NAME,
-  }
-  return _cache
-}
-/* eslint-enable @typescript-eslint/no-require-imports */
-
-// ── Feature-gated tools (dead code elimination via bun:bundle feature()) ──
+import { AgentTool } from './tools/AgentTool/AgentTool.js'
+import { SkillTool } from './tools/SkillTool/SkillTool.js'
+import { BashTool } from './tools/BashTool/BashTool.js'
+import { FileEditTool } from './tools/FileEditTool/FileEditTool.js'
+import { FileReadTool } from './tools/FileReadTool/FileReadTool.js'
+import { FileWriteTool } from './tools/FileWriteTool/FileWriteTool.js'
+import { GlobTool } from './tools/GlobTool/GlobTool.js'
+import { NotebookEditTool } from './tools/NotebookEditTool/NotebookEditTool.js'
+import { WebFetchTool } from './tools/WebFetchTool/WebFetchTool.js'
+import { TaskStopTool } from './tools/TaskStopTool/TaskStopTool.js'
+import { BriefTool } from './tools/BriefTool/BriefTool.js'
+// Dead code elimination: conditional import for internal-only tools
 /* eslint-disable @typescript-eslint/no-require-imports */
 const REPLTool = null
 const SuggestBackgroundPRTool = null
@@ -130,7 +41,15 @@ const PushNotificationTool =
 const SubscribePRTool = feature('KAIROS_GITHUB_WEBHOOKS')
   ? require('./tools/SubscribePRTool/SubscribePRTool.js').SubscribePRTool
   : null
+/* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
+import { TaskOutputTool } from './tools/TaskOutputTool/TaskOutputTool.js'
+import { WebSearchTool } from './tools/WebSearchTool/WebSearchTool.js'
+import { TodoWriteTool } from './tools/TodoWriteTool/TodoWriteTool.js'
+import { ExitPlanModeV2Tool } from './tools/ExitPlanModeTool/ExitPlanModeV2Tool.js'
+import { TestingPermissionTool } from './tools/testing/TestingPermissionTool.js'
+import { GrepTool } from './tools/GrepTool/GrepTool.js'
 // Lazy require to break circular dependency: tools.ts -> TeamCreateTool/TeamDeleteTool -> ... -> tools.ts
+/* eslint-disable @typescript-eslint/no-require-imports */
 const getTeamCreateTool = () =>
   require('./tools/TeamCreateTool/TeamCreateTool.js')
     .TeamCreateTool as typeof import('./tools/TeamCreateTool/TeamCreateTool.js').TeamCreateTool
@@ -140,13 +59,40 @@ const getTeamDeleteTool = () =>
 const getSendMessageTool = () =>
   require('./tools/SendMessageTool/SendMessageTool.js')
     .SendMessageTool as typeof import('./tools/SendMessageTool/SendMessageTool.js').SendMessageTool
+/* eslint-enable @typescript-eslint/no-require-imports */
+import { AskUserQuestionTool } from './tools/AskUserQuestionTool/AskUserQuestionTool.js'
+import { LSPTool } from './tools/LSPTool/LSPTool.js'
+import { ListMcpResourcesTool } from './tools/ListMcpResourcesTool/ListMcpResourcesTool.js'
+import { ReadMcpResourceTool } from './tools/ReadMcpResourceTool/ReadMcpResourceTool.js'
+import { ToolSearchTool } from './tools/ToolSearchTool/ToolSearchTool.js'
+import { EnterPlanModeTool } from './tools/EnterPlanModeTool/EnterPlanModeTool.js'
+import { EnterWorktreeTool } from './tools/EnterWorktreeTool/EnterWorktreeTool.js'
+import { ExitWorktreeTool } from './tools/ExitWorktreeTool/ExitWorktreeTool.js'
+import { TaskCreateTool } from './tools/TaskCreateTool/TaskCreateTool.js'
+import { TaskGetTool } from './tools/TaskGetTool/TaskGetTool.js'
+import { TaskUpdateTool } from './tools/TaskUpdateTool/TaskUpdateTool.js'
+import { TaskListTool } from './tools/TaskListTool/TaskListTool.js'
+import uniqBy from 'lodash-es/uniqBy.js'
+import { isToolSearchEnabledOptimistic } from './utils/toolSearch.js'
+import { isTodoV2Enabled } from './utils/tasks.js'
 // Dead code elimination: conditional import for CLAUDE_CODE_VERIFY_PLAN
+/* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 const VerifyPlanExecutionTool =
   process.env.CLAUDE_CODE_VERIFY_PLAN === 'true'
     ? require('./tools/VerifyPlanExecutionTool/VerifyPlanExecutionTool.js')
         .VerifyPlanExecutionTool
     : null
+/* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
+import { SYNTHETIC_OUTPUT_TOOL_NAME } from './tools/SyntheticOutputTool/SyntheticOutputTool.js'
+export {
+  ALL_AGENT_DISALLOWED_TOOLS,
+  CUSTOM_AGENT_DISALLOWED_TOOLS,
+  ASYNC_AGENT_ALLOWED_TOOLS,
+  COORDINATOR_MODE_ALLOWED_TOOLS,
+} from './constants/tools.js'
+import { feature } from 'bun:bundle'
 // Dead code elimination: conditional import for OVERFLOW_TEST_TOOL
+/* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 const OverflowTestTool = feature('OVERFLOW_TEST_TOOL')
   ? require('./tools/OverflowTestTool/OverflowTestTool.js').OverflowTestTool
   : null
@@ -175,13 +121,28 @@ const WorkflowTool = feature('WORKFLOW_SCRIPTS')
       return require('./tools/WorkflowTool/WorkflowTool.js').WorkflowTool
     })()
   : null
-/* eslint-enable @typescript-eslint/no-require-imports */
+/* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
+import type { ToolPermissionContext } from './Tool.js'
+import { getDenyRuleForTool } from './utils/permissions/permissions.js'
+import { hasEmbeddedSearchTools } from './utils/embeddedTools.js'
+import { isEnvTruthy } from './utils/envUtils.js'
+import { isPowerShellToolEnabled } from './utils/shell/shellToolUtils.js'
+import { isAgentSwarmsEnabled } from './utils/agentSwarmsEnabled.js'
+import { isWorktreeModeEnabled } from './utils/worktreeModeEnabled.js'
+import {
+  REPL_TOOL_NAME,
+  REPL_ONLY_TOOLS,
+  isReplModeEnabled,
+} from './tools/REPLTool/constants.js'
+export { REPL_ONLY_TOOLS }
+/* eslint-disable @typescript-eslint/no-require-imports */
 const getPowerShellTool = () => {
   if (!isPowerShellToolEnabled()) return null
   return (
     require('./tools/PowerShellTool/PowerShellTool.js') as typeof import('./tools/PowerShellTool/PowerShellTool.js')
   ).PowerShellTool
 }
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 /**
  * Predefined tool presets that can be used with --tools flag
@@ -219,16 +180,6 @@ export function getToolsForDefaultPreset(): string[] {
  * NOTE: This MUST stay in sync with https://console.statsig.com/4aF3Ewatb6xPVpCwxb5nA3/dynamic_configs/claude_code_global_system_caching, in order to cache the system prompt across users.
  */
 export function getAllBaseTools(): Tools {
-  const {
-    AgentTool, TaskOutputTool, BashTool, GlobTool, GrepTool,
-    ExitPlanModeV2Tool, FileReadTool, FileEditTool, FileWriteTool,
-    NotebookEditTool, WebFetchTool, TodoWriteTool, WebSearchTool,
-    TaskStopTool, AskUserQuestionTool, SkillTool, EnterPlanModeTool,
-    LSPTool, EnterWorktreeTool, ExitWorktreeTool,
-    TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool,
-    BriefTool, ListMcpResourcesTool, ReadMcpResourceTool, ToolSearchTool,
-    TestingPermissionTool,
-  } = T()
   return [
     AgentTool,
     TaskOutputTool,
@@ -295,7 +246,7 @@ export function getAllBaseTools(): Tools {
  *
  * Uses the same matcher as the runtime permission check (step 1a), so MCP
  * server-prefix rules like `mcp__server` strip all tools from that server
- * before the model sees them -- not just at call time.
+ * before the model sees them — not just at call time.
  */
 export function filterToolsByDenyRules<
   T extends {
@@ -307,7 +258,6 @@ export function filterToolsByDenyRules<
 }
 
 export const getTools = (permissionContext: ToolPermissionContext): Tools => {
-  const { BashTool, FileReadTool, FileEditTool, AgentTool, TaskStopTool, ListMcpResourcesTool, ReadMcpResourceTool } = T()
   // Simple mode: only Bash, Read, and Edit tools
   if (isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)) {
     // --bare + REPL mode: REPL wraps Bash/Read/Edit/etc inside the VM, so
@@ -343,7 +293,7 @@ export const getTools = (permissionContext: ToolPermissionContext): Tools => {
   const specialTools = new Set([
     ListMcpResourcesTool.name,
     ReadMcpResourceTool.name,
-    T().SYNTHETIC_OUTPUT_TOOL_NAME,
+    SYNTHETIC_OUTPUT_TOOL_NAME,
   ])
 
   const tools = getAllBaseTools().filter(tool => !specialTools.has(tool.name))
@@ -404,7 +354,7 @@ export function assembleToolPool(
   // sort would interleave MCP tools into built-ins and invalidate all downstream
   // cache keys whenever an MCP tool sorts between existing built-ins. uniqBy
   // preserves insertion order, so built-ins win on name conflict.
-  // Avoid Array.toSorted (Node 20+) -- we support Node 18. builtInTools is
+  // Avoid Array.toSorted (Node 20+) — we support Node 18. builtInTools is
   // readonly so copy-then-sort; allowedMcpTools is a fresh .filter() result.
   const byName = (a: Tool, b: Tool) => a.name.localeCompare(b.name)
   return uniqBy(

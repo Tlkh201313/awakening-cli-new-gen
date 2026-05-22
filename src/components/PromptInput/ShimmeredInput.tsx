@@ -6,7 +6,6 @@ import { ShimmerChar } from '../Spinner/ShimmerChar.js';
 type Props = {
   text: string;
   highlights: TextHighlight[];
-  isSubmitting?: boolean;
 };
 type LinePart = {
   text: string;
@@ -14,11 +13,10 @@ type LinePart = {
   start: number;
 };
 export function HighlightedInput(t0) {
-  const $ = _c(26);
+  const $ = _c(23);
   const {
     text,
-    highlights,
-    isSubmitting
+    highlights
   } = t0;
   let lines;
   if ($[0] !== highlights || $[1] !== text) {
@@ -106,18 +104,6 @@ export function HighlightedInput(t0) {
   } = t2;
   const [ref, time] = useAnimationFrame(hasShimmer_0 ? 50 : null);
   const glimmerIndex = hasShimmer_0 ? sweepStart_0 + Math.floor(time / 50) % cycleLength_0 : -100;
-  if (isSubmitting) {
-    let t5;
-    if ($[23] !== ref || $[24] !== text) {
-      t5 = <Box ref={ref}><Text dimColor>{text}</Text></Box>;
-      $[23] = ref;
-      $[24] = text;
-      $[25] = t5;
-    } else {
-      t5 = $[25];
-    }
-    return t5;
-  }
   let t3;
   if ($[15] !== glimmerIndex || $[16] !== lines_0) {
     let t4;

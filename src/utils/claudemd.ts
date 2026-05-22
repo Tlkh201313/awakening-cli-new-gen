@@ -29,19 +29,7 @@
 import { feature } from 'bun:bundle'
 import ignore from 'ignore'
 import memoize from 'lodash-es/memoize.js'
-// marked and picomatch are lazy-loaded on first use to defer ~200KB+ of
-// module evaluation from startup. They're only needed when actually processing
-// CLAUDE.md files, not at import time.
-let _Lexer: typeof import('marked').Lexer | null = null
-function getLexer(): typeof import('marked').Lexer {
-  if (!_Lexer) _Lexer = require('marked').Lexer
-  return _Lexer
-}
-let _picomatch: typeof import('picomatch') | null = null
-function getPicomatch(): typeof import('picomatch') {
-  if (!_picomatch) _picomatch = require('picomatch')
-  return _picomatch
-}
+import { Lexer } from 'marked'
 import {
   basename,
   dirname,
@@ -52,6 +40,7 @@ import {
   relative,
   sep,
 } from 'path'
+import picomatch from 'picomatch'
 import { logEvent } from 'src/services/analytics/index.js'
 import {
   getAdditionalDirectoriesForClaudeMd,
@@ -313,10 +302,10 @@ export function stripHtmlComments(content: string): {
     return { content, stripped: false }
   }
   // gfm:false is fine here — html-block detection is a CommonMark rule.
-  return stripHtmlCommentsFromTokens(new (getLexer())({ gfm: false }).lex(content))
+  return stripHtmlCommentsFromTokens(new Lexer({ gfm: false }).lex(content))
 }
 
-function stripHtmlCommentsFromTokens(tokens: ReturnType<ReturnType<typeof getLexer>['lex']>): {
+function stripHtmlCommentsFromTokens(tokens: ReturnType<Lexer['lex']>): {
   content: string
   stripped: boolean
 } {
@@ -388,7 +377,7 @@ function parseMemoryFileContent(
   const hasComment = withoutFrontmatter.includes('<!--')
   const tokens =
     hasComment || includeBasePath !== undefined
-      ? new (getLexer())({ gfm: false }).lex(withoutFrontmatter)
+      ? new Lexer({ gfm: false }).lex(withoutFrontmatter)
       : undefined
 
   // Only rebuild via tokens when a comment actually needs stripping —
@@ -475,7 +464,7 @@ type MarkdownToken = {
 // absolute paths. Skips html tokens so @paths inside block comments are
 // ignored — the caller may pass pre-strip tokens.
 function extractIncludePathsFromTokens(
-  tokens: ReturnType<ReturnType<typeof getLexer>['lex']>,
+  tokens: ReturnType<Lexer['lex']>,
   basePath: string,
 ): string[] {
   const absolutePaths = new Set<string>()
@@ -594,7 +583,7 @@ function isClaudeMdExcluded(filePath: string, type: MemoryType): boolean {
     return false
   }
 
-  return getPicomatch().isMatch(normalizedPath, expandedPatterns, matchOpts)
+  return picomatch.isMatch(normalizedPath, expandedPatterns, matchOpts)
 }
 
 /**

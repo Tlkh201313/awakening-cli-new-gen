@@ -8,42 +8,42 @@ import {
 
 describe('commit-message command helpers', () => {
   it('parses quoted co-author names with a plain email', () => {
-    expect(parseCoAuthor('"GPT 5.5" noreply@Awakened.dev')).toEqual({
+    expect(parseCoAuthor('"GPT 5.5" noreply@openclaude.dev')).toEqual({
       name: 'GPT 5.5',
-      email: 'noreply@Awakened.dev',
+      email: 'noreply@openclaude.dev',
     })
   })
 
   it('parses co-author trailers with angle-bracket emails', () => {
-    expect(parseCoAuthor('Awakened (gpt-5.5) <noreply@Awakened.dev>')).toEqual(
+    expect(parseCoAuthor('OpenClaude (gpt-5.5) <noreply@openclaude.dev>')).toEqual(
       {
-        name: 'Awakened (gpt-5.5)',
-        email: 'noreply@Awakened.dev',
+        name: 'OpenClaude (gpt-5.5)',
+        email: 'noreply@openclaude.dev',
       },
     )
   })
 
   it('rejects co-author trailers with empty sanitized names', () => {
-    expect(parseCoAuthor('"  " noreply@Awakened.dev')).toBeNull()
-    expect(parseCoAuthor('"  " <noreply@Awakened.dev>')).toBeNull()
+    expect(parseCoAuthor('"  " noreply@openclaude.dev')).toBeNull()
+    expect(parseCoAuthor('"  " <noreply@openclaude.dev>')).toBeNull()
   })
 
   it('strips one pair of matching quotes from custom attribution text', () => {
-    expect(stripMatchingQuotes('"Generated with Awakened"')).toBe(
-      'Generated with Awakened',
+    expect(stripMatchingQuotes('"Generated with OpenClaude"')).toBe(
+      'Generated with OpenClaude',
     )
-    expect(stripMatchingQuotes("'Generated with Awakened'")).toBe(
-      'Generated with Awakened',
+    expect(stripMatchingQuotes("'Generated with OpenClaude'")).toBe(
+      'Generated with OpenClaude',
     )
-    expect(stripMatchingQuotes('"Generated with Awakened')).toBe(
-      '"Generated with Awakened',
+    expect(stripMatchingQuotes('"Generated with OpenClaude')).toBe(
+      '"Generated with OpenClaude',
     )
   })
 
   it('formats a sanitized co-author trailer', () => {
     expect(
-      formatCoAuthorTrailer('Awakened <gpt>\n', '<noreply@Awakened.dev>'),
-    ).toBe('Co-Authored-By: Awakened gpt <noreply@Awakened.dev>')
+      formatCoAuthorTrailer('OpenClaude <gpt>\n', '<noreply@openclaude.dev>'),
+    ).toBe('Co-Authored-By: OpenClaude gpt <noreply@openclaude.dev>')
   })
 
   it('makes set scope explicit with example text', () => {
@@ -51,7 +51,7 @@ describe('commit-message command helpers', () => {
       'Controls only the attribution text appended after /commit messages.',
     )
     expect(USAGE).toContain(
-      '/commit-message set "Generated with Awakened using GPT-5.5"',
+      '/commit-message set "Generated with OpenClaude using GPT-5.5"',
     )
     expect(USAGE).not.toContain('/commit-message set-attribution')
   })

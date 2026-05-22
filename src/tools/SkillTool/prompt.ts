@@ -18,42 +18,32 @@ import { truncate } from '../../utils/format.js'
 import { logError } from '../../utils/log.js'
 
 // Skill listing gets 1% of the context window (in characters)
-export const SKILL_BUDGET_CONTEXT_PERCENT = 0.006
+export const SKILL_BUDGET_CONTEXT_PERCENT = 0.01
 export const CHARS_PER_TOKEN = 4
-export const DEFAULT_CHAR_BUDGET = 5_000
+export const DEFAULT_CHAR_BUDGET = 8_000 // Fallback: 1% of 200k × 4
 
 // Per-entry hard cap. The listing is for discovery only — the Skill tool loads
 // full content on invoke, so verbose whenToUse strings waste turn-1 cache_creation
 // tokens without improving match rate. Applies to all entries, including bundled,
 // since the cap is generous enough to preserve the core use case.
-export const MAX_LISTING_DESC_CHARS = 150
-
-// Enable adaptive budget tiers by context window size
-export const ADAPTIVE_MODEL_TIERS = true
+export const MAX_LISTING_DESC_CHARS = 250
 
 export function getCharBudget(contextWindowTokens?: number): number {
   if (Number(process.env.SLASH_COMMAND_TOOL_CHAR_BUDGET)) {
     return Number(process.env.SLASH_COMMAND_TOOL_CHAR_BUDGET)
   }
   if (contextWindowTokens) {
-    const percent =
-      contextWindowTokens > 100_000
-        ? 0.005
-        : contextWindowTokens < 50_000
-          ? 0.008
-          : SKILL_BUDGET_CONTEXT_PERCENT
-    return Math.floor(contextWindowTokens * CHARS_PER_TOKEN * percent)
+    return Math.floor(
+      contextWindowTokens * CHARS_PER_TOKEN * SKILL_BUDGET_CONTEXT_PERCENT,
+    )
   }
   return DEFAULT_CHAR_BUDGET
 }
 
-function getCommandDescription(cmd: Command, allowLong = false): string {
+function getCommandDescription(cmd: Command): string {
   const desc = cmd.whenToUse
     ? `${cmd.description} - ${cmd.whenToUse}`
     : cmd.description
-  if (allowLong) {
-    return desc
-  }
   return desc.length > MAX_LISTING_DESC_CHARS
     ? desc.slice(0, MAX_LISTING_DESC_CHARS - 1) + '\u2026'
     : desc
@@ -72,9 +62,7 @@ function formatCommandDescription(cmd: Command): string {
     )
   }
 
-  // Bundled skills preserve full descriptions (they are never truncated).
-  const isBundled = cmd.type === 'prompt' && cmd.source === 'bundled'
-  return `- ${cmd.name}: ${getCommandDescription(cmd, isBundled)}`
+  return `- ${cmd.name}: ${getCommandDescription(cmd)}`
 }
 
 const MIN_DESC_LENGTH = 20

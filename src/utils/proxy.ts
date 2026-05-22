@@ -2,11 +2,10 @@
 // dynamically in getAWSClientProxyConfig() to defer ~929KB of AWS SDK.
 // undici is lazy-required inside getProxyAgent/configureGlobalAgents to defer
 // ~1.5MB when no HTTPS_PROXY/mTLS env vars are set (the common case).
-// axios and https-proxy-agent are lazy-required below to defer ~30KB on startup.
-import type { AxiosInstance } from 'axios'
+import axios, { type AxiosInstance } from 'axios'
 import type { LookupOptions } from 'dns'
 import type { Agent } from 'http'
-import type { HttpsProxyAgentOptions } from 'https-proxy-agent'
+import { HttpsProxyAgent, type HttpsProxyAgentOptions } from 'https-proxy-agent'
 import memoize from 'lodash-es/memoize.js'
 import type * as undici from 'undici'
 import { getCACertificates } from './caCerts.js'
@@ -26,38 +25,13 @@ import {
 // Under Node/undici, keepalive is a no-op for pooling, but undici
 // naturally evicts dead sockets from the pool on ECONNRESET.
 let keepAliveDisabled = false
-let keepAliveCooldownTimer: ReturnType<typeof setTimeout> | null = null
 
 export function disableKeepAlive(): void {
   keepAliveDisabled = true
 }
 
-/**
- * Re-enable keep-alive after a cooldown period.
- * Call this after ECONNRESET to allow reconnection with keep-alive later.
- */
-export function resetKeepAliveAfterCooldown(
-  cooldownMs: number = 30_000,
-): void {
-  if (keepAliveCooldownTimer) {
-    clearTimeout(keepAliveCooldownTimer)
-  }
-  keepAliveCooldownTimer = setTimeout(() => {
-    keepAliveDisabled = false
-    keepAliveCooldownTimer = null
-  }, cooldownMs)
-}
-
-export function isKeepAliveDisabled(): boolean {
-  return keepAliveDisabled
-}
-
 export function _resetKeepAliveForTesting(): void {
   keepAliveDisabled = false
-  if (keepAliveCooldownTimer) {
-    clearTimeout(keepAliveCooldownTimer)
-    keepAliveCooldownTimer = null
-  }
 }
 
 /**
@@ -100,9 +74,6 @@ export function getNoProxy(env: EnvLike = process.env): string | undefined {
   return env.no_proxy || env.NO_PROXY
 }
 
-const BYPASS_CACHE_MAX = 256
-const bypassCache = new Map<string, boolean>()
-
 /**
  * Check if a URL should bypass the proxy based on NO_PROXY environment variable
  * Supports:
@@ -120,31 +91,7 @@ export function shouldBypassProxy(
 ): boolean {
   if (!noProxy) return false
 
-  const cacheKey = `${urlString}|${noProxy}`
-  const cached = bypassCache.get(cacheKey)
-  if (cached !== undefined) {
-    bypassCache.delete(cacheKey)
-    bypassCache.set(cacheKey, cached)
-    return cached
-  }
-
-  const result = shouldBypassProxyUncached(urlString, noProxy)
-
-  if (bypassCache.size >= BYPASS_CACHE_MAX) {
-    const firstKey = bypassCache.keys().next().value
-    if (firstKey !== undefined) {
-      bypassCache.delete(firstKey)
-    }
-  }
-  bypassCache.set(cacheKey, result)
-
-  return result
-}
-
-function shouldBypassProxyUncached(
-  urlString: string,
-  noProxy: string,
-): boolean {
+  // Handle wildcard
   if (noProxy === '*') return true
 
   try {
@@ -155,23 +102,30 @@ function shouldBypassProxyUncached(
     )
     const hostWithPort = `${hostname}:${port}`
 
+    // Split by comma or space and trim each entry
     const noProxyList = noProxy.split(/[,\s]+/).filter(Boolean)
 
     return noProxyList.some(pattern => {
       pattern = pattern.toLowerCase().trim()
 
+      // Check for port-specific match
       if (pattern.includes(':')) {
         return hostWithPort === pattern
       }
 
+      // Check for domain suffix match (with or without leading dot)
       if (pattern.startsWith('.')) {
+        // Pattern ".example.com" should match "sub.example.com" and "example.com"
+        // but NOT "notexample.com"
         const suffix = pattern
         return hostname === pattern.substring(1) || hostname.endsWith(suffix)
       }
 
+      // Check for exact hostname match or IP address
       return hostname === pattern
     })
   } catch {
+    // If URL parsing fails, don't bypass proxy
     return false
   }
 }
@@ -205,7 +159,7 @@ function createHttpsProxyAgent(
     }
   }
 
-  return new (require('https-proxy-agent') as typeof import('https-proxy-agent')).HttpsProxyAgent(proxyUrl, { ...agentOptions, ...extra })
+  return new HttpsProxyAgent(proxyUrl, { ...agentOptions, ...extra })
 }
 
 /**
@@ -218,7 +172,7 @@ export function createAxiosInstance(
 ): AxiosInstance {
   const proxyUrl = getProxyUrl()
   const mtlsAgent = getMTLSAgent()
-  const instance = (require('axios') as typeof import('axios')).default.create({ proxy: false })
+  const instance = axios.create({ proxy: false })
 
   if (!proxyUrl) {
     if (mtlsAgent) instance.defaults.httpsAgent = mtlsAgent
@@ -373,9 +327,6 @@ export function getProxyFetchOptions(opts?: { forAnthropicAPI?: boolean }): {
 let proxyInterceptorId: number | undefined
 
 export function configureGlobalAgents(): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const axiosModule = require('axios') as typeof import('axios')
-  const axios = axiosModule.default
   const proxyUrl = getProxyUrl()
   const mtlsAgent = getMTLSAgent()
 

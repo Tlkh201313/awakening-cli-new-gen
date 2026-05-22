@@ -10,7 +10,6 @@ import { isAgentSwarmsEnabled } from '../../utils/agentSwarmsEnabled.js';
 type Props = {
   mode: PromptInputMode;
   isLoading: boolean;
-  isSubmitting?: boolean;
   viewingAgentName?: string;
   viewingAgentColor?: AgentColorName;
 };
@@ -34,7 +33,6 @@ function getTeammateThemeColor(): keyof Theme | undefined {
 }
 type PromptCharProps = {
   isLoading: boolean;
-  isSubmitting?: boolean;
   // Dead code elimination: parameter named themeColor to avoid "teammate" string in external builds
   themeColor?: keyof Theme;
 };
@@ -44,32 +42,29 @@ type PromptCharProps = {
  * Teammate color overrides the default color when set.
  */
 function PromptChar(t0) {
-  const $ = _c(4);
+  const $ = _c(3);
   const {
     isLoading,
-    isSubmitting,
     themeColor
   } = t0;
   const teammateColor = themeColor;
   const color = teammateColor ?? (false ? "subtle" : undefined);
   let t1;
-  if ($[0] !== color || $[1] !== isLoading || $[2] !== isSubmitting) {
-    t1 = <Text color={color} dimColor={isLoading || isSubmitting}>{figures.pointer} </Text>;
+  if ($[0] !== color || $[1] !== isLoading) {
+    t1 = <Text color={color} dimColor={isLoading}>{figures.pointer} </Text>;
     $[0] = color;
     $[1] = isLoading;
-    $[2] = isSubmitting;
-    $[3] = t1;
+    $[2] = t1;
   } else {
-    t1 = $[3];
+    t1 = $[2];
   }
   return t1;
 }
 export function PromptInputModeIndicator(t0) {
-  const $ = _c(7);
+  const $ = _c(6);
   const {
     mode,
     isLoading,
-    isSubmitting,
     viewingAgentName,
     viewingAgentColor
   } = t0;
@@ -83,16 +78,15 @@ export function PromptInputModeIndicator(t0) {
   const teammateColor = t1;
   const viewedTeammateThemeColor = viewingAgentColor ? AGENT_COLOR_TO_THEME_COLOR[viewingAgentColor] : undefined;
   let t2;
-  if ($[1] !== isLoading || $[2] !== mode || $[3] !== viewedTeammateThemeColor || $[4] !== viewingAgentName || $[5] !== isSubmitting) {
-    t2 = <Box alignItems="flex-start" alignSelf="flex-start" flexWrap="nowrap" justifyContent="flex-start">{viewingAgentName ? <PromptChar isLoading={isLoading} isSubmitting={isSubmitting} themeColor={viewedTeammateThemeColor} /> : mode === "bash" ? <Text color="bashBorder" dimColor={isLoading || isSubmitting}>! </Text> : <PromptChar isLoading={isLoading} isSubmitting={isSubmitting} themeColor={isAgentSwarmsEnabled() ? teammateColor : undefined} />}</Box>;
+  if ($[1] !== isLoading || $[2] !== mode || $[3] !== viewedTeammateThemeColor || $[4] !== viewingAgentName) {
+    t2 = <Box alignItems="flex-start" alignSelf="flex-start" flexWrap="nowrap" justifyContent="flex-start">{viewingAgentName ? <PromptChar isLoading={isLoading} themeColor={viewedTeammateThemeColor} /> : mode === "bash" ? <Text color="bashBorder" dimColor={isLoading}>! </Text> : <PromptChar isLoading={isLoading} themeColor={isAgentSwarmsEnabled() ? teammateColor : undefined} />}</Box>;
     $[1] = isLoading;
     $[2] = mode;
     $[3] = viewedTeammateThemeColor;
     $[4] = viewingAgentName;
-    $[5] = isSubmitting;
-    $[6] = t2;
+    $[5] = t2;
   } else {
-    t2 = $[6];
+    t2 = $[5];
   }
   return t2;
 }

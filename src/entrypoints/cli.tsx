@@ -1,6 +1,14 @@
 import { feature } from 'bun:bundle';
-import { totalmem, cpus } from 'node:os';
-// Awakened: polyfill globalThis.File for Node < 20.
+import {
+  applyProfileEnvToProcessEnv,
+  buildStartupEnvFromProfile,
+} from '../utils/providerProfile.js'
+import {
+  getProviderValidationError,
+  validateProviderEnvForStartupOrExit,
+} from '../utils/providerValidation.js'
+
+// OpenClaude: polyfill globalThis.File for Node < 20.
 // undici v7 references `File` at module evaluation time (webidl type
 // assertions). Node 18 lacks the global, causing a ReferenceError inside
 // the bundled __commonJS require chain which deadlocks the process when a
@@ -28,7 +36,7 @@ if (typeof globalThis.File === 'undefined') {
   }
 }
 
-// Awakened: disable experimental API betas by default.
+// OpenClaude: disable experimental API betas by default.
 // Tool search (defer_loading), global cache scope, and context management
 // require internal API support not available to external accounts → 500.
 // Users can opt-in with CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=false.
@@ -47,29 +55,13 @@ process.env.COREPACK_ENABLE_AUTO_PIN = '0';
 // CCR (Claude Code Remote / container) environments are covered by the same
 // unconditional assignment — the previous CLAUDE_CODE_REMOTE guard was too
 // restrictive, preventing local users from benefiting from the raised limit.
-// Closes: Gitlawb/Awakened#402 — JavaScript heap OOM during large tasks.
+// Closes: Gitlawb/openclaude#402 — JavaScript heap OOM during large tasks.
 // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level, custom-rules/safe-env-boolean-check
 if (!process.env.NODE_OPTIONS?.includes('--max-old-space-size')) {
   // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
   const existing = process.env.NODE_OPTIONS || ''
-  // Adaptive: 40% of system RAM, clamped 512MB–8192MB.
-  // Avoids over-committing on low-RAM machines while still raising V8's 2GB ceiling.
   // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
-  const heapMB = Math.min(Math.max(Math.floor(totalmem() / 1024 / 1024 * 0.4), 512), 8192)
-  // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
-  process.env.NODE_OPTIONS = existing ? `${existing} --max-old-space-size=${heapMB}` : `--max-old-space-size=${heapMB}`
-
-  // Tune libuv threadpool for high-core-count machines (default is 4).
-  // I/O-bound operations (DNS, fs, crypto) benefit from more threads.
-  // Only raise if not already set by the user.
-  // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
-  if (!process.env.UV_THREADPOOL_SIZE) {
-    const logicalCores = cpus().length
-    // Cap at 16 to avoid excessive context-switching overhead on very large servers.
-    const threadpoolSize = Math.min(Math.max(logicalCores, 4), 16)
-    // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
-    process.env.UV_THREADPOOL_SIZE = String(threadpoolSize)
-  }
+  process.env.NODE_OPTIONS = existing ? `${existing} --max-old-space-size=8192` : '--max-old-space-size=8192'
 }
 
 // Harness-science L0 ablation baseline. Inlined here (not init.ts) because
@@ -96,7 +88,7 @@ async function main(): Promise<void> {
   if (args.length === 1 && (args[0] === '--version' || args[0] === '-v' || args[0] === '-V')) {
     // MACRO.VERSION is inlined at build time
     // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.log(`${MACRO.DISPLAY_VERSION ?? MACRO.VERSION} (Awakened)`);
+    console.log(`${MACRO.DISPLAY_VERSION ?? MACRO.VERSION} (OpenClaude)`);
     return;
   }
 
@@ -129,13 +121,11 @@ async function main(): Promise<void> {
     return getActiveProviderProfile() !== undefined
   })()
 
-  const { buildStartupEnvFromProfile, applyProfileEnvToProcessEnv } = await import('../utils/providerProfile.js')
   const startupEnv = await buildStartupEnvFromProfile({
     processEnv: process.env,
     hasConfiguredProviderProfile,
   })
   if (startupEnv !== process.env) {
-    const { getProviderValidationError } = await import('../utils/providerValidation.js')
     const startupProfileError = await getProviderValidationError(startupEnv)
     if (startupProfileError) {
       console.error(
@@ -156,12 +146,10 @@ async function main(): Promise<void> {
     hydrateGithubModelsTokenFromSecureStorage()
   }
 
-  const { validateProviderEnvForStartupOrExit } = await import('../utils/providerValidation.js')
   await validateProviderEnvForStartupOrExit()
 
   // #808: --model alone (no --provider) — route to the env var matching the
   // active provider before the banner prints so the override is visible.
-  // Note: providerFlag already imported above at line 106, reuse it.
   if (args.includes('--model')) {
     const { applyModelFlagFromArgs } = await import('../utils/providerFlag.js')
     applyModelFlagFromArgs(args)
@@ -349,10 +337,10 @@ async function main(): Promise<void> {
       templatesMain
     } = await import('../cli/handlers/templateJobs.js');
     await templatesMain(args);
-    // gracefulShutdownSync (not return) — mountFleetView's Ink TUI can leave
-    // event loop handles that prevent natural exit.
-    const { gracefulShutdownSync } = await import('../utils/gracefulShutdown.js');
-    gracefulShutdownSync(0);
+    // process.exit (not return) — mountFleetView's Ink TUI can leave event
+    // loop handles that prevent natural exit.
+    // eslint-disable-next-line custom-rules/no-process-exit
+    process.exit(0);
   }
 
   // Fast-path for `claude environment-runner`: headless BYOC runner.
@@ -419,7 +407,7 @@ async function main(): Promise<void> {
   }
 
   // No special flags detected, load and run the full CLI
-  if (process.env.Awakened_DISABLE_EARLY_INPUT !== '1') {
+  if (process.env.OPENCLAUDE_DISABLE_EARLY_INPUT !== '1') {
     const {
       startCapturingEarlyInput
     } = await import('../utils/earlyInput.js');

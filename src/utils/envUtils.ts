@@ -114,7 +114,7 @@ export function migrateLegacyClaudeConfigHome(options?: {
   }
 
   const homeDir = options?.homeDir ?? homedir()
-  const AwakenedDir = join(homeDir, '.Awakened')
+  const openClaudeDir = join(homeDir, '.openclaude')
   const legacyClaudeDir = join(homeDir, '.claude')
 
   try {
@@ -126,14 +126,14 @@ export function migrateLegacyClaudeConfigHome(options?: {
     }
 
     if (legacyDirExists) {
-      copyMissingPathSync(legacyClaudeDir, AwakenedDir)
+      copyMissingPathSync(legacyClaudeDir, openClaudeDir)
     }
 
     for (const legacyFile of legacyGlobalConfigFiles) {
-      const AwakenedFile = legacyFile.replace(/^\.claude/, '.Awakened')
+      const openClaudeFile = legacyFile.replace(/^\.claude/, '.openclaude')
       copyMissingPathSync(
         join(homeDir, legacyFile),
-        join(homeDir, AwakenedFile),
+        join(homeDir, openClaudeFile),
       )
     }
     return true
@@ -151,9 +151,9 @@ export function resolveClaudeConfigHomeDir(options?: {
   }
 
   const homeDir = options?.homeDir ?? homedir()
-  const AwakenedDir = join(homeDir, '.Awakened')
+  const openClaudeDir = join(homeDir, '.openclaude')
 
-  return AwakenedDir.normalize('NFC')
+  return openClaudeDir.normalize('NFC')
 }
 
 let claudeConfigHomeDirOverride: string | undefined
@@ -178,13 +178,13 @@ export const getClaudeConfigHomeDir = memoize(
       configDirEnv,
       homeDir,
     })
-    const AwakenedDir = join(homeDir, '.Awakened')
+    const openClaudeDir = join(homeDir, '.openclaude')
     const legacyClaudeDir = join(homeDir, '.claude')
 
     if (
       !configDirEnv &&
       !migrationSucceeded &&
-      !pathIsDirectory(AwakenedDir) &&
+      !pathIsDirectory(openClaudeDir) &&
       pathExists(legacyClaudeDir)
     ) {
       return legacyClaudeDir.normalize('NFC')

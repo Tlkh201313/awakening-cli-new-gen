@@ -48,7 +48,7 @@ afterEach(() => {
 })
 
 function createTempAuthJson(payload: Record<string, unknown>): string {
-  const dir = mkdtempSync(join(tmpdir(), 'Awakened-codex-'))
+  const dir = mkdtempSync(join(tmpdir(), 'openclaude-codex-'))
   tempDirs.push(dir)
   const authPath = join(dir, 'auth.json')
   writeFileSync(authPath, JSON.stringify(payload), 'utf8')
@@ -751,8 +751,8 @@ describe('Codex request translation', () => {
             type: 'web_search_call',
             sources: [
               {
-                title: 'Awakened repo',
-                url: 'https://github.com/example/Awakened',
+                title: 'OpenClaude repo',
+                url: 'https://github.com/example/openclaude',
               },
             ],
           },
@@ -762,11 +762,11 @@ describe('Codex request translation', () => {
             content: [
               {
                 type: 'text',
-                text: 'Awakened is available on GitHub.',
+                text: 'OpenClaude is available on GitHub.',
                 sources: [
                   {
                     title: 'Docs',
-                    url: 'https://docs.example.com/Awakened',
+                    url: 'https://docs.example.com/openclaude',
                   },
                 ],
               },
@@ -774,22 +774,22 @@ describe('Codex request translation', () => {
           },
         ],
       },
-      'Awakened GitHub 2026',
+      'OpenClaude GitHub 2026',
       0.42,
     )
 
     expect(output.results).toEqual([
-      'Awakened is available on GitHub.',
+      'OpenClaude is available on GitHub.',
       {
         tool_use_id: 'codex-web-search',
         content: [
           {
-            title: 'Awakened repo',
-            url: 'https://github.com/example/Awakened',
+            title: 'OpenClaude repo',
+            url: 'https://github.com/example/openclaude',
           },
           {
             title: 'Docs',
-            url: 'https://docs.example.com/Awakened',
+            url: 'https://docs.example.com/openclaude',
           },
         ],
       },
@@ -799,7 +799,7 @@ describe('Codex request translation', () => {
   test('falls back to a non-empty Codex web search result message', () => {
     const output = webSearchToolTest.makeOutputFromCodexWebSearchResponse(
       { output: [] },
-      'Awakened GitHub 2026',
+      'OpenClaude GitHub 2026',
       0.11,
     )
 
@@ -817,7 +817,7 @@ describe('Codex request translation', () => {
           },
         ],
       },
-      'Awakened GitHub 2026',
+      'OpenClaude GitHub 2026',
       0.05,
     )
 
@@ -837,7 +837,7 @@ describe('Codex request translation', () => {
           },
         ],
       },
-      'Awakened GitHub 2026',
+      'OpenClaude GitHub 2026',
       0.05,
     )
 
@@ -854,7 +854,7 @@ describe('Codex request translation', () => {
           },
         ],
       },
-      'Awakened GitHub 2026',
+      'OpenClaude GitHub 2026',
       0.05,
     )
 
@@ -878,14 +878,14 @@ describe('Codex request translation', () => {
                 type: 'output_text',
                 text: 'Partial results below.',
                 sources: [
-                  { title: 'Docs', url: 'https://docs.example.com/Awakened' },
+                  { title: 'Docs', url: 'https://docs.example.com/openclaude' },
                 ],
               },
             ],
           },
         ],
       },
-      'Awakened GitHub 2026',
+      'OpenClaude GitHub 2026',
       0.05,
     )
 
@@ -895,7 +895,7 @@ describe('Codex request translation', () => {
       {
         tool_use_id: 'codex-web-search',
         content: [
-          { title: 'Docs', url: 'https://docs.example.com/Awakened' },
+          { title: 'Docs', url: 'https://docs.example.com/openclaude' },
         ],
       },
     ])

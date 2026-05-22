@@ -34,7 +34,7 @@ mock.module('./marketplaceManager.js', () => ({
   getMarketplaceCacheOnly: async (name: string) => ({
     plugins: marketplaces[name] ?? [],
   }),
-  getMarketplacesCacheDir: () => '/tmp/Awakened-marketplaces',
+  getMarketplacesCacheDir: () => '/tmp/openclaude-marketplaces',
   loadKnownMarketplacesConfig: async () =>
     Object.fromEntries(
       Object.keys(marketplaces).map(name => [
@@ -91,12 +91,12 @@ mock.module('../config.js', () => ({
   getGlobalConfigWriteCount: () => 0,
   getAutoUpdaterDisabledReason: () => null,
   formatAutoUpdaterDisabledReason: () => 'enabled',
-  getManagedClaudeRulesDir: () => '/tmp/Awakened-managed-rules',
-  getMemoryPath: () => '/tmp/Awakened-memory.md',
+  getManagedClaudeRulesDir: () => '/tmp/openclaude-managed-rules',
+  getMemoryPath: () => '/tmp/openclaude-memory.md',
   getOrCreateUserID: () => 'test-user-id',
-  getProjectPathForConfig: () => '/tmp/Awakened-project-config.json',
+  getProjectPathForConfig: () => '/tmp/openclaude-project-config.json',
   getRemoteControlAtStartup: () => false,
-  getUserClaudeRulesDir: () => '/tmp/Awakened-user-rules',
+  getUserClaudeRulesDir: () => '/tmp/openclaude-user-rules',
   isAutoUpdaterDisabled: () => false,
   recordFirstStartTime: mock(() => {}),
   getCustomApiKeyStatus: () => ({ hasCustomApiKey: false }),

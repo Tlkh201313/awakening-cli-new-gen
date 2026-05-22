@@ -1,15 +1,13 @@
+import { c as _c } from "react-compiler-runtime";
 import figures from 'figures';
-import React, { useRef } from 'react';
+import React from 'react';
 import { Text } from '../../ink.js';
-import { useAnimationFrame } from '../../ink/hooks/use-animation-frame.js';
-import { interpolateColor, toRGBColor } from '../Spinner/utils.js';
-import { useSettings } from '../../hooks/useSettings.js';
 type Status = 'success' | 'error' | 'warning' | 'info' | 'pending' | 'loading';
 type Props = {
   /**
    * The status to display. Determines both the icon and color.
    *
-   * - `success`: Green checkmark (✓) with brightness pulse on transition
+   * - `success`: Green checkmark (✓)
    * - `error`: Red cross (✗)
    * - `warning`: Yellow warning symbol (⚠)
    * - `info`: Blue info symbol (ℹ)
@@ -23,9 +21,6 @@ type Props = {
    */
   withSpace?: boolean;
 };
-const PULSE_DURATION_MS = 400;
-const GREEN_BRIGHT = { r: 80, g: 220, b: 100 };
-const GREEN_DIM = { r: 40, g: 140, b: 60 };
 const STATUS_CONFIG: Record<Status, {
   icon: string;
   color: 'success' | 'error' | 'warning' | 'suggestion' | undefined;
@@ -59,9 +54,6 @@ const STATUS_CONFIG: Record<Status, {
 /**
  * Renders a status indicator icon with appropriate color.
  *
- * On transition to 'success', plays a green brightness pulse
- * (bright -> dim -> bright) over 400ms before settling on static green.
- *
  * @example
  * // Success indicator
  * <StatusIcon status="success" />
@@ -77,44 +69,26 @@ const STATUS_CONFIG: Record<Status, {
  *   Waiting for response
  * </Text>
  */
-export function StatusIcon({
-  status,
-  withSpace = false
-}: Props) {
-  const settings = useSettings();
-  const [ref, time] = useAnimationFrame(16);
-  const successTimeRef = useRef<number | null>(null);
-  const prevStatusRef = useRef<Status>(status);
-
+export function StatusIcon(t0) {
+  const $ = _c(5);
+  const {
+    status,
+    withSpace: t1
+  } = t0;
+  const withSpace = t1 === undefined ? false : t1;
   const config = STATUS_CONFIG[status];
-
-  // Detect transition to 'success' — start the pulse timer
-  if (status === 'success' && prevStatusRef.current !== 'success') {
-    successTimeRef.current = time;
+  const t2 = !config.color;
+  const t3 = withSpace && " ";
+  let t4;
+  if ($[0] !== config.color || $[1] !== config.icon || $[2] !== t2 || $[3] !== t3) {
+    t4 = <Text color={config.color} dimColor={t2}>{config.icon}{t3}</Text>;
+    $[0] = config.color;
+    $[1] = config.icon;
+    $[2] = t2;
+    $[3] = t3;
+    $[4] = t4;
+  } else {
+    t4 = $[4];
   }
-  if (status !== 'success') {
-    successTimeRef.current = null;
-  }
-  prevStatusRef.current = status;
-
-  // Compute interpolated pulse color during the animation window
-  let pulseColor: string | undefined;
-  if (status === 'success' && successTimeRef.current !== null) {
-    const elapsed = time - successTimeRef.current;
-    if (elapsed < PULSE_DURATION_MS && !settings.prefersReducedMotion) {
-      // Bright -> dim -> bright: sine wave from 0..1..0
-      const t = Math.sin((elapsed / PULSE_DURATION_MS) * Math.PI);
-      const color = interpolateColor(GREEN_BRIGHT, GREEN_DIM, t);
-      pulseColor = toRGBColor(color);
-    }
-  }
-
-  const dimColor = !config.color;
-  const space = withSpace ? ' ' : undefined;
-
-  return (
-    <Text color={pulseColor ?? config.color} dimColor={dimColor}>
-      {config.icon}{space}
-    </Text>
-  );
+  return t4;
 }

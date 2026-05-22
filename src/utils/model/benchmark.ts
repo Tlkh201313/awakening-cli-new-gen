@@ -1,5 +1,5 @@
 /**
- * Model Benchmarking for Awakened
+ * Model Benchmarking for OpenClaude
  * 
  * Tests and compares model speed/quality for informed model selection.
  * Supports OpenAI-compatible, Ollama, Anthropic, Bedrock, Vertex.

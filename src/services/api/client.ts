@@ -8,7 +8,6 @@ import {
   isClaudeAISubscriber,
   refreshAndGetAwsCredentials,
   refreshGcpCredentialsIfNeeded,
-  scheduleTokenRefresh,
 } from 'src/utils/auth.js'
 import {
   convertEffortValueToLevel,
@@ -133,82 +132,6 @@ function isXiaomiMimoModelName(value: string | undefined): boolean {
   )
 }
 
-const clientCache = new Map<string, Anthropic>()
-
-function getClientCacheKey(params: {
-  model?: string
-  apiKey?: string
-  providerOverride?: ProviderOverride
-}): string {
-  const { model, apiKey, providerOverride } = params
-
-  // Provider override (OpenAI shim with custom provider)
-  if (providerOverride) {
-    return `override:${model ?? ''}:${JSON.stringify(providerOverride)}`
-  }
-
-  // GitHub native Anthropic mode
-  if (isGithubNativeAnthropicMode(model)) {
-    const baseUrl = process.env.OPENAI_BASE_URL ?? ''
-    const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? ''
-    return `github-native:${model ?? ''}:${baseUrl}:${token}`
-  }
-
-  const envOnlyRouteId = resolveEnvOnlyProviderRouteId(process.env)
-
-  // OpenAI shim providers (env-only routes or explicit env flags)
-  if (
-    envOnlyRouteId === 'minimax' ||
-    envOnlyRouteId === 'xiaomi-mimo' ||
-    envOnlyRouteId === 'xai' ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_OPENAI) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_GITHUB) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_GEMINI) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_MISTRAL)
-  ) {
-    return `openai-shim:${envOnlyRouteId ?? ''}:${model ?? ''}`
-  }
-
-  // Bedrock
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK)) {
-    const region =
-      model === getSmallFastModel() &&
-      process.env.ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION
-        ? process.env.ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION
-        : getAWSRegion()
-    return `bedrock:${model ?? ''}:${region}:${process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH ?? ''}:${process.env.AWS_BEARER_TOKEN_BEDROCK ?? ''}`
-  }
-
-  // Foundry
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)) {
-    const resource = process.env.ANTHROPIC_FOUNDRY_RESOURCE ?? ''
-    const baseUrl = process.env.ANTHROPIC_FOUNDRY_BASE_URL ?? ''
-    return `foundry:${resource}:${baseUrl}:${process.env.ANTHROPIC_FOUNDRY_API_KEY ?? ''}:${process.env.CLAUDE_CODE_SKIP_FOUNDRY_AUTH ?? ''}`
-  }
-
-  // Vertex
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX)) {
-    const region = getVertexRegionForModel(model)
-    const projectId = process.env.ANTHROPIC_VERTEX_PROJECT_ID ?? ''
-    return `vertex:${model ?? ''}:${region}:${projectId}:${process.env.CLAUDE_CODE_SKIP_VERTEX_AUTH ?? ''}`
-  }
-
-  // Direct Anthropic
-  return `anthropic:${apiKey ?? ''}:${process.env.USER_TYPE ?? ''}:${process.env.USE_STAGING_OAUTH ?? ''}`
-}
-
-export function invalidateClientCache(keyPattern?: string): void {
-  if (!keyPattern) {
-    clientCache.clear()
-    return
-  }
-  for (const key of clientCache.keys()) {
-    if (key.startsWith(keyPattern)) {
-      clientCache.delete(key)
-    }
-  }
-}
-
 function applyMiniMaxEnvOnlyDefaults(): void {
   const baseUrlOverride = getMiniMaxBaseUrlOverride()
   const hasMiniMaxBaseOverride = baseUrlOverride !== undefined
@@ -286,10 +209,6 @@ export async function getAnthropicClient({
   providerOverride?: ProviderOverride
   effortValue?: EffortValue
 }): Promise<Anthropic> {
-  const cacheKey = getClientCacheKey({ model, apiKey, providerOverride })
-  const cached = clientCache.get(cacheKey)
-  if (cached) return cached
-
   // Convert the runtime effort value to the OpenAI-shaped enum the shim
   // expects. Undefined → shim falls back to descriptor/alias defaults.
   const shimReasoningEffort: OpenAIEffortLevel | undefined =
@@ -333,7 +252,6 @@ export async function getAnthropicClient({
     logForDebugging('[API:auth] OAuth token check starting')
     await checkAndRefreshOAuthTokenIfNeeded()
     logForDebugging('[API:auth] OAuth token check complete')
-// Schedule background token refresh at 80% of token lifetime    const oauthTokens = getClaudeAIOAuthTokens()    if (oauthTokens?.expiresAt) {      const lifetimeMs = oauthTokens.expiresAt - Date.now()      if (lifetimeMs > 0) {        scheduleTokenRefresh(lifetimeMs, checkAndRefreshOAuthTokenIfNeeded)      }    }
   }
 
   const isClaudeAiSubscriber =
@@ -368,15 +286,13 @@ export async function getAnthropicClient({
       if (lower === 'authorization' || lower === 'x-api-key' || lower === 'api-key') continue
       safeHeaders[k] = v
     }
-    const client = createOpenAIShimClient({
+    return createOpenAIShimClient({
       defaultHeaders: safeHeaders,
       maxRetries,
       timeout: parseInt(process.env.API_TIMEOUT_MS || String(600 * 1000), 10),
       providerOverride,
       reasoningEffort: shimReasoningEffort,
     }) as unknown as Anthropic
-    clientCache.set(cacheKey, client)
-    return client
   }
   // GitHub provider in native Anthropic API mode: send requests in Anthropic
   // format so cache_control blocks are honoured and prompt caching works.
@@ -395,9 +311,7 @@ export async function getAnthropicClient({
       // No apiKey — we authenticate via Bearer token (authToken)
       apiKey: null,
     }
-    const client = new Anthropic(nativeArgs)
-    clientCache.set(cacheKey, client)
-    return client
+    return new Anthropic(nativeArgs)
   }
   const envOnlyProviderRouteId = resolveEnvOnlyProviderRouteId(process.env)
   const useXiaomiMimoEnvOnlyProvider = envOnlyProviderRouteId === 'xiaomi-mimo'
@@ -423,14 +337,12 @@ export async function getAnthropicClient({
     isEnvTruthy(process.env.CLAUDE_CODE_USE_MISTRAL)
   ) {
     const { createOpenAIShimClient } = await import('./openaiShim.js')
-    const client = createOpenAIShimClient({
+    return createOpenAIShimClient({
       defaultHeaders,
       maxRetries,
       timeout: parseInt(process.env.API_TIMEOUT_MS || String(600 * 1000), 10),
       reasoningEffort: shimReasoningEffort,
     }) as unknown as Anthropic
-    clientCache.set(cacheKey, client)
-    return client
   }
   if (isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK)) {
     const { AnthropicBedrock } = await import('@anthropic-ai/bedrock-sdk')
@@ -468,9 +380,7 @@ export async function getAnthropicClient({
       }
     }
     // we have always been lying about the return type - this doesn't support batching or models
-    const client = new AnthropicBedrock(bedrockArgs) as unknown as Anthropic
-    clientCache.set(cacheKey, client)
-    return client
+    return new AnthropicBedrock(bedrockArgs) as unknown as Anthropic
   }
   if (isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)) {
     const { AnthropicFoundry } = await importRuntimeModule(
@@ -502,9 +412,7 @@ export async function getAnthropicClient({
       ...(isDebugToStdErr() && { logger: createStderrLogger() }),
     }
     // we have always been lying about the return type - this doesn't support batching or models
-    const client = new AnthropicFoundry(foundryArgs) as unknown as Anthropic
-    clientCache.set(cacheKey, client)
-    return client
+    return new AnthropicFoundry(foundryArgs) as unknown as Anthropic
   }
   if (isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX)) {
     // Refresh GCP credentials if gcpAuthRefresh is configured and credentials are expired
@@ -586,9 +494,7 @@ export async function getAnthropicClient({
       ...(isDebugToStdErr() && { logger: createStderrLogger() }),
     }
     // we have always been lying about the return type - this doesn't support batching or models
-    const client = new AnthropicVertex(vertexArgs) as unknown as Anthropic
-    clientCache.set(cacheKey, client)
-    return client
+    return new AnthropicVertex(vertexArgs) as unknown as Anthropic
   }
 
   // Determine authentication method based on available tokens
@@ -606,28 +512,7 @@ export async function getAnthropicClient({
     ...(isDebugToStdErr() && { logger: createStderrLogger() }),
   }
 
-  const client = new Anthropic(clientConfig)
-  clientCache.set(cacheKey, client)
-  return client
-}
-
-/**
- * Pre-warm connection to the configured provider.
- * Call during init to avoid TTFT penalty on first request.
- * Non-blocking — errors are silently ignored.
- *
- * This complements preconnectAnthropicApi() which handles first-party
- * Anthropic connections. This function warms non-Anthropic providers
- * (OpenAI-compatible, etc.) by instantiating the client early.
- */
-export async function prewarmConnection(): Promise<void> {
-  try {
-    await getAnthropicClient({ maxRetries: 0 })
-    logForDebugging('[API:prewarm] Connection pre-warming initiated')
-  } catch {
-    // Pre-warming is best-effort — don't fail startup
-    logForDebugging('[API:prewarm] Pre-warming skipped (no credentials)')
-  }
+  return new Anthropic(clientConfig)
 }
 
 async function configureApiKeyHeaders(

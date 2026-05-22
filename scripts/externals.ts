@@ -25,29 +25,15 @@ export const COMMON_EXTERNALS: string[] = [
   // Orama search engine
   '@orama/orama',
   '@orama/plugin-data-persistence',
-  // React ecosystem — external in both CLI + SDK. Saves ~500KB bundle parse.
-  // react is in package.json dependencies so it's always in node_modules.
-  'react',
-  'react-reconciler',
-  'react-compiler-runtime',
-  // gRPC — large (~3MB bundled). Only used for MCP gRPC connections.
-  // External = loaded from node_modules on demand, saves ~100-150ms parse.
-  '@grpc/grpc-js',
-  '@grpc/proto-loader',
-  // Web scraping — medium size, only used by WebFetchTool
-  '@mendable/firecrawl-js',
-  // LSP protocol — medium size, only used by LSP tools
-  'vscode-languageserver-protocol',
-  // Anthropic SDK — large. External in SDK already; external in CLI too.
-  // Saves ~200ms parse on startup. Resolved from node_modules at runtime.
-  '@anthropic-ai/sdk',
-  // MCP SDK — medium. Same rationale as Anthropic SDK.
-  '@modelcontextprotocol/sdk',
 ]
 
 // Additional packages external only in the SDK bundle (TUI + heavy deps)
-// react, react-reconciler, @anthropic-ai/sdk, @modelcontextprotocol/sdk moved to COMMON_EXTERNALS
-export const SDK_ONLY_EXTERNALS: string[] = []
+export const SDK_ONLY_EXTERNALS: string[] = [
+  'react',
+  'react-reconciler',
+  '@anthropic-ai/sdk',
+  '@modelcontextprotocol/sdk',
+]
 
 // Packages kept external but NOT listed in package.json dependencies.
 // These are dynamically imported at runtime — they're optional and resolved
@@ -123,11 +109,24 @@ export const INTENTIONALLY_BUNDLED: string[] = [
   'tree-kill',
   'undici',
   'ws',
-  // React hooks utilities (react/react-reconciler/react-compiler-runtime now in COMMON_EXTERNALS)
+  // React ecosystem (react/react-reconciler are SDK_ONLY_EXTERNALS, bundled in CLI)
+  'react',
+  'react-compiler-runtime',
+  'react-reconciler',
   'usehooks-ts',
-  // Anthropic SDK + MCP SDK now in COMMON_EXTERNALS (external in both CLI + SDK)
+  // Anthropic SDK (external in SDK bundle, bundled in CLI)
+  '@anthropic-ai/sdk',
+  // MCP SDK (external in SDK bundle, bundled in CLI)
+  '@modelcontextprotocol/sdk',
   // Schema validation
   'zod',
+    // gRPC (bundled into CLI, not external)
+  '@grpc/grpc-js',
+  '@grpc/proto-loader',
+  // Web scraping
+  '@mendable/firecrawl-js',
+  // Language server protocol
+  'vscode-languageserver-protocol',
   // File watching
   'chokidar',
 ]

@@ -17,4 +17,3 @@ package-lock.json
 coverage/
 agent.log
 plan/
-.mcp.json

@@ -101,7 +101,7 @@ function setupOpenAIMode(baseUrl: string, model: string): void {
 }
 
 describe('printStartupScreen logo', () => {
-  test('renders AWAKENED with 4 and 3 in the logo', () => {
+  test('renders CLAUDE with a D-shaped D instead of an O-shaped block', () => {
     ;(globalThis as Record<string, unknown>).MACRO = { VERSION: 'test-version' }
     Object.defineProperty(process.stdout, 'isTTY', {
       configurable: true,
@@ -117,9 +117,10 @@ describe('printStartupScreen logo', () => {
     printStartupScreen()
 
     const plainOutput = stripAnsi(output)
-    expect(plainOutput).toContain('██████╗')
-    expect(plainOutput).toContain('╚══╝╚══╝')
-    expect(plainOutput).not.toContain('OPEN')
+    expect(plainOutput).toContain('███████╗ ████████╗')
+    expect(plainOutput).toContain('██╔═══██╗ ██╔═════╝')
+    expect(plainOutput).toContain('███████╔╝ ████████╗')
+    expect(plainOutput).not.toContain('████████║ ████████╗')
   })
 })
 

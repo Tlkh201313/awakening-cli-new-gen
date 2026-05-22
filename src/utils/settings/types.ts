@@ -870,7 +870,7 @@ export const SettingsSchema = lazySchema(() =>
         .optional()
         .describe(
           'Custom directory for plan files, relative to project root. ' +
-            'If not set, defaults to ~/.Awakened/plans/',
+            'If not set, defaults to ~/.openclaude/plans/',
         ),
       ...(process.env.USER_TYPE === 'ant'
         ? {

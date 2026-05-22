@@ -35,7 +35,6 @@ import { Divider } from './design-system/Divider.js';
 import type { UnseenDivider } from './FullscreenLayout.js';
 import { LogoV2 } from './LogoV2/LogoV2.js';
 import { StreamingMarkdown } from './Markdown.js';
-import { FadeIn } from './FadeIn.js';
 import { hasContentAfterIndex, MessageRow } from './MessageRow.js';
 import { InVirtualListContext, type MessageActionsNav, MessageActionsSelectedContext, type MessageActionsState } from './messageActions.js';
 import { AssistantThinkingMessage } from './messages/AssistantThinkingMessage.js';
@@ -629,13 +628,12 @@ const MessagesImpl = ({
     const wrapped = <MessageActionsSelectedContext.Provider key={k_0} value={index === selectedIdx}>
         {row}
       </MessageActionsSelectedContext.Provider>;
-    const faded = <FadeIn key={k_0} duration={200}>{wrapped}</FadeIn>;
     if (unseenDivider && index === dividerBeforeIndex) {
       return [<Box key="unseen-divider" marginTop={1}>
           <Divider title={`${unseenDivider.count} new ${plural(unseenDivider.count, 'message')}`} width={columns} color="inactive" />
-        </Box>, faded];
+        </Box>, wrapped];
     }
-    return faded;
+    return wrapped;
   };
 
   // Search indexing: for tool_result messages, look up the Tool and use

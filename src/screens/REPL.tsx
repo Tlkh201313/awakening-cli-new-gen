@@ -28,7 +28,6 @@ import { sendNotification } from '../services/notifier.js';
 import { startPreventSleep, stopPreventSleep } from '../services/preventSleep.js';
 import { useTerminalNotification } from '../ink/useTerminalNotification.js';
 import { hasCursorUpViewportYankBug } from '../ink/terminal.js';
-import { useSettings } from '../hooks/useSettings.js';
 import { createFileStateCacheWithSizeLimit, mergeFileStateCaches, READ_FILE_STATE_CACHE_SIZE } from '../utils/fileStateCache.js';
 import { updateLastInteractionTime, getLastInteractionTime, getOriginalCwd, getProjectRoot, getSessionId, switchSession, setCostStateForRestore, getTurnHookDurationMs, getTurnHookCount, resetTurnHookDuration, getTurnToolDurationMs, getTurnToolCount, resetTurnToolDuration, getTurnClassifierDurationMs, getTurnClassifierCount, resetTurnClassifierDuration } from '../bootstrap/state.js';
 import { asSessionId, asAgentId } from '../types/ids.js';
@@ -703,12 +702,6 @@ export function REPL({
     setDynamicMcpConfig(config);
   }, [setDynamicMcpConfig]);
   const [screen, setScreen] = useState<Screen>('prompt');
-  // Screen transition state machine: fade out → swap → fade in
-  const TRANSITION_DURATION_MS = 150
-  const [transitionState, setTransitionState] = useState<'idle' | 'fading-out' | 'fading-in'>('idle')
-  const [pendingScreen, setPendingScreen] = useState<Screen | null>(null)
-  const transitionTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
-  const settings = useSettings()
   const [showAllInTranscript, setShowAllInTranscript] = useState(false);
   // [ forces the dump-to-scrollback path inside transcript mode. Separate
   // from CLAUDE_CODE_NO_FLICKER=0 (which is process-lifetime) — this is
@@ -1144,7 +1137,7 @@ export function REPL({
   // session from mid-conversation context.
   const haikuTitleAttemptedRef = useRef((initialMessages?.length ?? 0) > 0);
   const agentTitle = mainThreadAgentDefinition?.agentType;
-  const terminalTitle = sessionTitle ?? agentTitle ?? haikuTitle ?? 'Awakened';
+  const terminalTitle = sessionTitle ?? agentTitle ?? haikuTitle ?? 'OpenClaude';
   const isWaitingForApproval = toolUseConfirmQueue.length > 0 || promptQueue.length > 0 || pendingWorkerRequest || pendingSandboxRequest;
   // Local-jsx commands (like /plugin, /config) show user-facing dialogs that
   // wait for input. Require jsx != null — if the flag is stuck true but jsx
@@ -1401,7 +1394,7 @@ export function REPL({
   const handleRemoteInit = useCallback((remoteSlashCommands: string[]) => {
     const remoteCommandSet = new Set(remoteSlashCommands);
     // Keep commands that CCR lists OR that are in the local-safe set
-    setLocalCommands(prev => prev.filter(cmd => remoteCommandSet.has(cmd.name) || REMOTE_SAFE_COMMANDS.has(cmd.name)));
+    setLocalCommands(prev => prev.filter(cmd => remoteCommandSet.has(cmd.name) || REMOTE_SAFE_COMMANDS.has(cmd)));
   }, [setLocalCommands]);
   const [inProgressToolUseIDs, setInProgressToolUseIDs] = useState<Set<string>>(new Set());
   const hasInterruptibleToolInProgressRef = useRef(false);
@@ -3916,7 +3909,7 @@ export function REPL({
   // empty to non-empty, not on every length change -- otherwise a render loop
   // (concurrent onQuery thrashing, etc.) spams saveGlobalConfig, which hits
   // ELOCKED under concurrent sessions and falls back to unlocked writes.
-  // That write storm is the primary trigger for ~/.Awakened.json corruption
+  // That write storm is the primary trigger for ~/.openclaude.json corruption
   // (GH #3117).
   const hasCountedQueueUseRef = useRef(false);
   useEffect(() => {
@@ -4191,7 +4184,7 @@ export function REPL({
   useEffect(() => {
     const handleSuspend = () => {
       // Print suspension instructions
-      process.stdout.write(`\nAwakened has been suspended. Run \`fg\` to bring Awakened back.\nNote: ctrl + z now suspends Awakened, ctrl + _ undoes input.\n`);
+      process.stdout.write(`\nOpenClaude has been suspended. Run \`fg\` to bring OpenClaude back.\nNote: ctrl + z now suspends OpenClaude, ctrl + _ undoes input.\n`);
     };
     const handleResume = () => {
       // Force complete component tree replacement instead of terminal clear
@@ -4427,37 +4420,9 @@ export function REPL({
     // persists at its last screen coords after ctrl-c exits transcript.
     if (!inTranscript) setPositions(null);
   }, [inTranscript, searchQuery, setHighlight, setPositions]);
-
-  // Screen transition: requestScreenSwitch wraps setScreen with fade animation
-  const isTransitioning = transitionState !== 'idle'
-  const requestScreenSwitch: React.Dispatch<React.SetStateAction<Screen>> = useCallback((action) => {
-    const newScreen = typeof action === 'function' ? action(screen) : action
-    if (newScreen === screen) return
-    if (settings.prefersReducedMotion) {
-      setScreen(newScreen)
-      return
-    }
-    if (transitionState !== 'idle') return
-    // Clear any lingering timers
-    for (const t of transitionTimersRef.current) clearTimeout(t)
-    transitionTimersRef.current = []
-    setPendingScreen(newScreen)
-    setTransitionState('fading-out')
-    // After fade-out duration, swap screen and start fade-in
-    transitionTimersRef.current.push(setTimeout(() => {
-      setScreen(newScreen)
-      setTransitionState('fading-in')
-      // After fade-in duration, return to idle
-      transitionTimersRef.current.push(setTimeout(() => {
-        setTransitionState('idle')
-        setPendingScreen(null)
-      }, TRANSITION_DURATION_MS))
-    }, TRANSITION_DURATION_MS))
-  }, [screen, settings.prefersReducedMotion, transitionState])
-
   const globalKeybindingProps = {
     screen,
-    setScreen: requestScreenSwitch,
+    setScreen,
     showAllInTranscript,
     setShowAllInTranscript,
     messageCount: messages.length,
@@ -4577,13 +4542,12 @@ export function REPL({
     // normal mode's wrap below so React reconciles and the alt buffer
     // stays entered across toggle. The 30-cap dump branch stays
     // unwrapped — it wants native terminal scrollback.
-    const dimmedTranscript = isTransitioning ? <Text dimColor>{transcriptReturn}</Text> : transcriptReturn;
     if (transcriptScrollRef) {
       return <AlternateScreen mouseTracking={isMouseTrackingEnabled()}>
-        {dimmedTranscript}
+        {transcriptReturn}
       </AlternateScreen>;
     }
-    return dimmedTranscript;
+    return transcriptReturn;
   }
 
   // Get viewed agent task (inlined from selectors for explicit data flow).
@@ -4659,7 +4623,7 @@ export function REPL({
     {feature('MESSAGE_ACTIONS') && isFullscreenEnvEnabled() && !disableMessageActions ? <MessageActionsKeybindings handlers={messageActionHandlers} isActive={cursor !== null} /> : null}
     <CancelRequestHandler {...cancelRequestProps} />
     <MCPConnectionManager key={remountKey} dynamicMcpConfig={dynamicMcpConfig} isStrictMcpConfig={strictMcpConfig}>
-      <FullscreenLayout scrollRef={scrollRef} overlay={toolPermissionOverlay} bottomFloat={isBuddyEnabled() && companionVisible && !companionNarrow ? <CompanionFloatingBubble /> : undefined} modal={centeredModal} modalScrollRef={modalScrollRef} dividerYRef={dividerYRef} hidePill={!!viewedAgentTask} hideSticky={!!viewedTeammateTask} newMessageCount={unseenDivider?.count ?? 0} totalMessageCount={displayedMessages.length} onPillClick={() => {
+      <FullscreenLayout scrollRef={scrollRef} overlay={toolPermissionOverlay} bottomFloat={isBuddyEnabled() && companionVisible && !companionNarrow ? <CompanionFloatingBubble /> : undefined} modal={centeredModal} modalScrollRef={modalScrollRef} dividerYRef={dividerYRef} hidePill={!!viewedAgentTask} hideSticky={!!viewedTeammateTask} newMessageCount={unseenDivider?.count ?? 0} onPillClick={() => {
         setCursor(null);
         jumpToNew(scrollRef.current);
       }} scrollable={<>
@@ -5093,11 +5057,10 @@ export function REPL({
       </Box>} />
     </MCPConnectionManager>
   </KeybindingSetup>;
-  const displayReturn = isTransitioning ? <Text dimColor>{mainReturn}</Text> : mainReturn;
   if (isFullscreenEnvEnabled()) {
     return <AlternateScreen mouseTracking={isMouseTrackingEnabled()}>
-      {displayReturn}
+      {mainReturn}
     </AlternateScreen>;
   }
-  return displayReturn;
+  return mainReturn;
 }
