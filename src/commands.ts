@@ -63,6 +63,7 @@ import terminalSetup from './commands/terminalSetup/index.js'
 import usage from './commands/usage/index.js'
 import theme from './commands/theme/index.js'
 import logo from './commands/logo/index.js'
+import thinking from './commands/thinking/index.js'
 import vim from './commands/vim/index.js'
 import { feature } from 'bun:bundle'
 import { isBuddyEnabled } from './buddy/feature.js'
@@ -327,6 +328,7 @@ const COMMANDS = memoize((): Command[] => [
   tag,
   theme,
   logo,
+  thinking,
   feedback,
   review,
   ultrareview,

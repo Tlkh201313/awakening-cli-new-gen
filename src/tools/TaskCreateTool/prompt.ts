@@ -1,10 +1,11 @@
 import { isAgentSwarmsEnabled } from '../../utils/agentSwarmsEnabled.js'
+import { getTaskManagementGuidance } from '../shared/taskToolPrompt.js'
 
 export const DESCRIPTION = 'Create a new task in the task list'
 
 export function getPrompt(): string {
   const teammateContext = isAgentSwarmsEnabled()
-    ? ' and potentially assigned to teammates'
+    ? '\n- Plan mode - When using plan mode, create a task list to track the work'
     : ''
 
   const teammateTips = isAgentSwarmsEnabled()
@@ -13,21 +14,7 @@ export function getPrompt(): string {
 `
     : ''
 
-  return `Use this tool to create a structured task list for your current coding session. This helps you track progress, organize complex tasks, and demonstrate thoroughness to the user.
-It also helps the user understand the progress of the task and overall progress of their requests.
-
-## When to Use This Tool
-
-Use this tool proactively in these scenarios:
-
-- Complex multi-step tasks - When a task requires 3 or more distinct steps or actions
-- Non-trivial and complex tasks - Tasks that require careful planning or multiple operations${teammateContext}
-- Plan mode - When using plan mode, create a task list to track the work
-- User explicitly requests todo list - When the user directly asks you to use the todo list
-- User provides multiple tasks - When users provide a list of things to be done (numbered or comma-separated)
-- After receiving new instructions - Immediately capture user requirements as tasks
-- When you start working on a task - Mark it as in_progress BEFORE beginning work
-- After completing a task - Mark it as completed and add any new follow-up tasks discovered during implementation
+  return `${getTaskManagementGuidance('TaskCreate', teammateContext)}
 
 ## When NOT to Use This Tool
 

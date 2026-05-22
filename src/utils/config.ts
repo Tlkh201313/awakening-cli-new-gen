@@ -261,6 +261,7 @@ export type GlobalConfig = {
   // 'compact' — one-line summary (e.g. "[Cache: 1.2k read • hit 12%]")
   // 'full'    — breakdown (read / created / hit-rate) per query
   showCacheStats: ShowCacheStatsMode
+  hideThinkingBlocks: boolean // Controls whether to hide thinking blocks in output (still processes thinking, just hides display)
   /**
    * @deprecated Use settings.env instead.
    */
@@ -657,6 +658,7 @@ function createDefaultGlobalConfig(): GlobalConfig {
     toolHistoryCompressionEnabled: true,
     showTurnDuration: true,
     showCacheStats: 'compact',
+    hideThinkingBlocks: false,
     hasSeenTasksHint: false,
     hasUsedStash: false,
     hasUsedBackgroundTask: false,

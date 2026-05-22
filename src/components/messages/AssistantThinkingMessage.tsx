@@ -4,6 +4,7 @@ import React from 'react';
 import { Box, Text } from '../../ink.js';
 import { CtrlOToExpand } from '../CtrlOToExpand.js';
 import { Markdown } from '../Markdown.js';
+import { getGlobalConfig } from '../../utils/config.js';
 type Props = {
   // Accept either full ThinkingBlock/ThinkingBlockParam or a minimal shape with just type and thinking
   param: ThinkingBlock | ThinkingBlockParam | {
@@ -34,6 +35,10 @@ export function AssistantThinkingMessage(t0) {
     return null;
   }
   if (hideInTranscript) {
+    return null;
+  }
+  // Check global config for hiding thinking blocks
+  if (getGlobalConfig().hideThinkingBlocks) {
     return null;
   }
   const shouldShowFullThinking = isTranscriptMode || verbose;

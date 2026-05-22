@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { z } from 'zod'
 import { ShellError, AbortError } from './errors.js'
-import { formatError, getErrorParts } from './toolErrors.js'
+import { formatError, getErrorParts, formatZodValidationError } from './toolErrors.js'
 
 // =============================================================================
 // getErrorParts — what the model sees when a tool fails
@@ -109,5 +110,49 @@ describe('formatError', () => {
     const result = formatError(err)
     expect(result).not.toContain('truncated')
     expect(result).toContain(output)
+  })
+})
+
+// =============================================================================
+// formatZodValidationError — root and nested array path handling
+// =============================================================================
+
+describe('formatZodValidationError', () => {
+  test('root-level validation error shows (root)', () => {
+    const schema = z.object({ name: z.string() })
+    const result = schema.safeParse('not-an-object')
+    
+    if (!result.success) {
+      const formatted = formatZodValidationError('TestTool', result.error)
+      expect(formatted).toContain('(root)')
+    } else {
+      throw new Error('Expected validation to fail')
+    }
+  })
+
+  test('nested array path shows correct format', () => {
+    const schema = z.object({
+      items: z.array(z.object({ id: z.number() }))
+    })
+    const result = schema.safeParse({ items: [{ id: 'not-a-number' }] })
+    
+    if (!result.success) {
+      const formatted = formatZodValidationError('TestTool', result.error)
+      expect(formatted).toContain('items[0].id')
+    } else {
+      throw new Error('Expected validation to fail')
+    }
+  })
+
+  test('empty path at root level', () => {
+    const schema = z.string()
+    const result = schema.safeParse(123)
+    
+    if (!result.success) {
+      const formatted = formatZodValidationError('TestTool', result.error)
+      expect(formatted).toContain('(root)')
+    } else {
+      throw new Error('Expected validation to fail')
+    }
   })
 })
