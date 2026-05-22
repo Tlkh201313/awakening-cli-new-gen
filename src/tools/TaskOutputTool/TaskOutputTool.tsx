@@ -161,7 +161,9 @@ export const TaskOutputTool: Tool<InputSchema, TaskOutputToolOutput> = buildTool
     return this.isReadOnly?.(_input) ?? false;
   },
   isEnabled() {
-    return "external" !== 'ant';
+    // Legacy compatibility: only enable if explicitly requested
+    // Default off for Awakened fork - prefer Read tool on task output paths
+    return process.env.CLAUDE_CODE_LEGACY_TASK_OUTPUT === '1';
   },
   isReadOnly(_input) {
     return true;

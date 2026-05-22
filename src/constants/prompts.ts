@@ -291,6 +291,7 @@ function getUsingYourToolsSection(enabledTools: Set<string>): string {
           `To search for files use ${GLOB_TOOL_NAME} instead of find or ls`,
           `To search the content of files, use ${GREP_TOOL_NAME} instead of grep or rg`,
         ]),
+    `For background task output, use ${FILE_READ_TOOL_NAME} on the task's output file path (provided in task notifications) instead of TaskOutput tool`,
     `Reserve using the ${BASH_TOOL_NAME} exclusively for system commands and terminal operations that require shell execution. If you are unsure and there is a relevant dedicated tool, default to using the dedicated tool and only fallback on using the ${BASH_TOOL_NAME} tool for these if it is absolutely necessary.`,
   ]
 
