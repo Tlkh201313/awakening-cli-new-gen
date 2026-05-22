@@ -137,6 +137,7 @@ export async function ensureToolResultsDir(): Promise<void> {
 export async function persistToolResult(
   content: NonNullable<ToolResultBlockParam['content']>,
   toolUseId: string,
+  metadata?: { toolName?: string; fileCount?: number },
 ): Promise<PersistedToolResult | PersistToolResultError> {
   const isJson = Array.isArray(content)
 
@@ -171,8 +172,8 @@ export async function persistToolResult(
     // EEXIST: already persisted on a prior turn, fall through to preview
   }
 
-  // Generate a preview
-  const { preview, hasMore } = generatePreview(contentStr, PREVIEW_SIZE_BYTES)
+  // Generate a preview (with optional batch metadata)
+  const { preview, hasMore } = generatePreview(contentStr, PREVIEW_SIZE_BYTES, metadata)
 
   return {
     filepath,
@@ -339,20 +340,40 @@ async function maybePersistLargeToolResult(
 export function generatePreview(
   content: string,
   maxBytes: number,
+  metadata?: { toolName?: string; fileCount?: number },
 ): { preview: string; hasMore: boolean } {
   if (content.length <= maxBytes) {
     return { preview: content, hasMore: false }
   }
 
+  // For batch operations (BatchRead), include per-file metadata in preview
+  let preview = ''
+  if (metadata?.toolName === 'BatchRead' && metadata.fileCount) {
+    // Extract file headers from content for batch preview
+    const lines = content.split('\n')
+    const fileHeaders: string[] = []
+    for (const line of lines) {
+      if (line.startsWith('=== ') && line.endsWith(' ===')) {
+        fileHeaders.push(line)
+        if (fileHeaders.length >= 5) break // Show first 5 files
+      }
+    }
+    if (fileHeaders.length > 0) {
+      preview = `Batch read ${metadata.fileCount} files:\n${fileHeaders.join('\n')}\n\n`
+    }
+  }
+
   // Find the last newline within the limit to avoid cutting mid-line
-  const truncated = content.slice(0, maxBytes)
+  const remainingBytes = maxBytes - preview.length
+  const truncated = content.slice(0, remainingBytes)
   const lastNewline = truncated.lastIndexOf('\n')
 
   // If we found a newline reasonably close to the limit, use it
   // Otherwise fall back to the exact limit
-  const cutPoint = lastNewline > maxBytes * 0.5 ? lastNewline : maxBytes
+  const cutPoint = lastNewline > remainingBytes * 0.5 ? lastNewline : remainingBytes
 
-  return { preview: content.slice(0, cutPoint), hasMore: true }
+  preview += content.slice(0, cutPoint)
+  return { preview, hasMore: true }
 }
 
 /**
