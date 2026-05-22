@@ -9,8 +9,9 @@ export default defineGateway({
   supportsModelRouting: true,
   vendorId: 'openai',
   setup: {
-    requiresAuth: false,
-    authMode: 'none',
+    requiresAuth: true,
+    authMode: 'api-key',
+    apiKeyEnvVar: 'OPENGATEWAY_API_KEY',
   },
   transportConfig: {
     kind: 'openai-compatible',
@@ -29,12 +30,13 @@ export default defineGateway({
   },
   preset: {
     id: 'gitlawb-opengateway',
-    description: 'Gitlawb Opengateway — free hosted Xiaomi MiMo + GMI Cloud partner models',
+    description: 'Gitlawb Opengateway — hosted Xiaomi MiMo + GMI Cloud partner models',
     label: 'Gitlawb Opengateway',
     name: 'Gitlawb Opengateway',
     vendorId: 'openai',
     modelEnvVars: ['OPENAI_MODEL'],
     baseUrlEnvVars: ['OPENGATEWAY_BASE_URL', 'OPENAI_BASE_URL'],
+    apiKeyEnvVars: ['OPENGATEWAY_API_KEY', 'OPENAI_API_KEY'],
     fallbackBaseUrl: 'https://opengateway.gitlawb.com/v1',
     fallbackModel: 'mimo-v2.5-pro',
   },
