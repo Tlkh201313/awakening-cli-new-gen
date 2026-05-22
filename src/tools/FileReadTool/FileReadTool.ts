@@ -1184,3 +1184,46 @@ export async function readImageWithTokenBudget(
 
   return result
 }
+
+/**
+ * Core file reading logic extracted for reuse by BatchReadTool.
+ * Reads a single file with all FileReadTool features (dedup, images, PDFs, notebooks).
+ */
+export async function readFileCore(
+  filePath: string,
+  options: {
+    offset?: number
+    limit?: number
+    pages?: string
+    maxSizeBytes?: number
+    maxTokens?: number
+  },
+  context: ToolUseContext,
+  parentMessage?: any,
+): Promise<{ data: Output; newMessages?: ReturnType<typeof createUserMessage>[] }> {
+  const { offset = 1, limit, pages, maxSizeBytes, maxTokens } = options
+  const defaults = getDefaultFileReadingLimits()
+  const finalMaxSizeBytes = maxSizeBytes ?? defaults.maxSizeBytes
+  const finalMaxTokens = maxTokens ?? defaults.maxTokens
+
+  const ext = path.extname(filePath).toLowerCase().slice(1)
+  const fullFilePath = expandPath(filePath)
+
+  // Resolve symlinks/relative paths
+  const resolvedFilePath = await resolveFilePath(fullFilePath)
+
+  return callInner(
+    filePath,
+    fullFilePath,
+    resolvedFilePath,
+    ext,
+    offset,
+    limit,
+    pages,
+    finalMaxSizeBytes,
+    finalMaxTokens,
+    context.readFileState,
+    context,
+    parentMessage?.id,
+  )
+}
