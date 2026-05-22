@@ -25,6 +25,9 @@ export const firecrawlProvider: SearchProvider = {
     }
 
     const data = await app.search(query, { limit: 15 })
+    
+    // Check abort after SDK call completes (can't cancel in-flight)
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
     const hits = applyDomainFilters(
       (data.web ?? []).map((r: { url: string; title?: string; description?: string }) => ({

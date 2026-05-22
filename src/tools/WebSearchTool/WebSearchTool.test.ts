@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { ProviderOutput } from './providers/types.js'
 import { __test } from './WebSearchTool.js'
+import { runSearch } from './providers/index.js'
 
 const {
   buildEmptyAdapterResultHint,
@@ -102,5 +103,16 @@ describe('buildAdapterUnavailableError', () => {
     const msg = buildAdapterUnavailableError('nvidia-nim', 'timeout')
     expect(msg).toMatch(/Anthropic/)
     expect(msg).toMatch(/Codex/)
+  })
+})
+
+describe('abort signal propagation', () => {
+  test('runSearch throws AbortError when signal is pre-aborted', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    
+    await expect(
+      runSearch({ query: 'test' }, controller.signal)
+    ).rejects.toThrow('Aborted')
   })
 })

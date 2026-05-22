@@ -64,6 +64,9 @@ export const duckduckgoProvider: SearchProvider = {
       try {
         // TODO: duck-duck-scrape doesn't accept AbortSignal — can't cancel in-flight searches
         const response = await search(input.query, { safeSearch: SafeSearchType.STRICT })
+        
+        // Check abort after SDK call completes (can't cancel in-flight)
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
         const hits = applyDomainFilters(
           response.results.map(r => ({
