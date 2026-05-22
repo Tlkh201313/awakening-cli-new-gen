@@ -355,9 +355,26 @@ export function getPatchForEdits({
 const DIFF_SNIPPET_MAX_BYTES = 8192
 
 /**
+ * Core snippet extraction logic - extracts lines from content with context.
+ * Used by both getSnippetForTwoFileDiff and getSnippet.
+ */
+function extractSnippetLines(
+  content: string,
+  startLine: number,
+  endLine: number,
+): { snippet: string; actualStartLine: number } {
+  const lines = content.split(/\r?\n/)
+  const actualStartLine = Math.max(0, startLine)
+  const actualEndLine = Math.min(lines.length, endLine)
+  const snippetLines = lines.slice(actualStartLine, actualEndLine)
+  return {
+    snippet: snippetLines.join('\n'),
+    actualStartLine: actualStartLine + 1, // 1-indexed
+  }
+}
+
+/**
  * Used for attachments, to show snippets when files change.
- *
- * TODO: Unify this with the other snippet logic.
  */
 export function getSnippetForTwoFileDiff(
   fileAContents: string,
@@ -471,25 +488,14 @@ export function getSnippet(
   newString: string,
   contextLines: number = 4,
 ): { snippet: string; startLine: number } {
-  // Use the original algorithm from FileEditTool.tsx
   const before = originalFile.split(oldString)[0] ?? ''
   const replacementLine = before.split(/\r?\n/).length - 1
-  const newFileLines = applyEditToFile(
-    originalFile,
-    oldString,
-    newString,
-  ).split(/\r?\n/)
+  const newFileContent = applyEditToFile(originalFile, oldString, newString)
 
-  // Calculate the start and end line numbers for the snippet
-  const startLine = Math.max(0, replacementLine - contextLines)
-  const endLine =
-    replacementLine + contextLines + newString.split(/\r?\n/).length
+  const startLine = replacementLine - contextLines
+  const endLine = replacementLine + contextLines + newString.split(/\r?\n/).length
 
-  // Get snippet
-  const snippetLines = newFileLines.slice(startLine, endLine)
-  const snippet = snippetLines.join('\n')
-
-  return { snippet, startLine: startLine + 1 }
+  return extractSnippetLines(newFileContent, startLine, endLine)
 }
 
 export function getEditsForPatch(patch: StructuredPatchHunk[]): FileEdit[] {
