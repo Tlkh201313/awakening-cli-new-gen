@@ -238,8 +238,10 @@ function frameForStartup(
 
   for (let i = 0; i < LOGO_AWAKENED.length; i++) {
     const t = LOGO_AWAKENED.length > 1 ? i / (LOGO_AWAKENED.length - 1) : 0
-    const shineT = (sweep + i * 0.08) % 1
-    out.push(paintLine(LOGO_AWAKENED[i], GOLD_GRAD, t, shineT))
+    // Wave effect: each line offset creates diagonal sweep
+    const wave = Math.sin(sweep * Math.PI * 2 + i * 0.5) * 0.15
+    const shineT = (sweep + wave + i * 0.12) % 1
+    out.push(paintLine(LOGO_AWAKENED[i], GOLD_GRAD, t, shineT, 0.2))
   }
 
   out.push('')
@@ -290,8 +292,8 @@ function frameForStartup(
 export function printStartupScreen(modelOverride?: string): void {
   if (process.env.CI || !process.stdout.isTTY) return
 
-  const frames = 4
-  const delayMs = 20
+  const frames = 6
+  const delayMs = 25
 
   const hideCursor = '\x1b[?25l'
   const showCursor = '\x1b[?25h'
