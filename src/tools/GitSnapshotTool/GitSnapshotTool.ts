@@ -26,6 +26,7 @@ export const GitSnapshotTool = buildTool({
     return true
   },
   shouldDefer: false,
+  searchHint: 'git status diff log repository snapshot',
   async call(_input, context) {
     const cwd = getCwd()
 

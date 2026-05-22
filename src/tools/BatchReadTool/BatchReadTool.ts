@@ -45,6 +45,7 @@ export const BatchReadTool = buildTool({
     return true
   },
   shouldDefer: true,
+  searchHint: 'read multiple files parallel batch',
   async call(input, context) {
     const { file_paths, offset, limit } = input
 
