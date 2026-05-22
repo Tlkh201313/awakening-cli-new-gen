@@ -281,6 +281,10 @@ function getUsingYourToolsSection(enabledTools: Set<string>): string {
   // dedicated Glob/Grep tools, so skip guidance pointing at them.
   const embedded = hasEmbeddedSearchTools()
 
+  // Tool guidance aligned with new productivity tools (v0.12.13+):
+  // - BatchRead: parallel multi-file reads
+  // - GitSnapshot: quick repo status
+  // - TaskOutput: soft deprecated, prefer Read on task output paths
   const providedToolSubitems = [
     `To read files use ${FILE_READ_TOOL_NAME} instead of cat, head, tail, or sed. For 2+ files, use BatchRead for parallel reading`,
     `To edit files use ${FILE_EDIT_TOOL_NAME} instead of sed or awk`,
