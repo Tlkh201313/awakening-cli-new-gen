@@ -150,19 +150,28 @@ export function buildForkedMessages(
     ],
   }))
 
-  // Build a single user message: all placeholder tool_results + the per-child directive
-  // TODO(smoosh): this text sibling creates a [tool_result, text] pattern on the wire
-  // (renders as </function_results>\n\nHuman:<text>). One-off per-child construction,
-  // not a repeated teacher, so low-priority. If we ever care, use smooshIntoToolResult
-  // from src/utils/messages.ts to fold the directive into the last tool_result.content.
+  // Build a single user message: smoosh directive text into last tool_result
+  // to avoid [tool_result, text] pattern on the wire
+  const directiveText = buildChildMessage(directive)
+  
+  if (toolResultBlocks.length > 0) {
+    // Smoosh directive into last tool_result content
+    const lastBlock = toolResultBlocks[toolResultBlocks.length - 1]
+    const existingContent = lastBlock.content
+    const smooshedContent = typeof existingContent === 'string'
+      ? `${existingContent.trim()}\n\n${directiveText.trim()}`
+      : existingContent // Array content - keep as-is for now
+    
+    toolResultBlocks[toolResultBlocks.length - 1] = {
+      ...lastBlock,
+      content: smooshedContent,
+    }
+  }
+
   const toolResultMessage = createUserMessage({
-    content: [
-      ...toolResultBlocks,
-      {
-        type: 'text' as const,
-        text: buildChildMessage(directive),
-      },
-    ],
+    content: toolResultBlocks.length > 0
+      ? toolResultBlocks
+      : [{ type: 'text' as const, text: directiveText }],
   })
 
   return [fullAssistantMessage, toolResultMessage]
