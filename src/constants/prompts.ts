@@ -282,7 +282,7 @@ function getUsingYourToolsSection(enabledTools: Set<string>): string {
   const embedded = hasEmbeddedSearchTools()
 
   const providedToolSubitems = [
-    `To read files use ${FILE_READ_TOOL_NAME} instead of cat, head, tail, or sed`,
+    `To read files use ${FILE_READ_TOOL_NAME} instead of cat, head, tail, or sed. For 2+ files, use BatchRead for parallel reading`,
     `To edit files use ${FILE_EDIT_TOOL_NAME} instead of sed or awk`,
     `To create files use ${FILE_WRITE_TOOL_NAME} instead of cat with heredoc or echo redirection`,
     ...(embedded
