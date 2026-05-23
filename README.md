@@ -1,8 +1,8 @@
 # Awakened CLI
 
-**Awakened** is a fast, terminal-first coding agent built on [OpenClaude](https://github.com/Gitlawb/openclaude). One workflow for prompts, tools, MCP, agents, and streaming — with **OpenAI-compatible APIs**, Gemini, Ollama, NVIDIA NIM, GitHub Models, and 200+ providers.
+**Awakened** is a fast, terminal-first coding agent (OpenClaude fork). One workflow for prompts, tools, MCP, agents, and streaming — with **OpenAI-compatible APIs**, Gemini, Ollama, NVIDIA NIM, GitHub Models, and 200+ providers.
 
-[![PR Checks](https://github.com/Gitlawb/openclaude/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/Gitlawb/openclaude/actions/workflows/pr-checks.yml)
+**Repository:** [github.com/Tlkh201313/awakening-cli-new-gen](https://github.com/Tlkh201313/awakening-cli-new-gen)
 
 ## Why use Awakened
 
@@ -14,14 +14,53 @@
 | **Skills** | Six auto packs (Browser, Research, Marketing, Skills Vault, Graphify, Productivity) show **Reading skill …** when your task matches — toggle with `/awakened` |
 | **Providers** | `/provider` profiles, NVIDIA NIM, local Ollama, OpenAI shims, preconnect and retry tuning |
 
-## Quick start
+## Install
+
+Requires **Bun**, **Node 18+**, and **ripgrep** (`rg --version` in your PATH).
+
+### From this repo (recommended)
 
 ```bash
-npm install -g @gitlawb/openclaude
+git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git
+cd awakening-cli-new-gen
+bun install
+bun run build
+```
+
+Run without a global install:
+
+```bash
+bun run start
+# or: node dist/cli.mjs
+```
+
+Install the `openclaude` command globally (same binary Awakened uses):
+
+```bash
+bun link
 openclaude
 ```
 
-Requires **ripgrep** (`rg --version` in your PATH).
+On Windows (PowerShell), after `bun link`:
+
+```powershell
+openclaude
+```
+
+### One-line global install from GitHub
+
+```bash
+npm install -g github:Tlkh201313/awakening-cli-new-gen
+openclaude
+```
+
+> The CLI entrypoint is named **`openclaude`** in `package.json` (`bin.openclaude`). The UI and branding say **Awakened**.
+
+## Quick start
+
+```bash
+openclaude
+```
 
 Inside the app:
 
@@ -31,6 +70,8 @@ Inside the app:
 
 ### Fastest OpenAI-style setup
 
+macOS / Linux:
+
 ```bash
 export CLAUDE_CODE_USE_OPENAI=1
 export OPENAI_API_KEY="your-key"
@@ -38,11 +79,28 @@ export OPENAI_BASE_URL="https://your-endpoint/v1"
 openclaude
 ```
 
+Windows (PowerShell):
+
+```powershell
+$env:CLAUDE_CODE_USE_OPENAI = "1"
+$env:OPENAI_API_KEY = "your-key"
+$env:OPENAI_BASE_URL = "https://your-endpoint/v1"
+openclaude
+```
+
 ### Even faster startup (optional)
 
+Windows (CMD):
+
+```cmd
+set AWAKENED_FAST_STARTUP=1
+openclaude
+```
+
+macOS / Linux:
+
 ```bash
-set AWAKENED_FAST_STARTUP=1          # Windows CMD
-# export AWAKENED_FAST_STARTUP=1     # macOS/Linux
+export AWAKENED_FAST_STARTUP=1
 openclaude
 ```
 
@@ -50,13 +108,13 @@ Returning users also get a single-frame logo automatically (`numStartups > 0`).
 
 ## Benchmarks
 
-Run locally:
+From the repo root:
 
 ```bash
-bun run scripts/benchmark-awakened.ts
+bun run benchmark:awakened
 ```
 
-Measured on Windows with `bun run benchmark:awakened` (2026-05-23):
+Measured on Windows (2026-05-23):
 
 | Benchmark | Result | Notes |
 |-----------|--------|--------|
@@ -67,8 +125,17 @@ Measured on Windows with `bun run benchmark:awakened` (2026-05-23):
 
 Profile full startup checkpoints:
 
-```bash
+Windows (CMD):
+
+```cmd
 set CLAUDE_CODE_PROFILE_STARTUP=1
+openclaude
+```
+
+macOS / Linux:
+
+```bash
+export CLAUDE_CODE_PROFILE_STARTUP=1
 openclaude
 ```
 
@@ -82,7 +149,7 @@ Tune UI if needed:
 
 ## Awakened auto capabilities
 
-When your message matches, the transcript shows **Reading skill &lt;name&gt;** and injects a compact playbook (not a user slash skill):
+When your message matches, the transcript shows **Reading skill {name}** and injects a compact playbook (not a user slash skill):
 
 | Pack | Best for |
 |------|----------|
@@ -95,18 +162,19 @@ When your message matches, the transcript shows **Reading skill &lt;name&gt;** a
 
 Install upstream tools when prompted (e.g. `pip install graphifyy`, `npx antigravity-awesome-skills`).
 
-## Build from source
+## Develop
+
+Same repo — useful scripts:
 
 ```bash
-git clone https://github.com/Gitlawb/openclaude.git
-cd openclaude
-bun install
-bun run build
-bun run start
+bun run dev          # build + run
+bun run build        # production bundle → dist/cli.mjs
+bun run test         # unit tests
+bun run smoke        # build + --version check
 ```
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
 
-Security issues: report via GitHub Security Advisories on the upstream repository.
+Issues and updates: [Tlkh201313/awakening-cli-new-gen](https://github.com/Tlkh201313/awakening-cli-new-gen/issues).
