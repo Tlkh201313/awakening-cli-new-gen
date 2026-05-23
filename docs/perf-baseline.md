@@ -127,12 +127,35 @@ Based on hypothesis:
 
 ---
 
+## Phase 1 — Quick Wins (Complete)
+
+| Change | File | Savings |
+|--------|------|---------|
+| Perf mode: 4 cores or Windows (was 6+) | `awakenedPerformance.ts` | Auto-enable on more machines |
+| Logo skip in perf mode | `StartupScreen.ts` | ~200ms on return visits |
+| Ollama prefetch gated on OpenAI | `main.tsx` | Skip on cloud-only setups |
+| Windows Terminal detection | `terminal.ts` | Better UX guidance |
+| GPU/CPU clarity | `README.md` | Correct expectations |
+
+## Phase 2 — Structural (Already Exists)
+
+| Feature | Status | Evidence |
+|---------|--------|----------|
+| Lazy command loading | ✓ Done | All heavy commands use `load: () => import('./...')` |
+| Non-blocking MCP (REPL) | ✓ Done | Line 2473: "MCP never blocks REPL render OR turn 1 TTFT" |
+| Stream throttle | ✓ Optimal | 2 coalesced runs (benchmark) |
+| Ollama prefetch gate | ✓ Done | Phase 1: gated on `CLAUDE_CODE_USE_OPENAI` |
+
+**Conclusion:** Structural optimizations already baked in. Further gains require profiling data.
+
+---
+
 ## Next Steps
 
 1. **User:** Run `$env:CLAUDE_CODE_PROFILE_STARTUP = "1"; awakened` in REPL
 2. **User:** Record checkpoint deltas (especially MCP connection)
 3. **User:** Fill in interactive session checklist times
-4. **Agent:** Proceed to Phase 1 (quick wins) based on evidence
+4. **Agent:** Phase 3+ only if profiling reveals specific bottleneck
 
 ---
 
