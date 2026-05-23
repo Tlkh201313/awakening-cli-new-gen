@@ -18,6 +18,10 @@ coverage/
 agent.log
 plan/
 tmp/
-docs/superpowers/
+docs/superpowers/*
+!docs/superpowers/plans/
+docs/superpowers/plans/*
+!docs/superpowers/plans/README.md
+!docs/superpowers/plans/*.md
 .cursor/
 *.backup
