@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "mcp-obsidian": {
+      "type": "http",
+      "url": "http://localhost:27123",
+      "headers": {
+        "Authorization": "Bearer ${OBSIDIAN_API_KEY}"
+      }
+    }
+  }
+}
