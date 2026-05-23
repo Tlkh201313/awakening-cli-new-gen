@@ -129,4 +129,6 @@ export const INTENTIONALLY_BUNDLED: string[] = [
   'vscode-languageserver-protocol',
   // File watching
   'chokidar',
+  // Browser automation
+  '@runablehq/mini-browser',
 ]
