@@ -89,7 +89,7 @@ import { initializeAnalyticsGates } from 'src/services/analytics/sink.js';
 import { getOriginalCwd, setAdditionalDirectoriesForClaudeMd, setIsRemoteMode, setMainLoopModelOverride, setMainThreadAgentType, setTeleportedSessionInfo } from './bootstrap/state.js';
 import { filterCommandsForRemoteMode, getCommands } from './commands.js';
 import type { StatsStore } from './context/stats.js';
-import { launchAssistantInstallWizard, launchAssistantSessionChooser, launchInvalidSettingsDialog, launchResumeChooser, launchSnapshotUpdateDialog, launchTeleportRepoMismatchDialog, launchTeleportResumeWrapper } from './dialogLaunchers.js';
+import { launchAssistantInstallWizard, launchAssistantSessionChooser, launchResumeChooser, launchSnapshotUpdateDialog, launchTeleportRepoMismatchDialog, launchTeleportResumeWrapper } from './dialogLaunchers.js';
 import { SHOW_CURSOR } from './ink/termio/dec.js';
 import { exitWithError, exitWithMessage, getRenderContext, renderAndRun, showSetupScreens } from './interactiveHelpers.js';
 import { initBuiltinPlugins } from './plugins/bundled/index.js';
@@ -109,6 +109,7 @@ import { getContextWindowForModel } from './utils/context.js';
 import { loadConversationForResume } from './utils/conversationRecovery.js';
 import { buildDeepLinkBanner } from './utils/deepLink/banner.js';
 import { createCombinedAbortSignal } from './utils/combinedAbortSignal.js';
+import { applyAwakenedRuntimeBoost, isAwakenedPerformanceMode } from './utils/awakenedPerformance.js';
 import { hasNodeOption, isBareMode, isEnvTruthy, isInProtectedNamespace } from './utils/envUtils.js';
 import { refreshExampleCommands } from './utils/exampleCommands.js';
 import type { FpsMetrics } from './utils/fpsTracker.js';
@@ -793,7 +794,7 @@ export async function main() {
       // Headless (-p) mode is not supported with SSH in v1 — reject early
       // so the flag doesn't silently cause local execution.
       if (rest.includes('-p') || rest.includes('--print')) {
-        process.stderr.write('Error: headless (-p/--print) mode is not supported with openclaude ssh\n');
+        process.stderr.write('Error: headless (-p/--print) mode is not supported with awakened ssh\n');
         gracefulShutdownSync(1);
         return;
       }
@@ -967,7 +968,7 @@ async function run(): Promise<CommanderCommand> {
     }
     profileCheckpoint('preAction_after_settings_sync');
   });
-  program.name('openclaude').description(`OpenClaude - starts an interactive session by default, use -p/--print for non-interactive output`).argument('[prompt]', 'Your prompt', String)
+  program.name('awakened').description(`Awakened CLI - starts an interactive session by default, use -p/--print for non-interactive output`).argument('[prompt]', 'Your prompt', String)
   // Subcommands inherit helpOption via commander's copyInheritedSettings —
   // setting it once here covers mcp, plugin, auth, and all other subcommands.
   .helpOption('-h, --help', 'Display help for command').option('-d, --debug [filter]', 'Enable debug mode with optional category filtering (e.g., "api,hooks" or "!1p,!file")', (_value: string | true) => {
@@ -1007,6 +1008,7 @@ async function run(): Promise<CommanderCommand> {
   // --plugin-dir takes exactly one arg; repeat the flag for multiple dirs.
   .option('--plugin-dir <path>', 'Load plugins from a directory for this session only (repeatable: --plugin-dir A --plugin-dir B)', (val: string, prev: string[]) => [...prev, val], [] as string[]).option('--disable-slash-commands', 'Disable all skills', () => true).option('--chrome', 'Enable Claude in Chrome integration').option('--no-chrome', 'Disable Claude in Chrome integration').option('--file <specs...>', 'File resources to download at startup. Format: file_id:relative_path (e.g., --file file_abc:doc.txt file_def:img.png)').action(async (prompt, options) => {
     profileCheckpoint('action_handler_start');
+    applyAwakenedRuntimeBoost();
 
     // --bare = one-switch minimal mode. Sets SIMPLE so all the existing
     // gates fire (CLAUDE.md, skills, hooks inside executeHooks, agent
@@ -1021,7 +1023,7 @@ async function run(): Promise<CommanderCommand> {
     if (prompt === 'code') {
       logEvent('tengu_code_prompt_ignored', {});
       // biome-ignore lint/suspicious/noConsole:: intentional console output
-      console.warn(chalk.yellow('Tip: You can launch OpenClaude with just `openclaude`'));
+      console.warn(chalk.yellow('Tip: You can launch Awakened with just `awakened`'));
       prompt = undefined;
     }
 
@@ -1929,6 +1931,10 @@ async function run(): Promise<CommanderCommand> {
     const setupPromise = setup(preSetupCwd, permissionMode, allowDangerouslySkipPermissions, worktreeEnabled, worktreeName, tmuxEnabled, sessionId ? validateUuid(sessionId) : undefined, worktreePRNumber, messagingSocketPath);
     const commandsPromise = worktreeEnabled ? null : getCommands(preSetupCwd);
     const agentDefsPromise = worktreeEnabled ? null : getAgentDefinitionsWithOverrides(preSetupCwd);
+    if (!isNonInteractiveSession) {
+      preloadReplModules();
+      void import('./ink.js');
+    }
     // Suppress transient unhandledRejection if these reject during the
     // ~28ms setupPromise await before Promise.all joins them below.
     commandsPromise?.catch(() => {});
@@ -2031,9 +2037,6 @@ async function run(): Promise<CommanderCommand> {
     const [commands, agentDefinitionsResult] = await Promise.all([commandsPromise ?? getCommands(currentCwd), agentDefsPromise ?? getAgentDefinitionsWithOverrides(currentCwd)]);
     logForDebugging(`[STARTUP] Commands and agents loaded in ${Date.now() - commandsStart}ms`);
     profileCheckpoint('action_commands_loaded');
-    if (!isNonInteractiveSession) {
-      preloadReplModules();
-    }
 
     // Parse CLI agents if provided via --agents flag
     let cliAgents: typeof agentDefinitionsResult.activeAgents = [];
@@ -2218,6 +2221,7 @@ async function run(): Promise<CommanderCommand> {
     let root!: Root;
     let getFpsMetrics!: () => FpsMetrics | undefined;
     let stats!: StatsStore;
+    let orgValidationPromise: ReturnType<typeof validateForceLoginOrg> | undefined;
 
     // Show setup screens after commands are loaded
     if (!isNonInteractiveSession) {
@@ -2299,10 +2303,7 @@ async function run(): Promise<CommanderCommand> {
         });
       }
 
-      const orgValidation = await validateForceLoginOrg();
-      if (!orgValidation.valid) {
-        await exitWithError(root, orgValidation.message);
-      }
+      orgValidationPromise = validateForceLoginOrg();
     }
 
     // If gracefulShutdown was initiated (e.g., user rejected trust dialog),
@@ -2320,32 +2321,18 @@ async function run(): Promise<CommanderCommand> {
     // Must be after inline plugins are set (if any) so --plugin-dir LSP servers are included.
     initializeLspServerManager();
 
-    if (!isNonInteractiveSession) {
-      const {
-        errors
-      } = getSettingsWithErrors();
-      const nonMcpErrors = errors.filter(e => !e.mcpErrorMetadata);
-      if (
-        nonMcpErrors.length > 0 &&
-        !isEnvTruthy(process.env.CLAUDE_CODE_USE_OPENAI) &&
-        !isEnvTruthy(process.env.CLAUDE_CODE_USE_GITHUB)
-      ) {
-        await launchInvalidSettingsDialog(root, {
-          settingsErrors: nonMcpErrors,
-          onExit: () => gracefulShutdownSync(1)
-        });
-      }
-    }
-
     // Check quota status, fast mode, passes eligibility, and bootstrap data
     // --bare / SIMPLE: skip — these are cache-warms for the REPL's
     // first-turn responsiveness (quota, passes, fastMode, bootstrap data). Fast
     // mode doesn't apply to the Agent SDK anyway (see getFastModeUnavailableReason).
     const bgRefreshThrottleMs = getFeatureValue_CACHED_MAY_BE_STALE('tengu_cicada_nap_ms', 0);
     const lastPrefetched = getGlobalConfig().startupPrefetchedAt ?? 0;
-    const skipStartupPrefetches = isBareMode() || bgRefreshThrottleMs > 0 && Date.now() - lastPrefetched < bgRefreshThrottleMs;
-    // Always prefetch Ollama models (not gated by throttle — local server, fast & cheap)
-    prefetchOllamaModels();
+    const skipStartupPrefetches = isBareMode() || !isAwakenedPerformanceMode() && bgRefreshThrottleMs > 0 && Date.now() - lastPrefetched < bgRefreshThrottleMs;
+    // Prefetch Ollama models only if using OpenAI shim (potential Ollama route)
+    // Skip on cloud-only setups (Anthropic, Gemini, etc.) to save startup time
+    if (process.env.CLAUDE_CODE_USE_OPENAI) {
+      prefetchOllamaModels();
+    }
     void refreshStartupDiscoveryForActiveRoute();
 
     if (!skipStartupPrefetches) {
@@ -3140,6 +3127,12 @@ async function run(): Promise<CommanderCommand> {
       cliAgents,
       initialState
     };
+    if (orgValidationPromise) {
+      const orgValidation = await orgValidationPromise;
+      if (!orgValidation.valid) {
+        await exitWithError(root, orgValidation.message);
+      }
+    }
     if (options.continue) {
       // Continue the most recent conversation directly
       let resumeSucceeded = false;

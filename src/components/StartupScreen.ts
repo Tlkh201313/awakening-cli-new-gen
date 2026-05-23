@@ -14,6 +14,7 @@ import { getLocalOpenAICompatibleProviderLabel } from '../utils/providerDiscover
 import { getSettings_DEPRECATED } from '../utils/settings/settings.js'
 import { parseUserSpecifiedModel } from '../utils/model/model.js'
 import { DEFAULT_GEMINI_MODEL } from '../utils/providerProfile.js'
+import { isAwakenedPerformanceMode } from '../utils/awakenedPerformance.js'
 import { getGlobalConfig } from '../utils/config.js'
 import { isEnvTruthy } from '../utils/envUtils.js'
 import { ANSI_DIM, ANSI_RESET, ansiRgb } from '../utils/terminalAnsi.js'
@@ -294,7 +295,8 @@ function isFastStartupScreen(): boolean {
   return (
     isEnvTruthy(process.env.AWAKENED_FAST_STARTUP) ||
     isEnvTruthy(process.env.CLAUDE_CODE_FAST_STARTUP) ||
-    (getGlobalConfig().numStartups ?? 0) > 0
+    (getGlobalConfig().numStartups ?? 0) > 0 ||
+    isAwakenedPerformanceMode() // Skip animation when perf mode active
   )
 }
 

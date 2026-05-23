@@ -7,11 +7,26 @@ import type { Diff } from './frame.js'
 import { cursorMove, cursorTo, eraseLines } from './termio/csi.js'
 import { BSU, ESU, HIDE_CURSOR, SHOW_CURSOR } from './termio/dec.js'
 import { link } from './termio/osc.js'
+import { isAwakenedPerformanceMode } from '../utils/awakenedPerformance.js'
 import { FRAME_INTERVAL_MS } from './constants.js'
 
 export type Progress = {
   state: 'running' | 'completed' | 'error' | 'indeterminate'
   percentage?: number
+}
+
+/**
+ * Detect if running in Windows Terminal (recommended for Awakened on Windows).
+ */
+export function isWindowsTerminal(): boolean {
+  return !!process.env.WT_SESSION
+}
+
+/**
+ * Detect if running in legacy Windows conhost (not recommended — causes Ink jank).
+ */
+export function isLegacyConhost(): boolean {
+  return process.platform === 'win32' && !isWindowsTerminal() && !process.env.ConEmuANSI
 }
 
 /**

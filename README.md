@@ -9,7 +9,7 @@
 | Area | What you get |
 |------|----------------|
 | **Startup** | Returning sessions skip the logo animation; MCP config and REPL modules load in parallel so the input bar appears sooner |
-| **UI** | Stream updates are coalesced (~48ms on Windows) so the terminal does not freeze on every token or tool-argument chunk |
+| **UI** | Stream updates are coalesced (~24ms on Windows) so the terminal does not freeze on every token or tool-argument chunk |
 | **Context** | **Awakened Graphify** auto-loads guidance for [graphify](https://github.com/safishamsi/graphify) — build a knowledge graph once, query with `--budget` instead of re-reading the whole repo (up to **~71×** fewer tokens on large corpora, per upstream benchmarks) |
 | **Skills** | Six auto packs (Browser, Research, Marketing, Skills Vault, Graphify, Productivity) show **Reading skill …** when your task matches — toggle with `/awakened` |
 | **Providers** | `/provider` profiles, NVIDIA NIM, local Ollama, OpenAI shims, preconnect and retry tuning |
@@ -34,32 +34,32 @@ bun run start
 # or: node dist/cli.mjs
 ```
 
-Install the `openclaude` command globally (same binary Awakened uses):
+Install the `awakened` command globally (same binary Awakened uses):
 
 ```bash
 bun link
-openclaude
+awakened
 ```
 
 On Windows (PowerShell), after `bun link`:
 
 ```powershell
-openclaude
+awakened
 ```
 
 ### One-line global install from GitHub
 
 ```bash
 npm install -g github:Tlkh201313/awakening-cli-new-gen
-openclaude
+awakened
 ```
 
-> The CLI entrypoint is named **`openclaude`** in `package.json` (`bin.openclaude`). The UI and branding say **Awakened**.
+> Primary command: **`awakened`** (`bin.awakened` in `package.json`). **`openclaude`** is kept as an alias to the same binary for compatibility.
 
 ## Quick start
 
 ```bash
-openclaude
+awakened
 ```
 
 Inside the app:
@@ -67,6 +67,7 @@ Inside the app:
 - `/provider` — set up API keys and saved profiles  
 - `/awakened` — enable or disable auto skill packs (Space toggle, Enter save)  
 - `/help` — commands and shortcuts  
+- `/hardware` — live CPU, RAM, and GPU panel (Esc to close)  
 
 ### Fastest OpenAI-style setup
 
@@ -76,7 +77,7 @@ macOS / Linux:
 export CLAUDE_CODE_USE_OPENAI=1
 export OPENAI_API_KEY="your-key"
 export OPENAI_BASE_URL="https://your-endpoint/v1"
-openclaude
+awakened
 ```
 
 Windows (PowerShell):
@@ -85,8 +86,35 @@ Windows (PowerShell):
 $env:CLAUDE_CODE_USE_OPENAI = "1"
 $env:OPENAI_API_KEY = "your-key"
 $env:OPENAI_BASE_URL = "https://your-endpoint/v1"
-openclaude
+awakened
 ```
+
+### Maximum speed
+
+**Two separate areas:**
+
+#### 1. UI & Startup (CPU/I/O — not GPU)
+
+On **4+ CPU cores** or **Windows**, performance mode auto-enables. Force it:
+
+```powershell
+$env:AWAKENED_PERFORMANCE = "1"
+awakened
+```
+
+**What it does:**
+- Widens libuv I/O thread pool (faster file ops, subprocess spawns)
+- 12ms stream flush, 16ms UI frames (less Ink jank on Windows)
+- Skips logo animation on return visits
+
+**Windows users:** Use **Windows Terminal** (not legacy conhost) for best streaming performance.
+
+#### 2. Model Inference (Cloud vs Local GPU)
+
+- **Cloud APIs** (Anthropic, OpenAI, etc.): GPU in your machine **does not** accelerate tokens. Speed is API-bound (region, model size, context length).
+- **Local Ollama/vLLM**: GPU matters. Awakened stays HTTP client; GPU work lives in Ollama daemon. Use `/hardware` to monitor GPU utilization (system-wide, not CLI-specific).
+
+This widens the libuv thread pool, uses faster stream/Ink timing (12–16ms), skips throttled startup prefetches, and shows the fast logo. Set `AWAKENED_ECO=1` to disable auto performance mode.
 
 ### Even faster startup (optional)
 
@@ -94,14 +122,14 @@ Windows (CMD):
 
 ```cmd
 set AWAKENED_FAST_STARTUP=1
-openclaude
+awakened
 ```
 
 macOS / Linux:
 
 ```bash
 export AWAKENED_FAST_STARTUP=1
-openclaude
+awakened
 ```
 
 Returning users also get a single-frame logo automatically (`numStartups > 0`).
@@ -120,7 +148,7 @@ Measured on Windows (2026-05-23):
 |-----------|--------|--------|
 | Logo animation (first launch) | **~210ms** | 6-frame shimmer before Ink |
 | Logo fast path (returning / `AWAKENED_FAST_STARTUP`) | **under 1ms** | Single frame, no sleeps |
-| Stream UI coalescing | **2 updates** for 50 scheduled token deltas | Default 48ms flush on Windows |
+| Stream UI coalescing | **2 updates** for 50 scheduled token deltas | Default 24ms flush on Windows |
 | Graphify corpus query (upstream) | **~71.5×** token reduction | Mixed code + papers + images; see [graphify README](https://github.com/safishamsi/graphify) |
 
 Profile full startup checkpoints:
@@ -129,23 +157,25 @@ Windows (CMD):
 
 ```cmd
 set CLAUDE_CODE_PROFILE_STARTUP=1
-openclaude
+awakened
 ```
 
 macOS / Linux:
 
 ```bash
 export CLAUDE_CODE_PROFILE_STARTUP=1
-openclaude
+awakened
 ```
 
 Tune UI if needed:
 
 | Variable | Purpose |
 |----------|---------|
-| `CLAUDE_CODE_STREAM_UI_FLUSH_MS` | Stream coalesce interval (8–200ms, default 48 on Windows) |
+| `CLAUDE_CODE_STREAM_UI_FLUSH_MS` | Stream coalesce interval (8–200ms, default 16 on Windows) |
+| `AWAKENED_PERFORMANCE` | Snappier UI + parallel startup work (see above) |
 | `CLAUDE_CODE_UI_FRAME_MS` | Ink frame interval (8–100ms) |
 | `AWAKENED_FAST_STARTUP` | Skip logo animation |
+| `AWAKENED_PERFORMANCE` | Snappier UI + parallel startup work (see above) |
 
 ## Awakened auto capabilities
 
