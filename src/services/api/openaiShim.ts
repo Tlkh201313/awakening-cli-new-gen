@@ -36,7 +36,12 @@ import { resolveGeminiCredential } from '../../utils/geminiAuth.js'
 import { hydrateGeminiAccessTokenFromSecureStorage } from '../../utils/geminiCredentials.js'
 import { hydrateGithubModelsTokenFromSecureStorage } from '../../utils/githubModelsCredentials.js'
 import { resolveOpenAIShimRuntimeContext } from '../../integrations/runtimeMetadata.js'
-import { resolveRouteCredentialValue } from '../../integrations/routeMetadata.js'
+import {
+  getRouteCredentialEnvVars,
+  resolveActiveRouteIdFromEnv,
+  resolveRouteCredentialValue,
+  resolveRouteIdFromBaseUrl,
+} from '../../integrations/routeMetadata.js'
 import {
   createThinkTagFilter,
   stripThinkTags,
@@ -56,7 +61,7 @@ import { buildAnthropicUsageFromRawUsage } from './cacheMetrics.js'
 import { compressToolHistory } from './compressToolHistory.js'
 import { fetchWithProxyRetry } from './fetchWithProxyRetry.js'
 import {
-  getLocalFastPathConfig,
+  getShimFastPathConfig,
   getLocalProviderRetryBaseUrls,
   getGithubEndpointType,
   isLocalProviderUrl,
@@ -469,11 +474,38 @@ function hydrateOpenAIShimCompatibilityEnv(
     processEnv.OPENAI_MODEL = processEnv.BANKR_MODEL
   }
 
+  const baseUrl = processEnv.OPENAI_BASE_URL ?? processEnv.OPENAI_API_BASE
+  const routeId =
+    resolveRouteIdFromBaseUrl(baseUrl) ??
+    resolveActiveRouteIdFromEnv(processEnv)
   const routeCredential = resolveRouteCredentialValue({
     processEnv,
-    baseUrl: processEnv.OPENAI_BASE_URL ?? processEnv.OPENAI_API_BASE,
+    baseUrl,
+    routeId: routeId ?? undefined,
   })
-  if (routeCredential && !processEnv.OPENAI_API_KEY) {
+  if (!routeCredential) {
+    return
+  }
+
+  const dedicatedVars = routeId
+    ? getRouteCredentialEnvVars(routeId).filter(name => name !== 'OPENAI_API_KEY')
+    : []
+  let dedicatedCredential: string | undefined
+  for (const envVar of dedicatedVars) {
+    const value = processEnv[envVar]?.trim()
+    if (value) {
+      dedicatedCredential = value
+      break
+    }
+  }
+
+  const currentOpenAI = processEnv.OPENAI_API_KEY?.trim()
+  if (dedicatedCredential && dedicatedCredential !== currentOpenAI) {
+    processEnv.OPENAI_API_KEY = dedicatedCredential
+    return
+  }
+
+  if (!currentOpenAI) {
     processEnv.OPENAI_API_KEY = routeCredential
   }
 }
@@ -1629,7 +1661,7 @@ class OpenAIShimMessages {
     // the cloud-side caching/strict-validation behaviours that several of our
     // pre-send transforms target. Computing the fast-path config once here
     // lets us skip those transforms uniformly. See providerConfig.ts.
-    const fastPath: LocalFastPathConfig = getLocalFastPathConfig(request.baseUrl)
+    const fastPath: LocalFastPathConfig = getShimFastPathConfig(request.baseUrl)
 
     const rawMessages = params.messages as Array<{
       role: string
@@ -2064,6 +2096,7 @@ class OpenAIShimMessages {
           status,
           body: errorBody,
           url: requestUrl,
+          model: request.resolvedModel,
         })
       const failureWithUrl = { ...failure, requestUrl: failure.requestUrl ?? requestUrl }
       const redactedUrl = redactUrlForDiagnostics(requestUrl)
@@ -2191,6 +2224,8 @@ class OpenAIShimMessages {
           const responsesFailure = classifyOpenAIHttpFailure({
             status: responsesResponse.status,
             body: responsesErrorBody,
+            url: responsesUrl,
+            model: request.resolvedModel,
           })
           let responsesErrorResponse: object | undefined
           try { responsesErrorResponse = JSON.parse(responsesErrorBody) } catch { /* raw text */ }
@@ -2209,6 +2244,8 @@ class OpenAIShimMessages {
       const failure = classifyOpenAIHttpFailure({
         status: response.status,
         body: errorBody,
+        url: requestUrl,
+        model: request.resolvedModel,
       })
 
       if (

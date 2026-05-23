@@ -24,10 +24,26 @@ const SUPPORTS_TERMINAL_VT_MODE =
     ? satisfies(process.versions.bun, '>=1.2.23')
     : satisfies(process.versions.node, '>=22.17.0 <23.0.0 || >=24.2.0'))
 
-// Platform-specific mode cycle shortcut:
-// - Windows without VT mode: meta+m (shift+tab doesn't work reliably)
-// - Other platforms: shift+tab
-const MODE_CYCLE_KEY = SUPPORTS_TERMINAL_VT_MODE ? 'shift+tab' : 'meta+m'
+/** Chat bindings for cycling permission modes (Shift+Tab carousel). */
+export function getModeCycleChatBindings(): Record<string, 'chat:cycleMode'> {
+  // Windows: always register Alt+M — Shift+Tab is often captured by the
+  // terminal (previous tab) even when VT mode is enabled.
+  if (getPlatform() === 'windows') {
+    return {
+      'meta+m': 'chat:cycleMode',
+      'shift+tab': 'chat:cycleMode',
+    }
+  }
+  return { 'shift+tab': 'chat:cycleMode' }
+}
+
+/** Fallback shortcut hint when keybinding display cannot be resolved. */
+export function getModeCycleShortcutFallback(): string {
+  if (getPlatform() === 'windows') {
+    return SUPPORTS_TERMINAL_VT_MODE ? 'shift+tab or alt+m' : 'alt+m'
+  }
+  return 'shift+tab'
+}
 
 export const DEFAULT_BINDINGS: KeybindingBlock[] = [
   {
@@ -66,7 +82,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       escape: 'chat:cancel',
       // ctrl+x chord prefix avoids shadowing readline editing keys (ctrl+a/b/e/f/...).
       'ctrl+x ctrl+k': 'chat:killAgents',
-      [MODE_CYCLE_KEY]: 'chat:cycleMode',
+      ...getModeCycleChatBindings(),
       'meta+p': 'chat:modelPicker',
       'meta+o': 'chat:fastMode',
       'meta+t': 'chat:thinkingToggle',

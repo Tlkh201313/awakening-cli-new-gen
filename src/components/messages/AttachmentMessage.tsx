@@ -210,6 +210,10 @@ export function AttachmentMessage({
           from <Text bold>{attachment.displayPath}</Text>
         </Line>;
       }
+    case 'reading_skill':
+      return <Line>
+          Reading skill <Text bold>{attachment.skillName}</Text>
+        </Line>;
     case 'skill_listing':
       {
         if (attachment.isInitial) {

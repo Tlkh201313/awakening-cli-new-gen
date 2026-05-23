@@ -1624,6 +1624,60 @@ test('uses NVIDIA_API_KEY for NVIDIA NIM requests without OPENAI_API_KEY', async
   expect(capturedAuthorization).toBe('Bearer nvidia-live-key')
 })
 
+test('prefers NVIDIA_API_KEY over stale OPENAI_API_KEY on NVIDIA NIM', async () => {
+  let capturedAuthorization: string | null = null
+
+  process.env.CLAUDE_CODE_USE_OPENAI = '1'
+  process.env.NVIDIA_NIM = '1'
+  process.env.OPENAI_BASE_URL = 'https://integrate.api.nvidia.com/v1'
+  process.env.OPENAI_MODEL = 'nvidia/llama-3.1-nemotron-70b-instruct'
+  process.env.NVIDIA_API_KEY = 'nvidia-live-key'
+  process.env.OPENAI_API_KEY = 'stale-opengateway-key'
+
+  globalThis.fetch = (async (_input, init) => {
+    const headers = init?.headers as Record<string, string> | undefined
+    capturedAuthorization =
+      headers?.Authorization ?? headers?.authorization ?? null
+
+    return new Response(
+      JSON.stringify({
+        id: 'chatcmpl-nvidia-stale',
+        model: 'nvidia/llama-3.1-nemotron-70b-instruct',
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'ok',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+        usage: {
+          prompt_tokens: 3,
+          completion_tokens: 1,
+          total_tokens: 4,
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    )
+  }) as FetchType
+
+  const client = createOpenAIShimClient({}) as OpenAIShimClient
+
+  await client.beta.messages.create({
+    model: 'nvidia/llama-3.1-nemotron-70b-instruct',
+    messages: [{ role: 'user', content: 'hello' }],
+    max_tokens: 32,
+    stream: false,
+  })
+
+  expect(capturedAuthorization).toBe('Bearer nvidia-live-key')
+})
+
 test('does not use stale NVIDIA_API_KEY for non-NVIDIA OpenAI-compatible routes', async () => {
   let capturedAuthorization: string | null = null
 

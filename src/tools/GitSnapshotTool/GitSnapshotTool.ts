@@ -12,7 +12,9 @@ type Input = z.infer<ReturnType<typeof inputSchema>>
 
 export const GitSnapshotTool = buildTool({
   name: GIT_SNAPSHOT_TOOL_NAME,
-  inputSchema,
+  get inputSchema(): ReturnType<typeof inputSchema> {
+    return inputSchema()
+  },
   async description() {
     return 'Get git repository status snapshot (status, diff stats, last commit)'
   },

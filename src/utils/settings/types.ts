@@ -659,6 +659,19 @@ export const SettingsSchema = lazySchema(() =>
         .describe(
           'Preferred language for Claude responses and voice dictation (e.g., "japanese", "spanish")',
         ),
+      awakenedCapabilities: z
+        .object({
+          disabled: z
+            .array(z.string())
+            .optional()
+            .describe(
+              'Awakened capability ids to disable (e.g. awakened-browser). Omitted ids stay enabled.',
+            ),
+        })
+        .optional()
+        .describe(
+          'Auto-triggered Awakened capability packs (/awakened). All enabled by default.',
+        ),
       skipWebFetchPreflight: z
         .boolean()
         .optional()

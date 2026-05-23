@@ -1,45 +1,64 @@
 /**
- * Preconnect to the Anthropic API to overlap TCP+TLS handshake with startup.
+ * Preconnect to provider APIs to overlap TCP+TLS handshake with startup.
  *
  * The TCP+TLS handshake is ~100-200ms that normally blocks inside the first
- * API call. Kicking a fire-and-forget fetch during init lets the handshake
- * happen in parallel with action-handler work (~100ms of setup/commands/mcp
- * before the API request in -p mode; unbounded "user is typing" window in
- * interactive mode).
+ * API call. Kicking a fire-and-forget fetch during init / profile apply lets
+ * the handshake happen in parallel with setup, MCP, and the first keystroke.
  *
  * Bun's fetch shares a keep-alive connection pool globally, so the real API
  * request reuses the warmed connection.
  *
  * Called from init.ts AFTER applyExtraCACertsFromConfig() + configureGlobalAgents()
- * so settings.json env vars are applied and the TLS cert store is finalized.
- * The early cli.tsx call site was removed — it ran before settings.json loaded,
- * so ANTHROPIC_BASE_URL/proxy/mTLS in settings would be invisible and preconnect
- * would warm the wrong pool (or worse, lock BoringSSL's cert store before
- * NODE_EXTRA_CA_CERTS was applied).
+ * and again after applyProviderProfileToProcessEnv() when a saved profile sets
+ * OPENAI_BASE_URL (init may run before profile env is applied).
  *
- * Skipped when:
- * - proxy/mTLS/unix socket configured (preconnect would use wrong transport —
- *   the SDK passes a custom dispatcher/agent that doesn't share the global pool)
- * - Bedrock/Vertex/Foundry (different endpoints, different auth)
+ * Skipped when proxy/mTLS/unix is configured (custom dispatcher won't reuse pool).
  */
 
 import { getOauthConfig } from '../constants/oauth.js'
+import { isLocalProviderUrl } from '../services/api/providerConfig.js'
 import { createCombinedAbortSignal } from './combinedAbortSignal.js'
 import { isEnvTruthy } from './envUtils.js'
 import { getAPIProvider } from './model/providers.js'
 
-let fired = false
+let lastAnthropicPreconnectTarget: string | undefined
+let lastOpenAIPreconnectTarget: string | undefined
+
+/** @internal Test-only reset */
+export function resetApiPreconnectStateForTests(): void {
+  lastAnthropicPreconnectTarget = undefined
+  lastOpenAIPreconnectTarget = undefined
+}
+
+function shouldSkipTransportPreconnect(): boolean {
+  return Boolean(
+    process.env.HTTPS_PROXY ||
+      process.env.https_proxy ||
+      process.env.HTTP_PROXY ||
+      process.env.http_proxy ||
+      process.env.ANTHROPIC_UNIX_SOCKET ||
+      process.env.CLAUDE_CODE_CLIENT_CERT ||
+      process.env.CLAUDE_CODE_CLIENT_KEY,
+  )
+}
+
+function preconnectBaseUrl(baseUrl: string): void {
+  const normalized = baseUrl.replace(/\/+$/, '')
+  const { signal, cleanup } = createCombinedAbortSignal(undefined, {
+    timeoutMs: 5_000,
+  })
+  // HEAD: no body; connection enters keep-alive pool as soon as headers arrive.
+  // eslint-disable-next-line eslint-plugin-n/no-unsupported-features/node-builtins
+  void fetch(normalized, { method: 'HEAD', signal })
+    .catch(() => {})
+    .finally(cleanup)
+}
 
 export function preconnectAnthropicApi(): void {
-  if (fired) return
-  fired = true
-
-  // Third-party providers should not warm a connection to Anthropic.
   if (getAPIProvider() !== 'firstParty') {
     return
   }
 
-  // Skip if using a cloud provider — different endpoint + auth
   if (
     isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
@@ -47,37 +66,38 @@ export function preconnectAnthropicApi(): void {
   ) {
     return
   }
-  // Skip if proxy/mTLS/unix — SDK's custom dispatcher won't reuse this pool
-  if (
-    process.env.HTTPS_PROXY ||
-    process.env.https_proxy ||
-    process.env.HTTP_PROXY ||
-    process.env.http_proxy ||
-    process.env.ANTHROPIC_UNIX_SOCKET ||
-    process.env.CLAUDE_CODE_CLIENT_CERT ||
-    process.env.CLAUDE_CODE_CLIENT_KEY
-  ) {
+  if (shouldSkipTransportPreconnect()) {
     return
   }
 
-  // Use configured base URL (staging, local, or custom gateway). Covers
-  // ANTHROPIC_BASE_URL env + USE_STAGING_OAUTH + USE_LOCAL_OAUTH in one lookup.
-  // NODE_EXTRA_CA_CERTS no longer a skip — init.ts applied it before this fires.
-  const baseUrl =
+  const target = (
     process.env.ANTHROPIC_BASE_URL || getOauthConfig().BASE_API_URL
+  ).replace(/\/+$/, '')
+  if (lastAnthropicPreconnectTarget === target) {
+    return
+  }
+  lastAnthropicPreconnectTarget = target
+  preconnectBaseUrl(target)
+}
 
-  // Fire and forget. HEAD means no response body — the connection is eligible
-  // for keep-alive pool reuse immediately after headers arrive. 10s timeout
-  // so a slow network doesn't hang the process; abort is fine since the real
-  // request will handshake fresh if needed.
-  const { signal, cleanup } = createCombinedAbortSignal(undefined, {
-    timeoutMs: 10_000,
-  })
-  // eslint-disable-next-line eslint-plugin-n/no-unsupported-features/node-builtins
-  void fetch(baseUrl, {
-    method: 'HEAD',
-    signal,
-  })
-    .catch(() => {})
-    .finally(cleanup)
+/** Warm TCP+TLS to the active OpenAI-compatible gateway (Opengateway, OpenRouter, etc.). */
+export function preconnectOpenAICompatibleApi(): void {
+  if (!isEnvTruthy(process.env.CLAUDE_CODE_USE_OPENAI)) {
+    return
+  }
+
+  const baseUrl = process.env.OPENAI_BASE_URL?.trim()
+  if (!baseUrl || isLocalProviderUrl(baseUrl)) {
+    return
+  }
+  if (shouldSkipTransportPreconnect()) {
+    return
+  }
+
+  const target = baseUrl.replace(/\/+$/, '')
+  if (lastOpenAIPreconnectTarget === target) {
+    return
+  }
+  lastOpenAIPreconnectTarget = target
+  preconnectBaseUrl(target)
 }

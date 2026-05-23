@@ -138,7 +138,13 @@ export function modelSupportsThinking(model: string): boolean {
   ) {
     return true
   }
-  if (provider === 'openai') {
+  if (
+    provider === 'openai' ||
+    provider === 'nvidia-nim' ||
+    provider === 'minimax' ||
+    provider === 'xiaomi-mimo' ||
+    provider === 'xai'
+  ) {
     const descriptorSupportsThinking = routeCatalogSupportsThinking(model)
     if (descriptorSupportsThinking !== undefined) {
       return descriptorSupportsThinking

@@ -22,6 +22,7 @@ import {
 } from 'src/services/analytics/index.js'
 import { sanitizeToolNameForAnalytics } from 'src/services/analytics/metadata.js'
 import type { AgentId } from 'src/types/ids.js'
+import { formatReadingSkillMetadata } from '../capabilities/formatReadingSkill.js'
 import { companionIntroText } from '../buddy/prompt.js'
 import { NO_CONTENT_MESSAGE } from '../constants/messages.js'
 import { OUTPUT_STYLE_CONFIG } from '../constants/outputStyles.js'
@@ -84,6 +85,13 @@ import {
 } from './attachments.js'
 import { quote } from './bash/shellQuote.js'
 import { formatNumber, formatTokens } from './format.js'
+import {
+  flushStreamUiThrottleState,
+  resetStreamUiThrottleState,
+  scheduleStreamingTextUiUpdate,
+  scheduleStreamingThinkingUiUpdate,
+  scheduleStreamingToolInputUiUpdate,
+} from './streamUiThrottle.js'
 import { getPewterLedgerVariant } from './planModeV2.js'
 import { jsonStringify } from './slowOperations.js'
 
@@ -2930,6 +2938,12 @@ export type StreamingThinking = {
   streamingEndedAt?: number
 }
 
+/** Index of the in-flight thinking block; used to ignore unrelated content_block_stop. */
+let activeStreamingThinkingBlockIndex: number | null = null
+let pendingStreamingTextDelta = ''
+let pendingStreamingThinkingDelta = ''
+let pendingStreamingToolInputByIndex = new Map<number, string>()
+
 /**
  * Handles messages from a stream, updating response length for deltas and appending completed messages
  */
@@ -2972,6 +2986,8 @@ export function handleMessageFromStream(
         block => block.type === 'thinking',
       )
       if (thinkingBlock && thinkingBlock.type === 'thinking') {
+        flushStreamUiThrottleState()
+        activeStreamingThinkingBlockIndex = null
         onStreamingThinking?.(() => ({
           thinking: thinkingBlock.thinking,
           isStreaming: false,
@@ -2989,6 +3005,13 @@ export function handleMessageFromStream(
 
   if (message.type === 'stream_request_start') {
     onSetStreamMode('requesting')
+    flushStreamUiThrottleState()
+    resetStreamUiThrottleState()
+    activeStreamingThinkingBlockIndex = null
+    pendingStreamingTextDelta = ''
+    pendingStreamingThinkingDelta = ''
+    pendingStreamingToolInputByIndex = new Map()
+    onStreamingThinking?.(() => null)
     return
   }
 
@@ -3001,6 +3024,19 @@ export function handleMessageFromStream(
   if (message.event.type === 'message_stop') {
     onSetStreamMode('tool-use')
     onStreamingToolUses(() => [])
+    flushStreamUiThrottleState()
+    if (activeStreamingThinkingBlockIndex !== null) {
+      activeStreamingThinkingBlockIndex = null
+      onStreamingThinking?.(current =>
+        current?.isStreaming
+          ? {
+              ...current,
+              isStreaming: false,
+              streamingEndedAt: Date.now(),
+            }
+          : current,
+      )
+    }
     return
   }
 
@@ -3018,6 +3054,11 @@ export function handleMessageFromStream(
         case 'thinking':
         case 'redacted_thinking':
           onSetStreamMode('thinking')
+          activeStreamingThinkingBlockIndex = message.event.index
+          onStreamingThinking?.(() => ({
+            thinking: '',
+            isStreaming: true,
+          }))
           return
         case 'text':
           onSetStreamMode('responding')
@@ -3056,31 +3097,61 @@ export function handleMessageFromStream(
         case 'text_delta': {
           const deltaText = message.event.delta.text
           onUpdateLength(deltaText)
-          onStreamingText?.(text => (text ?? '') + deltaText)
+          if (onStreamingText) {
+            pendingStreamingTextDelta += deltaText
+            scheduleStreamingTextUiUpdate(() => {
+              const chunk = pendingStreamingTextDelta
+              pendingStreamingTextDelta = ''
+              onStreamingText(text => (text ?? '') + chunk)
+            })
+          }
           return
         }
         case 'input_json_delta': {
           const delta = message.event.delta.partial_json
           const index = message.event.index
           onUpdateLength(delta)
-          onStreamingToolUses(_ => {
-            const element = _.find(_ => _.index === index)
-            if (!element) {
-              return _
-            }
-            return [
-              ..._.filter(_ => _ !== element),
-              {
-                ...element,
-                unparsedToolInput: element.unparsedToolInput + delta,
-              },
-            ]
+          pendingStreamingToolInputByIndex.set(
+            index,
+            (pendingStreamingToolInputByIndex.get(index) ?? '') + delta,
+          )
+          scheduleStreamingToolInputUiUpdate(() => {
+            const deltas = pendingStreamingToolInputByIndex
+            pendingStreamingToolInputByIndex = new Map()
+            onStreamingToolUses(prev => {
+              let next = prev
+              for (const [idx, chunk] of deltas) {
+                const element = next.find(t => t.index === idx)
+                if (!element) continue
+                next = [
+                  ...next.filter(t => t !== element),
+                  {
+                    ...element,
+                    unparsedToolInput: element.unparsedToolInput + chunk,
+                  },
+                ]
+              }
+              return next
+            })
           })
           return
         }
-        case 'thinking_delta':
-          onUpdateLength(message.event.delta.thinking)
+        case 'thinking_delta': {
+          const deltaThinking = message.event.delta.thinking
+          onUpdateLength(deltaThinking)
+          if (onStreamingThinking) {
+            pendingStreamingThinkingDelta += deltaThinking
+            scheduleStreamingThinkingUiUpdate(() => {
+              const chunk = pendingStreamingThinkingDelta
+              pendingStreamingThinkingDelta = ''
+              onStreamingThinking(current => ({
+                thinking: (current?.thinking ?? '') + chunk,
+                isStreaming: true,
+              }))
+            })
+          }
           return
+        }
         case 'signature_delta':
           // Signatures are cryptographic authentication strings, not model
           // output. Excluding them from onUpdateLength prevents them from
@@ -3090,6 +3161,22 @@ export function handleMessageFromStream(
           return
       }
     case 'content_block_stop':
+      if (
+        activeStreamingThinkingBlockIndex !== null &&
+        message.event.index === activeStreamingThinkingBlockIndex
+      ) {
+        flushStreamUiThrottleState()
+        activeStreamingThinkingBlockIndex = null
+        onStreamingThinking?.(current =>
+          current?.isStreaming
+            ? {
+                ...current,
+                isStreaming: false,
+                streamingEndedAt: Date.now(),
+              }
+            : current,
+        )
+      }
       return
     case 'message_delta':
       onSetStreamMode('responding')
@@ -3509,6 +3596,23 @@ Read the team config to discover your teammates' names. Check the task list peri
   // skill_discovery handled here (not in the switch) so the 'skill_discovery'
   // string literal lives inside a feature()-guarded block. A case label can't
   // be gated, but this pattern can — same approach as teammate_mailbox above.
+  if (attachment.type === 'reading_skill') {
+    return [
+      createUserMessage({
+        content: formatReadingSkillMetadata(attachment.skillName),
+      }),
+      ...wrapMessagesInSystemReminder([
+        createUserMessage({
+          content:
+            `Awakened capability loaded (auto-triggered: **${attachment.skillName}**${attachment.capabilityId ? ` / ${attachment.capabilityId}` : ''}). ` +
+            `Follow the guidance below. Do not call Skill() for this — use /awakened to toggle packs.\n\n` +
+            attachment.content,
+          isMeta: true,
+        }),
+      ]),
+    ]
+  }
+
   if (feature('EXPERIMENTAL_SKILL_SEARCH')) {
     if (attachment.type === 'skill_discovery') {
       if (attachment.skills.length === 0) return []

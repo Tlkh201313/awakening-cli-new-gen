@@ -666,6 +666,13 @@ export function applyProviderProfileToProcessEnv(profile: ProviderProfile): void
       if (route.routeId === 'xiaomi-mimo' || profile.baseUrl.toLowerCase().includes('api.xiaomimimo.com') || profile.baseUrl.toLowerCase().includes('api.mimo-v2.com')) {
         openAIProfileEnv.MIMO_API_KEY = profile.apiKey
       }
+      if (
+        route.routeId === 'gitlawb-opengateway' ||
+        profile.baseUrl.toLowerCase().includes('opengateway.gitlawb.com') ||
+        profile.baseUrl.toLowerCase().includes('opengateway.fly.dev')
+      ) {
+        openAIProfileEnv.OPENGATEWAY_API_KEY = profile.apiKey
+      }
     }
     if (route.gatewayId === 'nvidia-nim') {
       openAIProfileEnv.NVIDIA_NIM = '1'
@@ -686,6 +693,10 @@ export function applyProviderProfileToProcessEnv(profile: ProviderProfile): void
   Object.assign(process.env, nextEnv)
   process.env[PROFILE_ENV_APPLIED_FLAG] = '1'
   process.env[PROFILE_ENV_APPLIED_ID] = profile.id
+
+  // Overlap TLS handshake with REPL render / first prompt (init may have run
+  // before profile env was applied).
+  void import('./apiPreconnect.js').then(m => m.preconnectOpenAICompatibleApi())
 }
 
 export function applyActiveProviderProfileFromConfig(

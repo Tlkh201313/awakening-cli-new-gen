@@ -32,7 +32,7 @@ import { getSystemContext, getUserContext } from './context.js';
 import { init, initializeTelemetryAfterTrust } from './entrypoints/init.js';
 import { addToHistory } from './history.js';
 import type { Root } from './ink.js';
-import { launchRepl } from './replLauncher.js';
+import { launchRepl, preloadReplModules } from './replLauncher.js';
 import { hasGrowthBookEnvOverride, initializeGrowthBook, refreshGrowthBookAfterAuthChange } from './services/analytics/growthbook.js';
 import { fetchBootstrapData } from './services/api/bootstrap.js';
 import { refreshStartupDiscoveryForActiveRoute } from './integrations/discoveryService.js';
@@ -2031,6 +2031,9 @@ async function run(): Promise<CommanderCommand> {
     const [commands, agentDefinitionsResult] = await Promise.all([commandsPromise ?? getCommands(currentCwd), agentDefsPromise ?? getAgentDefinitionsWithOverrides(currentCwd)]);
     logForDebugging(`[STARTUP] Commands and agents loaded in ${Date.now() - commandsStart}ms`);
     profileCheckpoint('action_commands_loaded');
+    if (!isNonInteractiveSession) {
+      preloadReplModules();
+    }
 
     // Parse CLI agents if provided via --agents flag
     let cliAgents: typeof agentDefinitionsResult.activeAgents = [];
@@ -2378,27 +2381,51 @@ async function run(): Promise<CommanderCommand> {
       void refreshExampleCommands(); // Pre-fetch example commands (runs git log, no API call)
     }
 
-    const {
-      servers: existingMcpConfigs
-    } = await mcpConfigPromise;
     // CLI flag (--mcp-config) should override file-based configs, matching settings precedence
-    const allMcpConfigs = {
-      ...existingMcpConfigs,
+    let allMcpConfigs: Record<string, ScopedMcpServerConfig | McpSdkServerConfig> = {
       ...dynamicMcpConfig
     };
-
-    // Separate SDK configs from regular MCP configs
     const sdkMcpConfigs: Record<string, McpSdkServerConfig> = {};
-    const regularMcpConfigs: Record<string, ScopedMcpServerConfig> = {};
-    for (const [name, config] of Object.entries(allMcpConfigs)) {
-      const typedConfig = config as ScopedMcpServerConfig | McpSdkServerConfig;
-      if (typedConfig.type === 'sdk') {
-        sdkMcpConfigs[name] = typedConfig as McpSdkServerConfig;
-      } else {
-        regularMcpConfigs[name] = typedConfig as ScopedMcpServerConfig;
+    let regularMcpConfigs: Record<string, ScopedMcpServerConfig> = {};
+    const applyMcpSplit = () => {
+      for (const key of Object.keys(sdkMcpConfigs)) {
+        delete sdkMcpConfigs[key];
       }
+      for (const key of Object.keys(regularMcpConfigs)) {
+        delete regularMcpConfigs[key];
+      }
+      for (const [name, config] of Object.entries(allMcpConfigs)) {
+        const typedConfig = config as ScopedMcpServerConfig | McpSdkServerConfig;
+        if (typedConfig.type === 'sdk') {
+          sdkMcpConfigs[name] = typedConfig as McpSdkServerConfig;
+        } else {
+          regularMcpConfigs[name] = typedConfig as ScopedMcpServerConfig;
+        }
+      }
+    };
+    applyMcpSplit();
+    if (isNonInteractiveSession) {
+      const {
+        servers: existingMcpConfigs
+      } = await mcpConfigPromise;
+      allMcpConfigs = {
+        ...existingMcpConfigs,
+        ...dynamicMcpConfig
+      };
+      applyMcpSplit();
+      profileCheckpoint('action_mcp_configs_loaded');
+    } else {
+      void mcpConfigPromise.then(({
+        servers: existingMcpConfigs
+      }) => {
+        allMcpConfigs = {
+          ...existingMcpConfigs,
+          ...dynamicMcpConfig
+        };
+        applyMcpSplit();
+        profileCheckpoint('action_mcp_configs_loaded');
+      });
     }
-    profileCheckpoint('action_mcp_configs_loaded');
 
     // Prefetch MCP resources after trust dialog (this is where execution happens).
     // Interactive mode only: print mode defers connects until headlessStore exists
@@ -2408,7 +2435,25 @@ async function run(): Promise<CommanderCommand> {
       clients: [],
       tools: [],
       commands: []
-    }) : prefetchAllMcpResources(regularMcpConfigs);
+    }) : mcpConfigPromise.then(({
+      servers: existingMcpConfigs
+    }) => {
+      const mergedRegular: Record<string, ScopedMcpServerConfig> = {};
+      for (const [name, config] of Object.entries({
+        ...existingMcpConfigs,
+        ...dynamicMcpConfig
+      })) {
+        const typedConfig = config as ScopedMcpServerConfig | McpSdkServerConfig;
+        if (typedConfig.type !== 'sdk') {
+          mergedRegular[name] = typedConfig as ScopedMcpServerConfig;
+        }
+      }
+      return Object.keys(mergedRegular).length > 0 ? prefetchAllMcpResources(mergedRegular) : {
+        clients: [],
+        tools: [],
+        commands: []
+      };
+    });
     const claudeaiMcpPromise = isNonInteractiveSession ? Promise.resolve({
       clients: [],
       tools: [],

@@ -13,6 +13,7 @@ import type { VimMode, PromptInputMode } from '../../types/textInputTypes.js';
 import type { ToolPermissionContext } from '../../Tool.js';
 import { isVimModeEnabled } from './utils.js';
 import { useShortcutDisplay } from '../../keybindings/useShortcutDisplay.js';
+import { getModeCycleShortcutFallback } from '../../keybindings/defaultBindings.js';
 import { isDefaultMode, permissionModeSymbol, permissionModeTitle, getModeColor } from '../../utils/permissions/PermissionMode.js';
 import { BackgroundTaskStatus } from '../tasks/BackgroundTaskStatus.js';
 import { isBackgroundTask } from '../../tasks/types.js';
@@ -248,7 +249,11 @@ function ModeIndicator({
   const {
     columns
   } = useTerminalSize();
-  const modeCycleShortcut = useShortcutDisplay('chat:cycleMode', 'Chat', 'shift+tab');
+  const modeCycleShortcut = useShortcutDisplay(
+    'chat:cycleMode',
+    'Chat',
+    getModeCycleShortcutFallback(),
+  );
   const tasks = useAppState(s => s.tasks);
   const teamContext = useAppState(s_0 => s_0.teamContext);
   // Set once in initialState (main.tsx --remote mode) and never mutated — lazy

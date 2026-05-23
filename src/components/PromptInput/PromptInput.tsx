@@ -76,6 +76,7 @@ import { logError } from '../../utils/log.js';
 import { isOpus1mMergeEnabled, modelDisplayString } from '../../utils/model/model.js';
 import { setAutoModeActive } from '../../utils/permissions/autoModeState.js';
 import { cyclePermissionMode, getNextPermissionMode } from '../../utils/permissions/getNextPermissionMode.js';
+import { permissionModeTitle } from '../../utils/permissions/PermissionMode.js';
 import { transitionPermissionMode } from '../../utils/permissions/permissionSetup.js';
 import { getPlatform } from '../../utils/platform.js';
 import type { ProcessUserInputContext } from '../../utils/processUserInput/processUserInput.js';
@@ -1476,6 +1477,12 @@ function PromptInput({
           }
         };
       });
+      addNotification({
+        key: 'permission-mode-cycle',
+        text: `Teammate permission mode: ${permissionModeTitle(nextMode)}`,
+        priority: 'immediate',
+        timeoutMs: 2500,
+      })
       if (helpOpen) {
         setHelpOpen(false);
       }
@@ -1583,6 +1590,13 @@ function PromptInput({
       mode: nextMode
     });
 
+    addNotification({
+      key: 'permission-mode-cycle',
+      text: `Permission mode: ${permissionModeTitle(nextMode)}`,
+      priority: 'immediate',
+      timeoutMs: 2500,
+    })
+
     // If this is a teammate, update config.json so team lead sees the change
     syncTeammateMode(nextMode, teamContext?.teamName);
 
@@ -1590,7 +1604,7 @@ function PromptInput({
     if (helpOpen) {
       setHelpOpen(false);
     }
-  }, [toolPermissionContext, teamContext, viewingAgentTaskId, viewedTeammate, setAppState, setToolPermissionContext, helpOpen, showAutoModeOptIn]);
+  }, [toolPermissionContext, teamContext, viewingAgentTaskId, viewedTeammate, setAppState, setToolPermissionContext, helpOpen, showAutoModeOptIn, addNotification]);
 
   // Handler for auto mode opt-in dialog acceptance
   const handleAutoModeOptInAccept = useCallback(() => {

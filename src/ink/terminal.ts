@@ -7,6 +7,7 @@ import type { Diff } from './frame.js'
 import { cursorMove, cursorTo, eraseLines } from './termio/csi.js'
 import { BSU, ESU, HIDE_CURSOR, SHOW_CURSOR } from './termio/dec.js'
 import { link } from './termio/osc.js'
+import { FRAME_INTERVAL_MS } from './constants.js'
 
 export type Progress = {
   state: 'running' | 'completed' | 'error' | 'indeterminate'
@@ -208,6 +209,33 @@ export function hasCursorUpViewportYankBug(): boolean {
 // Computed once at module load — terminal capabilities don't change mid-session.
 // Exported so callers can pass a sync-skip hint gated to specific modes.
 export const SYNC_OUTPUT_SUPPORTED = isSynchronizedOutputSupported()
+
+/**
+ * Render/spinner tick interval. Terminals with DEC 2026 synchronized output
+ * (BSU/ESU — Windows Terminal, Kitty, iTerm, etc.) can safely repaint at ~60fps.
+ * Legacy consoles without sync use a slower cadence to cut lag spikes during
+ * spinner ticks and streaming retries.
+ */
+export function getFrameIntervalMs(): number {
+  const override = process.env.CLAUDE_CODE_UI_FRAME_MS?.trim()
+  if (override) {
+    const ms = Number.parseInt(override, 10)
+    if (Number.isFinite(ms) && ms >= 8 && ms <= 100) {
+      return ms
+    }
+  }
+
+  // Windows: slightly lower refresh than 60fps cuts conhost/WT jank during
+  // spinner + streaming without a visible smoothness loss.
+  if (process.platform === 'win32') {
+    return SYNC_OUTPUT_SUPPORTED ? 20 : 50
+  }
+
+  if (SYNC_OUTPUT_SUPPORTED) {
+    return FRAME_INTERVAL_MS
+  }
+  return 32
+}
 
 export type Terminal = {
   stdout: Writable

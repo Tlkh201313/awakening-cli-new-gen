@@ -103,3 +103,40 @@ describe('preconnectAnthropicApi', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('preconnectOpenAICompatibleApi', () => {
+  test('warms connection after OpenAI mode is enabled post-init', async () => {
+    const fetchMock = mock(() => Promise.resolve(new Response(null, { status: 200 })))
+    globalThis.fetch = fetchMock as typeof globalThis.fetch
+
+    const { preconnectOpenAICompatibleApi, resetApiPreconnectStateForTests } =
+      await importFreshModule()
+    resetApiPreconnectStateForTests()
+
+    preconnectOpenAICompatibleApi()
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    process.env.CLAUDE_CODE_USE_OPENAI = '1'
+    process.env.OPENAI_BASE_URL = 'https://integrate.api.nvidia.com/v1'
+    preconnectOpenAICompatibleApi()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://integrate.api.nvidia.com/v1')
+  })
+
+  test('does not refetch when the same base URL is preconnected again', async () => {
+    process.env.CLAUDE_CODE_USE_OPENAI = '1'
+    process.env.OPENAI_BASE_URL = 'https://integrate.api.nvidia.com/v1'
+    const fetchMock = mock(() => Promise.resolve(new Response(null, { status: 200 })))
+    globalThis.fetch = fetchMock as typeof globalThis.fetch
+
+    const { preconnectOpenAICompatibleApi, resetApiPreconnectStateForTests } =
+      await importFreshModule()
+    resetApiPreconnectStateForTests()
+
+    preconnectOpenAICompatibleApi()
+    preconnectOpenAICompatibleApi()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})

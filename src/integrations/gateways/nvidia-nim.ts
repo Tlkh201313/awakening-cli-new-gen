@@ -35,9 +35,41 @@ export default defineGateway({
     },
   },
   catalog: {
-    source: 'static',
+    source: 'hybrid',
+    discovery: {
+      kind: 'openai-compatible',
+      mapModel(raw: unknown) {
+        const model = raw as { id?: string }
+        const id = model.id?.trim()
+        if (!id) {
+          return null
+        }
+        if (
+          /(embed|embedding|rerank|reward|guard|safety|vision|whisper|asr|tts|ocr|depth|detect)/i.test(
+            id,
+          )
+        ) {
+          return null
+        }
+        return {
+          id: id.replace(/\//g, '-'),
+          apiName: id,
+          label: id.split('/').pop() ?? id,
+          modelDescriptorId: id,
+        }
+      },
+    },
+    discoveryCacheTtl: '1d',
+    discoveryRefreshMode: 'background-if-stale',
+    allowManualRefresh: true,
     models: [
-      { id: 'nvidia-llama-3.1-nemotron-70b', apiName: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'Llama 3.1 Nemotron 70B', modelDescriptorId: 'nvidia/llama-3.1-nemotron-70b-instruct' },
+      {
+        id: 'nvidia-llama-3.1-nemotron-70b',
+        apiName: 'nvidia/llama-3.1-nemotron-70b-instruct',
+        label: 'Llama 3.1 Nemotron 70B',
+        modelDescriptorId: 'nvidia/llama-3.1-nemotron-70b-instruct',
+        default: true,
+      },
     ],
   },
   usage: { supported: false },

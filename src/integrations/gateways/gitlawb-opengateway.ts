@@ -16,10 +16,7 @@ export default defineGateway({
   transportConfig: {
     kind: 'openai-compatible',
     openaiShim: {
-      defaultAuthHeader: {
-        name: 'api-key',
-        scheme: 'raw',
-      },
+      // Opengateway expects Authorization: Bearer ogw_live_… (see gitlawb.com/opengateway).
       preserveReasoningContent: true,
       requireReasoningContentOnAssistantMessages: true,
       reasoningContentFallback: '',

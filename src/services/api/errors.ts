@@ -29,7 +29,7 @@ import {
   isNonCustomOpusModel,
 } from 'src/utils/model/model.js'
 import { getModelStrings } from 'src/utils/model/modelStrings.js'
-import { getAPIProvider } from 'src/utils/model/providers.js'
+import { getAPIProvider, type APIProvider } from 'src/utils/model/providers.js'
 import { getIsNonInteractiveSession } from '../../bootstrap/state.js'
 import {
   API_PDF_MAX_PAGES,
@@ -54,10 +54,36 @@ import {
   extractOpenAICategoryHost,
   extractOpenAICategoryMarker,
   isLocalhostLikeHost,
+  isNvidiaNimKimiUnhashableFailure,
+  NVIDIA_NIM_KIMI_UNHASHABLE_HINT,
   type OpenAICompatibilityFailureCategory,
 } from './openaiErrorClassification.js'
 
 export const API_ERROR_MESSAGE_PREFIX = 'API Error'
+
+function getProviderAuthEnvHint(provider: APIProvider): string {
+  switch (provider) {
+    case 'nvidia-nim':
+      return 'Verify NVIDIA_API_KEY (create at https://build.nvidia.com) or run /provider and save your NVIDIA NIM key on the active profile.'
+    case 'minimax':
+      return 'Verify MINIMAX_API_KEY or OPENAI_API_KEY for your MiniMax profile.'
+    case 'xai':
+      return 'Verify XAI_API_KEY or OPENAI_API_KEY for your xAI profile.'
+    case 'xiaomi-mimo':
+      return 'Verify MIMO_API_KEY or OPENAI_API_KEY for your Xiaomi MiMo profile.'
+    case 'gemini':
+      return 'Verify GEMINI_API_KEY or GOOGLE_API_KEY.'
+    case 'mistral':
+      return 'Verify MISTRAL_API_KEY.'
+    case 'github':
+    case 'codex':
+      return 'Re-authenticate with /onboard-github or /login — OAuth tokens expire.'
+    case 'openai':
+      return 'Verify OPENAI_API_KEY (or OPENGATEWAY_API_KEY for Gitlawb Opengateway) and endpoint-specific auth requirements.'
+    default:
+      return 'Verify API key, token source, and endpoint-specific auth headers.'
+  }
+}
 
 function stripOpenAICompatibilityMetadata(message: string): string {
   return message
@@ -102,11 +128,20 @@ function mapOpenAICompatibilityFailureToAssistantMessage(options: {
         error: 'invalid_request',
       })
 
-    case 'auth_invalid':
+    case 'auth_invalid': {
+      const stripped = stripOpenAICompatibilityMetadata(options.rawMessage)
+      const opengatewayHint =
+        stripped.includes('gitlawb.com/opengateway') ||
+        stripped.toLowerCase().includes('opengateway_api_key')
+          ? stripped
+          : null
       return createAssistantAPIErrorMessage({
-        content: `${API_ERROR_MESSAGE_PREFIX}: Authentication failed for your OpenAI-compatible provider. Verify OPENAI_API_KEY and endpoint-specific auth requirements.`,
+        content: opengatewayHint
+          ? `${API_ERROR_MESSAGE_PREFIX}: ${opengatewayHint}`
+          : `${API_ERROR_MESSAGE_PREFIX}: Authentication failed for your provider. ${getProviderAuthEnvHint(getAPIProvider())}`,
         error: 'authentication_failed',
       })
+    }
 
     case 'rate_limited':
       return createAssistantAPIErrorMessage({
@@ -127,6 +162,18 @@ function mapOpenAICompatibilityFailureToAssistantMessage(options: {
       })
 
     case 'tool_call_incompatible':
+      if (
+        isNvidiaNimKimiUnhashableFailure({
+          message: options.rawMessage,
+          model: options.model,
+          host: options.host,
+        })
+      ) {
+        return createAssistantAPIErrorMessage({
+          content: `${API_ERROR_MESSAGE_PREFIX}: ${NVIDIA_NIM_KIMI_UNHASHABLE_HINT}`,
+          error: 'invalid_request',
+        })
+      }
       return createAssistantAPIErrorMessage({
         content: `The selected provider/model rejected tool-calling payloads. Try ${switchCmd} to pick a tool-capable model or continue without tools.`,
         error: 'invalid_request',
@@ -140,6 +187,18 @@ function mapOpenAICompatibilityFailureToAssistantMessage(options: {
       })
 
     case 'provider_unavailable':
+      if (
+        isNvidiaNimKimiUnhashableFailure({
+          message: options.rawMessage,
+          model: options.model,
+          host: options.host,
+        })
+      ) {
+        return createAssistantAPIErrorMessage({
+          content: `${API_ERROR_MESSAGE_PREFIX}: ${NVIDIA_NIM_KIMI_UNHASHABLE_HINT}`,
+          error: 'invalid_request',
+        })
+      }
       return createAssistantAPIErrorMessage({
         content: `${API_ERROR_MESSAGE_PREFIX}: Provider is temporarily unavailable. Retry in a moment.`,
         error: 'unknown',

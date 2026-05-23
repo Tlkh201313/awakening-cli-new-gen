@@ -28,6 +28,37 @@ const OPENAI_CATEGORY_MARKER_PREFIX = '[openai_category='
 
 const LOCALHOST_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1'])
 
+const OPENGATEWAY_HOSTNAMES = new Set([
+  'opengateway.gitlawb.com',
+  'opengateway.fly.dev',
+])
+
+function isGitlawbOpengatewayHost(hostname: string | null): boolean {
+  return hostname !== null && OPENGATEWAY_HOSTNAMES.has(hostname.toLowerCase())
+}
+
+function isDefinitiveApiKeyAuthFailureBody(body: string): boolean {
+  const lowerBody = body.toLowerCase()
+  return (
+    lowerBody.includes('api_key_required') ||
+    lowerBody.includes('invalid_api_key') ||
+    lowerBody.includes('incorrect api key') ||
+    lowerBody.includes('missing api key')
+  )
+}
+
+/** Auth failures that will not succeed on retry without the user supplying a key. */
+export function isNonRetryableProviderAuthError(error: unknown): boolean {
+  if (!(error && typeof error === 'object' && 'message' in error)) {
+    return false
+  }
+  const message = String((error as { message?: unknown }).message ?? '')
+  if (extractOpenAICategoryMarker(message) === 'auth_invalid') {
+    return true
+  }
+  return isDefinitiveApiKeyAuthFailureBody(message)
+}
+
 const OPENAI_COMPATIBILITY_FAILURE_CATEGORIES: ReadonlySet<OpenAICompatibilityFailureCategory> =
   new Set<OpenAICompatibilityFailureCategory>([
     'connection_refused',
@@ -153,6 +184,33 @@ function isModelNotFoundMessage(body: string): boolean {
   )
 }
 
+export const NVIDIA_NIM_KIMI_UNHASHABLE_HINT =
+  'Known NVIDIA NIM server bug with moonshotai/kimi-k2.6 when the agent sends a large tool schema. Use /model to switch (e.g. deepseek-v4-flash) or use Moonshot API (api.moonshot.ai) instead of integrate.api.nvidia.com.'
+
+function isNvidiaIntegrateHost(host: string | null | undefined): boolean {
+  if (!host) return false
+  const lower = host.toLowerCase()
+  return lower.includes('nvidia.com') || lower.includes('integrate.api.nvidia')
+}
+
+function isKimiFamilyModel(model: string | undefined): boolean {
+  if (!model) return false
+  const lower = model.toLowerCase()
+  return lower.includes('kimi') || lower.includes('moonshot')
+}
+
+/** NVIDIA NIM returns 500 "unhashable type: 'dict'|'list'" for Kimi + large tool schemas. */
+export function isNvidiaNimKimiUnhashableFailure(options: {
+  message: string
+  model?: string
+  host?: string | null
+}): boolean {
+  const lower = options.message.toLowerCase()
+  if (!lower.includes('unhashable type')) return false
+  if (!isNvidiaIntegrateHost(options.host)) return false
+  return isKimiFamilyModel(options.model)
+}
+
 export function formatOpenAICategoryMarker(
   category: OpenAICompatibilityFailureCategory,
   host?: string,
@@ -264,6 +322,7 @@ export function classifyOpenAIHttpFailure(options: {
   status: number
   body: string
   url?: string
+  model?: string
 }): OpenAICompatibilityFailure {
   const body = options.body ?? ''
   const hostname = options.url ? getHostname(options.url) : null
@@ -279,6 +338,9 @@ export function classifyOpenAIHttpFailure(options: {
       lowerBody.includes('token expired') ||
       lowerBody.includes('token has expired') ||
       lowerBody.includes('token revoked')
+    const opengatewayAuth =
+      isGitlawbOpengatewayHost(hostname) ||
+      lowerBody.includes('api_key_required')
     return {
       source: 'http',
       category: 'auth_invalid',
@@ -287,7 +349,9 @@ export function classifyOpenAIHttpFailure(options: {
       message: body,
       hint: isExpiredOAuthToken
         ? 'OAuth token expired. Re-authenticate with /onboard-github (GitHub Models) or /login (Codex / Claude) and try again.'
-        : 'Authentication failed. Verify API key, token source, and endpoint-specific auth headers.',
+        : opengatewayAuth
+          ? 'Gitlawb Opengateway requires an API key. Sign in at https://gitlawb.com/opengateway to create one (ogw_live_…), then set OPENGATEWAY_API_KEY or run /provider and paste it.'
+          : 'Authentication failed. Verify API key, token source, and endpoint-specific auth headers.',
     }
   }
 
@@ -362,6 +426,23 @@ export function classifyOpenAIHttpFailure(options: {
       status: options.status,
       message: body,
       hint: 'Provider returned malformed or non-JSON response where JSON was expected.',
+    }
+  }
+
+  if (
+    isNvidiaNimKimiUnhashableFailure({
+      message: body,
+      model: options.model,
+      host: hostname,
+    })
+  ) {
+    return {
+      source: 'http',
+      category: 'tool_call_incompatible',
+      retryable: false,
+      status: options.status,
+      message: body,
+      hint: NVIDIA_NIM_KIMI_UNHASHABLE_HINT,
     }
   }
 

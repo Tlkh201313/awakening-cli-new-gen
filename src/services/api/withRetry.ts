@@ -46,10 +46,14 @@ import {
 } from '../rateLimitMocking.js'
 import { REPEATED_529_ERROR_MESSAGE } from './errors.js'
 import { extractConnectionErrorDetails } from './errorUtils.js'
+import { isNonRetryableProviderAuthError } from './openaiErrorClassification.js'
 
 const abortError = () => new APIUserAbortError()
 
 const DEFAULT_MAX_RETRIES = 10
+/** Third-party OpenAI-compatible gateways rarely recover after many retries. */
+const OPENAI_COMPATIBLE_MAX_RETRIES = 3
+const OPENAI_COMPATIBLE_MAX_BACKOFF_MS = 8_000
 const FLOOR_OUTPUT_TOKENS = 3000
 const MAX_529_RETRIES = 3
 export const BASE_DELAY_MS = 500
@@ -478,7 +482,18 @@ export async function* withRetry<T>(
           PERSISTENT_RESET_CAP_MS,
         )
       } else {
-        delayMs = getRetryDelay(attempt, retryAfter)
+        const provider = getAPIProviderForStatsig()
+        const isOpenAICompatible =
+          provider === 'openai' ||
+          provider === 'nvidia-nim' ||
+          provider === 'minimax' ||
+          provider === 'xiaomi-mimo' ||
+          provider === 'xai'
+        delayMs = getRetryDelay(
+          attempt,
+          retryAfter,
+          isOpenAICompatible ? OPENAI_COMPATIBLE_MAX_BACKOFF_MS : 32_000,
+        )
       }
 
       // In persistent mode the for-loop `attempt` is clamped at maxRetries+1;
@@ -792,6 +807,11 @@ function shouldRetry(error: APIError): boolean {
   // OAuth token handling is done in the main retry loop via handleOAuth401Error.
   if (error.status === 401) {
     clearApiKeyHelperCache()
+    // Missing/invalid API keys never self-heal across retries; skipping
+    // avoids 10× spinner lag while the UI counts down (api_key_required, etc.).
+    if (isNonRetryableProviderAuthError(error)) {
+      return false
+    }
     return true
   }
 
@@ -809,6 +829,16 @@ function shouldRetry(error: APIError): boolean {
 export function getDefaultMaxRetries(): number {
   if (process.env.CLAUDE_CODE_MAX_RETRIES) {
     return parseInt(process.env.CLAUDE_CODE_MAX_RETRIES, 10)
+  }
+  const provider = getAPIProvider()
+  if (
+    provider === 'openai' ||
+    provider === 'nvidia-nim' ||
+    provider === 'minimax' ||
+    provider === 'xiaomi-mimo' ||
+    provider === 'xai'
+  ) {
+    return OPENAI_COMPATIBLE_MAX_RETRIES
   }
   return DEFAULT_MAX_RETRIES
 }

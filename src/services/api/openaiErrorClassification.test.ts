@@ -8,6 +8,8 @@ import {
   extractOpenAICategoryMarker,
   formatOpenAICategoryMarker,
   isLocalhostLikeHost,
+  isNvidiaNimKimiUnhashableFailure,
+  NVIDIA_NIM_KIMI_UNHASHABLE_HINT,
 } from './openaiErrorClassification.js'
 
 test('classifies localhost ECONNREFUSED as connection_refused', () => {
@@ -93,6 +95,19 @@ test('401 without expired-token signal keeps the generic API-key hint', () => {
   expect(failure.hint).not.toContain('/onboard-github')
 })
 
+test('401 api_key_required on opengateway host points to key signup', () => {
+  const failure = classifyOpenAIHttpFailure({
+    status: 401,
+    body: '{"error":{"message":"API key required","type":"authentication_error","code":"api_key_required"}}',
+    url: 'https://opengateway.gitlawb.com/v1/chat/completions',
+  })
+
+  expect(failure.category).toBe('auth_invalid')
+  expect(failure.retryable).toBe(false)
+  expect(failure.hint).toContain('gitlawb.com/opengateway')
+  expect(failure.hint).toContain('OPENGATEWAY_API_KEY')
+})
+
 test('classifies tool compatibility failures', () => {
   const failure = classifyOpenAIHttpFailure({
     status: 400,
@@ -143,6 +158,36 @@ test('endpoint_not_found 404 from localhost keeps the Ollama-flavored hint', () 
 
   expect(failure.category).toBe('endpoint_not_found')
   expect(failure.hint).toContain('local providers')
+})
+
+test('isNvidiaNimKimiUnhashableFailure detects kimi on NVIDIA integrate host', () => {
+  expect(
+    isNvidiaNimKimiUnhashableFailure({
+      message: "Internal server error: unhashable type: 'dict'",
+      model: 'moonshotai/kimi-k2.6',
+      host: 'integrate.api.nvidia.com',
+    }),
+  ).toBe(true)
+})
+
+test('classifies NVIDIA NIM kimi unhashable 500 as tool_call_incompatible without retry', () => {
+  const body = JSON.stringify({
+    error: {
+      message: "Internal server error: unhashable type: 'dict'",
+      type: 'InternalServerError',
+    },
+  })
+  const failure = classifyOpenAIHttpFailure({
+    status: 500,
+    body,
+    url: 'https://integrate.api.nvidia.com/v1/chat/completions',
+    model: 'moonshotai/kimi-k2.6',
+  })
+
+  expect(failure.category).toBe('tool_call_incompatible')
+  expect(failure.retryable).toBe(false)
+  expect(failure.hint).toBe(NVIDIA_NIM_KIMI_UNHASHABLE_HINT)
+  expect(failure.hint).toContain('deepseek-v4-flash')
 })
 
 test('marker round-trip preserves host segment', () => {

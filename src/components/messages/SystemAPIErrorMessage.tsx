@@ -34,7 +34,8 @@ export function SystemAPIErrorMessage(t0) {
   } else {
     t2 = $[0];
   }
-  useInterval(t2, hidden || done ? null : 1000);
+  // Coarser tick than 1s — retry UI is informational; fewer REPL reconciles.
+  useInterval(t2, hidden || done ? null : 2000);
   if (hidden) {
     return null;
   }
@@ -136,5 +137,5 @@ export function SystemAPIErrorMessage(t0) {
   return t12;
 }
 function _temp(ms) {
-  return ms + 1000;
+  return ms + 2000;
 }

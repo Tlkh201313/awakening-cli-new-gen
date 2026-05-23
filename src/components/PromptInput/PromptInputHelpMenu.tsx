@@ -3,6 +3,7 @@ import { feature } from 'bun:bundle';
 import * as React from 'react';
 import { Box, Text } from 'src/ink.js';
 import { getPlatform } from 'src/utils/platform.js';
+import { getModeCycleShortcutFallback } from '../../keybindings/defaultBindings.js';
 import { isKeybindingCustomizationEnabled } from '../../keybindings/loadUserBindings.js';
 import { useShortcutDisplay } from '../../keybindings/useShortcutDisplay.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
@@ -67,7 +68,7 @@ export function PromptInputHelpMenu(props) {
     t7 = $[7];
   }
   const stashShortcut = t7;
-  const t8 = useShortcutDisplay("chat:cycleMode", "Chat", "shift+tab");
+  const t8 = useShortcutDisplay("chat:cycleMode", "Chat", getModeCycleShortcutFallback());
   let t9;
   if ($[8] !== t8) {
     t9 = formatShortcut(t8);

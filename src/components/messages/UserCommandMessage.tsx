@@ -37,8 +37,37 @@ export function UserCommandMessage(t0) {
   }
   const args = t3;
   const isSkillFormat = extractTag(text, "skill-format") === "true";
+  const isReadingSkillFormat = extractTag(text, "reading-skill-format") === "true";
   if (!commandMessage) {
     return null;
+  }
+  if (isReadingSkillFormat) {
+    const t4 = addMargin ? 1 : 0;
+    let t5;
+    if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
+      t5 = <Text color="subtle">{figures.pointer} </Text>;
+      $[4] = t5;
+    } else {
+      t5 = $[4];
+    }
+    let t6;
+    if ($[5] !== commandMessage) {
+      t6 = <Text>{t5}<Text color="text">Reading skill {commandMessage}</Text></Text>;
+      $[5] = commandMessage;
+      $[6] = t6;
+    } else {
+      t6 = $[6];
+    }
+    let t7;
+    if ($[7] !== t4 || $[8] !== t6) {
+      t7 = <Box flexDirection="column" marginTop={t4} backgroundColor="userMessageBackground" paddingRight={1}>{t6}</Box>;
+      $[7] = t4;
+      $[8] = t6;
+      $[9] = t7;
+    } else {
+      t7 = $[9];
+    }
+    return t7;
   }
   if (isSkillFormat) {
     const t4 = addMargin ? 1 : 0;

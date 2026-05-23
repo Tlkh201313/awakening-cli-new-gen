@@ -108,4 +108,13 @@ describe('modelSupportsThinking — Z.AI GLM', () => {
 
     expect(modelSupportsThinking('GLM-5.1')).toBe(true)
   })
+
+  test('disables GLM thinking on NVIDIA NIM catalog entries', async () => {
+    process.env.CLAUDE_CODE_USE_OPENAI = '1'
+    process.env.NVIDIA_NIM = '1'
+    process.env.OPENAI_BASE_URL = 'https://integrate.api.nvidia.com/v1'
+    const { modelSupportsThinking } = await importFreshThinkingModule()
+
+    expect(modelSupportsThinking('z-ai/glm-5.1')).toBe(false)
+  })
 })

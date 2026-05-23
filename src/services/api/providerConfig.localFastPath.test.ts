@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { acquireSharedMutationLock, releaseSharedMutationLock } from '../../test/sharedMutationLock.js'
 
-import { getLocalFastPathConfig } from './providerConfig.js'
+import { getLocalFastPathConfig, getShimFastPathConfig } from './providerConfig.js'
 
 const ENV_VAR = 'OPENCLAUDE_LOCAL_FAST_PATH'
 const originalEnv = process.env[ENV_VAR]
@@ -105,5 +105,24 @@ describe('getLocalFastPathConfig — explicit env override', () => {
       [ENV_VAR]: '1',
     } as NodeJS.ProcessEnv)
     expect(cfg.enabled).toBe(true)
+  })
+})
+
+describe('getShimFastPathConfig — remote OpenAI-compatible gateways', () => {
+  test('engages for NVIDIA NIM public base URL', () => {
+    const cfg = getShimFastPathConfig('https://integrate.api.nvidia.com/v1', {
+      NVIDIA_NIM: '1',
+      CLAUDE_CODE_USE_OPENAI: '1',
+      OPENAI_BASE_URL: 'https://integrate.api.nvidia.com/v1',
+    } as NodeJS.ProcessEnv)
+    expect(cfg.enabled).toBe(true)
+    expect(cfg.skipStableStringify).toBe(true)
+    expect(cfg.skipStrictTools).toBe(true)
+    expect(cfg.skipToolHistoryCompression).toBe(false)
+  })
+
+  test('does not engage for public host without shim provider flags', () => {
+    const cfg = getShimFastPathConfig('https://api.openai.com/v1', {} as NodeJS.ProcessEnv)
+    expect(cfg.enabled).toBe(false)
   })
 })

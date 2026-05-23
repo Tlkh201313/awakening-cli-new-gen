@@ -23,6 +23,7 @@ import {
   openAIShimSupportsApiFormatForModel,
   resolveOpenAIShimRuntimeContext,
 } from '../../integrations/runtimeMetadata.js'
+import { resolveActiveRouteIdFromEnv } from '../../integrations/routeMetadata.js'
 
 export const DEFAULT_OPENAI_BASE_URL = 'https://api.openai.com/v1'
 export const DEFAULT_CODEX_BASE_URL = 'https://chatgpt.com/backend-api/codex'
@@ -424,6 +425,25 @@ const LOCAL_FAST_PATH_ON: LocalFastPathConfig = {
   skipToolHistoryCompression: true,
 }
 
+/** Remote OpenAI-compatible gateways: trim request-prep cost, keep history compression. */
+const REMOTE_SHIM_FAST_PATH_ON: LocalFastPathConfig = {
+  enabled: true,
+  skipStableStringify: true,
+  skipStrictTools: true,
+  skipToolHistoryCompression: false,
+}
+
+const OPENAI_COMPATIBLE_SHIM_ROUTES = new Set([
+  'nvidia-nim',
+  'minimax',
+  'xiaomi-mimo',
+  'xai',
+  'openai',
+  'custom',
+  'gitlawb-opengateway',
+  'mistral',
+])
+
 function parseLocalFastPathOverride(raw: string | undefined): boolean | undefined {
   if (raw === undefined) return undefined
   const v = raw.trim().toLowerCase()
@@ -440,6 +460,52 @@ export function getLocalFastPathConfig(
   const override = parseLocalFastPathOverride(env[LOCAL_FAST_PATH_ENV])
   const enabled = override ?? isLocalProviderUrl(baseUrl)
   return enabled ? LOCAL_FAST_PATH_ON : LOCAL_FAST_PATH_OFF
+}
+
+function shouldUseRemoteShimFastPath(
+  baseUrl: string | undefined,
+  env: NodeJS.ProcessEnv,
+): boolean {
+  if (!baseUrl || isLocalProviderUrl(baseUrl)) {
+    return false
+  }
+
+  const routeId = resolveActiveRouteIdFromEnv(env)
+  if (routeId && OPENAI_COMPATIBLE_SHIM_ROUTES.has(routeId)) {
+    return true
+  }
+
+  return (
+    isEnvTruthy(env.CLAUDE_CODE_USE_OPENAI) ||
+    isEnvTruthy(env.NVIDIA_NIM) ||
+    isEnvTruthy(env.MINIMAX_API_KEY)
+  )
+}
+
+/**
+ * Fast-path for OpenAI shim request preparation (local llama.cpp and remote
+ * gateways such as NVIDIA NIM). Skips stableStringify and strict tool schemas
+ * that add hundreds of ms on large tool catalogs.
+ */
+export function getShimFastPathConfig(
+  baseUrl: string | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): LocalFastPathConfig {
+  const override = parseLocalFastPathOverride(env[LOCAL_FAST_PATH_ENV])
+  if (override === false) {
+    return LOCAL_FAST_PATH_OFF
+  }
+
+  const local = getLocalFastPathConfig(baseUrl, env)
+  if (local.enabled) {
+    return local
+  }
+
+  if (override === true || shouldUseRemoteShimFastPath(baseUrl, env)) {
+    return REMOTE_SHIM_FAST_PATH_ON
+  }
+
+  return LOCAL_FAST_PATH_OFF
 }
 
 function trimTrailingSlash(value: string): string {

@@ -136,17 +136,25 @@ async function main(): Promise<void> {
     }
   }
 
-  // Hydrate GitHub credentials after profile is applied so CLAUDE_CODE_USE_GITHUB from profile is available
+  // Hydrate GitHub credentials after profile apply; run validation in parallel
+  // so interactive startup is not blocked on token refresh when GitHub is off.
   {
-    const {
-      hydrateGithubModelsTokenFromSecureStorage,
-      refreshGithubModelsTokenIfNeeded,
-    } = await import('../utils/githubModelsCredentials.js')
-    await refreshGithubModelsTokenIfNeeded()
-    hydrateGithubModelsTokenFromSecureStorage()
+    const githubCredsPromise = (async () => {
+      const {
+        hydrateGithubModelsTokenFromSecureStorage,
+        refreshGithubModelsTokenIfNeeded,
+      } = await import('../utils/githubModelsCredentials.js')
+      const { isEnvTruthy } = await import('../utils/envUtils.js')
+      if (isEnvTruthy(process.env.CLAUDE_CODE_USE_GITHUB)) {
+        await refreshGithubModelsTokenIfNeeded()
+      }
+      hydrateGithubModelsTokenFromSecureStorage()
+    })()
+    await Promise.all([
+      githubCredsPromise,
+      validateProviderEnvForStartupOrExit(),
+    ])
   }
-
-  await validateProviderEnvForStartupOrExit()
 
   // #808: --model alone (no --provider) — route to the env var matching the
   // active provider before the banner prints so the override is visible.

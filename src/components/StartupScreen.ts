@@ -15,6 +15,7 @@ import { getSettings_DEPRECATED } from '../utils/settings/settings.js'
 import { parseUserSpecifiedModel } from '../utils/model/model.js'
 import { DEFAULT_GEMINI_MODEL } from '../utils/providerProfile.js'
 import { getGlobalConfig } from '../utils/config.js'
+import { isEnvTruthy } from '../utils/envUtils.js'
 import { ANSI_DIM, ANSI_RESET, ansiRgb } from '../utils/terminalAnsi.js'
 import {
   resolveLogoPalette,
@@ -289,11 +290,20 @@ function frameForStartup(
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+function isFastStartupScreen(): boolean {
+  return (
+    isEnvTruthy(process.env.AWAKENED_FAST_STARTUP) ||
+    isEnvTruthy(process.env.CLAUDE_CODE_FAST_STARTUP) ||
+    (getGlobalConfig().numStartups ?? 0) > 0
+  )
+}
+
 export function printStartupScreen(modelOverride?: string): void {
   if (process.env.CI || !process.stdout.isTTY) return
 
   const frames = 6
   const delayMs = 25
+  const fast = isFastStartupScreen()
 
   const hideCursor = '\x1b[?25l'
   const showCursor = '\x1b[?25h'
@@ -302,14 +312,23 @@ export function printStartupScreen(modelOverride?: string): void {
   try {
     process.stdout.write(hideCursor)
 
-    for (let f = 0; f < frames; f++) {
+    if (fast) {
       process.stdout.write(clearHome)
-      process.stdout.write(frameForStartup(modelOverride, f, frames).join('\n') + '\n')
-      sleepSync(delayMs)
-    }
+      process.stdout.write(
+        frameForStartup(modelOverride, frames - 1, frames).join('\n') + '\n',
+      )
+    } else {
+      for (let f = 0; f < frames; f++) {
+        process.stdout.write(clearHome)
+        process.stdout.write(frameForStartup(modelOverride, f, frames).join('\n') + '\n')
+        sleepSync(delayMs)
+      }
 
-    process.stdout.write(clearHome)
-    process.stdout.write(frameForStartup(modelOverride, frames - 1, frames).join('\n') + '\n')
+      process.stdout.write(clearHome)
+      process.stdout.write(
+        frameForStartup(modelOverride, frames - 1, frames).join('\n') + '\n',
+      )
+    }
   } finally {
     process.stdout.write(showCursor)
   }

@@ -4,6 +4,7 @@ import {
   detectBestProvider,
   detectLocalService,
   detectProviderFromEnv,
+  hasRemoteOpenAICompatibleEndpoint,
 } from './providerAutoDetect.ts'
 
 // Hermetic env scan: always report "no Codex auth on disk" so tests don't
@@ -271,6 +272,35 @@ describe('detectBestProvider — orchestrator', () => {
       hasCodexAuth: () => false,
     })
     expect(result?.kind).toBe('ollama')
+  })
+
+  test('hasRemoteOpenAICompatibleEndpoint detects hosted gateway URLs', () => {
+    expect(
+      hasRemoteOpenAICompatibleEndpoint({
+        OPENAI_BASE_URL: 'https://opengateway.gitlawb.com/v1',
+      }),
+    ).toBe(true)
+    expect(
+      hasRemoteOpenAICompatibleEndpoint({
+        OPENAI_BASE_URL: 'http://127.0.0.1:11434/v1',
+      }),
+    ).toBe(false)
+  })
+
+  test('remote OPENAI_BASE_URL skips local probes and falls back faster', async () => {
+    let probeCalled = false
+    const fetchImpl = (async () => {
+      probeCalled = true
+      return new Response('{}', { status: 200 })
+    }) as typeof fetch
+
+    const result = await detectBestProvider({
+      env: { OPENAI_BASE_URL: 'https://opengateway.gitlawb.com/v1' },
+      fetchImpl,
+      hasCodexAuth: () => false,
+    })
+    expect(probeCalled).toBe(false)
+    expect(result?.kind).toBe('gitlawb-opengateway')
   })
 
   test('skipLocal prevents network probes and falls back to opengateway', async () => {

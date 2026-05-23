@@ -174,7 +174,16 @@ async function loadDescriptorDiscoveryContext(
   const routeLabel = descriptor.label
   const routeDefaultModel =
     'defaultModel' in descriptor ? descriptor.defaultModel : undefined
-  const staticEntries = catalog.models ?? []
+  let staticEntries = catalog.models ?? []
+  if (routeId === 'nvidia-nim') {
+    const { getNvidiaNimCatalogStaticModels } = await import(
+      '../../integrations/catalogs/nvidiaNimStaticCatalog.js'
+    )
+    staticEntries = mergeRouteCatalogEntries(
+      staticEntries,
+      getNvidiaNimCatalogStaticModels(),
+    )
+  }
   const trafficRestricted = isEssentialTrafficOnly()
   const canRefresh = Boolean(
     catalog.discovery && catalog.allowManualRefresh && !trafficRestricted,

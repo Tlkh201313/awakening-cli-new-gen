@@ -46,6 +46,7 @@ import {
 } from './claudemd.js'
 import { dirname, parse, relative, resolve } from 'path'
 import { getCwd } from 'src/utils/cwd.js'
+import { getAutoCapabilityAttachments } from '../capabilities/autoCapabilities.js'
 import { getViewedTeammateTask } from '../state/selectors.js'
 import { logError } from './log.js'
 import { logAntError } from './debug.js'
@@ -542,6 +543,12 @@ export type Attachment =
       source: 'native' | 'aki' | 'both'
     }
   | {
+      type: 'reading_skill'
+      skillName: string
+      capabilityId?: string
+      content: string
+    }
+  | {
       type: 'queued_command'
       prompt: string | Array<ContentBlockParam>
       source_uuid?: UUID
@@ -874,6 +881,15 @@ export async function getAttachments(
     // relevant_memories moved to async prefetch (startRelevantMemoryPrefetch)
     maybe('dynamic_skill', () => getDynamicSkillAttachments(context)),
     maybe('skill_listing', () => getSkillListingAttachments(context)),
+    maybe('reading_skill', () =>
+      Promise.resolve(
+        getAutoCapabilityAttachments({
+          userText: input,
+          tools: toolUseContext.options.tools,
+          agentId: toolUseContext.agentId,
+        }),
+      ),
+    ),
     // Inter-turn skill discovery now runs via startSkillDiscoveryPrefetch
     // (query.ts, concurrent with the main turn). The blocking call that
     // previously lived here was the assistant_turn signal — 97% of those

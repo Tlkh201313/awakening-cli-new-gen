@@ -182,7 +182,27 @@ type LocalProbe = {
   baseUrl: string
 }
 
-const DEFAULT_LOCAL_PROBE_TIMEOUT_MS = 1200
+const DEFAULT_LOCAL_PROBE_TIMEOUT_MS = 500
+
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0'])
+
+/** Skip Ollama/LM Studio probes when env already targets a remote gateway. */
+export function hasRemoteOpenAICompatibleEndpoint(
+  env: EnvLike = process.env,
+): boolean {
+  const raw =
+    (typeof env.OPENAI_BASE_URL === 'string' && env.OPENAI_BASE_URL.trim()) ||
+    (typeof env.OPENGATEWAY_BASE_URL === 'string' &&
+      env.OPENGATEWAY_BASE_URL.trim()) ||
+    ''
+  if (!raw) return false
+  try {
+    const hostname = new URL(raw).hostname.toLowerCase()
+    return !LOCAL_HOSTNAMES.has(hostname)
+  } catch {
+    return false
+  }
+}
 
 async function probeReachable(
   url: string,
@@ -303,7 +323,8 @@ function defaultOpengatewayProvider(env: EnvLike): DetectedProvider {
     OPENGATEWAY_DEFAULT_BASE_URL
   return {
     kind: 'gitlawb-opengateway',
-    source: 'Gitlawb Opengateway (free partner models — no key required)',
+    source:
+      'Gitlawb Opengateway (set OPENGATEWAY_API_KEY — free key at gitlawb.com/opengateway)',
     baseUrl: normalizeOpengatewayBaseUrl(baseUrl),
     model: OPENGATEWAY_DEFAULT_MODEL,
   }
@@ -331,7 +352,7 @@ export async function detectBestProvider(options?: {
   })
   if (fromEnv) return fromEnv
 
-  if (!options?.skipLocal) {
+  if (!options?.skipLocal && !hasRemoteOpenAICompatibleEndpoint(env)) {
     const local = await detectLocalService({
       env,
       fetchImpl: options?.fetchImpl,

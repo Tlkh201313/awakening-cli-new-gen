@@ -9,13 +9,26 @@ type AppWrapperProps = {
   stats?: StatsStore;
   initialState: AppState;
 };
+function loadReplModules() {
+  return Promise.all([
+    import('./components/App.js'),
+    import('./screens/REPL.js'),
+  ]).then(([app, repl]) => ({
+    App: app.App,
+    REPL: repl.REPL,
+  }));
+}
+let replModulesPreload: ReturnType<typeof loadReplModules> | null = null;
+export function preloadReplModules(): void {
+  if (!replModulesPreload) {
+    replModulesPreload = loadReplModules();
+  }
+}
 export async function launchRepl(root: Root, appProps: AppWrapperProps, replProps: REPLProps, renderAndRun: (root: Root, element: React.ReactNode) => Promise<void>): Promise<void> {
   const {
-    App
-  } = await import('./components/App.js');
-  const {
+    App,
     REPL
-  } = await import('./screens/REPL.js');
+  } = await (replModulesPreload ?? loadReplModules());
   await renderAndRun(root, <App {...appProps}>
       <REPL {...replProps} />
     </App>);

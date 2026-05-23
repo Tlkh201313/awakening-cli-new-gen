@@ -31,7 +31,9 @@ type Input = z.infer<ReturnType<typeof inputSchema>>
 
 export const BatchReadTool = buildTool({
   name: BATCH_READ_TOOL_NAME,
-  inputSchema,
+  get inputSchema(): ReturnType<typeof inputSchema> {
+    return inputSchema()
+  },
   async description() {
     return 'Read multiple files in parallel (2-20 files)'
   },
