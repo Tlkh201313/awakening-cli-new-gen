@@ -20,7 +20,7 @@ describe('streamUiThrottle', () => {
       runs++
     })
     expect(runs).toBe(1)
-    await new Promise(r => setTimeout(r, 60))
+    await new Promise(r => setTimeout(r, 80))
     expect(runs).toBe(2)
   })
 

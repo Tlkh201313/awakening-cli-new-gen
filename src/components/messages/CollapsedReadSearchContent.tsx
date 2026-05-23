@@ -244,6 +244,11 @@ export function CollapsedReadSearchContent({
                 {info.command} ({formatSecondsShort(info.durationMs ?? 0)})
               </Text>)}
           </>}
+        {message.hookErrors && message.hookErrors.length > 0 && <Text dimColor>
+            {'  └  '}Hook errors ({message.hookErrors.length}):{' '}
+            {message.hookErrors.slice(0, 2).join(' | ')}
+            {message.hookErrors.length > 2 && ` +${message.hookErrors.length - 2} more`}
+          </Text>}
         {message.relevantMemories?.map(m => <Box key={m.path} flexDirection="column" marginTop={1}>
             <Text dimColor>
               {'  └  '}Recalled {basename(m.path)}
@@ -478,6 +483,11 @@ export function CollapsedReadSearchContent({
           {'  └  '}Ran {message.hookCount} PreToolUse{' '}
           {message.hookCount === 1 ? 'hook' : 'hooks'} (
           {formatSecondsShort(message.hookTotalMs)})
+        </Text>}
+      {message.hookErrors && message.hookErrors.length > 0 && <Text dimColor>
+          {'  └  '}Hook errors ({message.hookErrors.length}):{' '}
+          {message.hookErrors.slice(0, 2).join(' | ')}
+          {message.hookErrors.length > 2 && ` +${message.hookErrors.length - 2} more`}
         </Text>}
     </Box>;
 }

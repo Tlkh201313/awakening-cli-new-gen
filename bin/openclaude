@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * OpenClaude — Claude Code with any LLM
- *
- * If dist/cli.mjs exists (built), run that.
- * Otherwise, tell the user to build first or use `bun run dev`.
+ * Legacy CLI entry — same as `awakened` (see package.json bin aliases).
  */
 
 import { existsSync } from 'fs'

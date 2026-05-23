@@ -4,13 +4,10 @@
  * Windows conhost and during long retry spinners).
  */
 
-const DEFAULT_DELTA_FLUSH_MS = 32
-const DEFAULT_DELTA_FLUSH_MS_WIN32 = 48
+import { getStreamFlushMsForTier } from './awakenedMemory.js'
 
 function defaultDeltaFlushMs(): number {
-  return process.platform === 'win32'
-    ? DEFAULT_DELTA_FLUSH_MS_WIN32
-    : DEFAULT_DELTA_FLUSH_MS
+  return getStreamFlushMsForTier()
 }
 
 function parseFlushMs(): number {

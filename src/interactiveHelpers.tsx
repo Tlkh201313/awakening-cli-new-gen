@@ -157,6 +157,8 @@ export async function showSetupScreens(root: Root, permissionMode: PermissionMod
 
     // Now that trust is established, prefetch system context if it wasn't already
     void getSystemContext();
+    const { prefetchApiKeyFromApiKeyHelperIfSafe } = await import('./utils/auth.js');
+    prefetchApiKeyFromApiKeyHelperIfSafe(false);
 
     // MCP approval and external-includes warnings are about workspace
     // trust, not about Anthropic auth. They must run for all providers

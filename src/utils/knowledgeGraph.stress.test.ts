@@ -46,7 +46,7 @@ describe('KnowledgeGraph Phase 1 Stress & Edge Cases', () => {
 
   beforeEach(async () => {
     await acquireEnvMutex()
-    configDir = mkdtempSync(join(tmpdir(), 'openclaude-stress-'))
+    configDir = mkdtempSync(join(tmpdir(), 'Awakened-stress-'))
     process.env.CLAUDE_CONFIG_DIR = configDir
     process.env.OPENCLAUDE_KNOWLEDGE_ORAMA = '1'
     setClaudeConfigHomeDirForTesting(configDir)

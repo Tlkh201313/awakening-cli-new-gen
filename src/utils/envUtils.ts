@@ -10,9 +10,15 @@ import {
 } from 'fs'
 import { homedir } from 'os'
 import { dirname, join } from 'path'
+import {
+  getAwakenedConfigHomePath,
+  GLOBAL_CONFIG_BASENAME,
+  LEGACY_CONFIG_DIR_NAMES,
+  LEGACY_GLOBAL_CONFIG_BASENAMES,
+} from '../constants/brand.js'
 
 const LEGACY_GLOBAL_CONFIG_FILE_RE =
-  /^\.claude(?:-(?:custom|local|staging)-oauth)?\.json$/
+  /^\.(?:claude|openclaude)(?:-(?:custom|local|staging)-oauth)?\.json$/
 
 function getErrnoCode(error: unknown): string | undefined {
   if (
@@ -114,28 +120,46 @@ export function migrateLegacyClaudeConfigHome(options?: {
   }
 
   const homeDir = options?.homeDir ?? homedir()
-  const openClaudeDir = join(homeDir, '.openclaude')
-  const legacyClaudeDir = join(homeDir, '.claude')
+  const awakenedDir = getAwakenedConfigHomePath(homeDir)
 
   try {
-    const legacyDirExists = pathIsDirectory(legacyClaudeDir)
     const legacyGlobalConfigFiles = getLegacyGlobalConfigFiles(homeDir)
+    const legacyDirs = LEGACY_CONFIG_DIR_NAMES.map(name =>
+      join(homeDir, name),
+    ).filter(pathIsDirectory)
 
-    if (!legacyDirExists && legacyGlobalConfigFiles.length === 0) {
+    if (legacyDirs.length === 0 && legacyGlobalConfigFiles.length === 0) {
       return true
     }
 
-    if (legacyDirExists) {
-      copyMissingPathSync(legacyClaudeDir, openClaudeDir)
+    for (const legacyDir of legacyDirs) {
+      copyMissingPathSync(legacyDir, awakenedDir)
     }
 
     for (const legacyFile of legacyGlobalConfigFiles) {
-      const openClaudeFile = legacyFile.replace(/^\.claude/, '.openclaude')
-      copyMissingPathSync(
-        join(homeDir, legacyFile),
-        join(homeDir, openClaudeFile),
+      const awakenedFile = legacyFile.replace(
+        /^\.(?:claude|openclaude)/,
+        GLOBAL_CONFIG_BASENAME,
       )
+      copyMissingPathSync(join(homeDir, legacyFile), join(homeDir, awakenedFile))
     }
+
+    for (const legacyBase of LEGACY_GLOBAL_CONFIG_BASENAMES) {
+      const legacyOAuthFiles = readdirSync(homeDir).filter(file =>
+        file.startsWith(`${legacyBase}-`) && file.endsWith('.json'),
+      )
+      for (const legacyFile of legacyOAuthFiles) {
+        const awakenedFile = legacyFile.replace(
+          new RegExp(`^${legacyBase.replace('.', '\\.')}`),
+          GLOBAL_CONFIG_BASENAME,
+        )
+        copyMissingPathSync(
+          join(homeDir, legacyFile),
+          join(homeDir, awakenedFile),
+        )
+      }
+    }
+
     return true
   } catch {
     return false
@@ -151,9 +175,7 @@ export function resolveClaudeConfigHomeDir(options?: {
   }
 
   const homeDir = options?.homeDir ?? homedir()
-  const openClaudeDir = join(homeDir, '.openclaude')
-
-  return openClaudeDir.normalize('NFC')
+  return getAwakenedConfigHomePath(homeDir).normalize('NFC')
 }
 
 let claudeConfigHomeDirOverride: string | undefined
@@ -178,16 +200,15 @@ export const getClaudeConfigHomeDir = memoize(
       configDirEnv,
       homeDir,
     })
-    const openClaudeDir = join(homeDir, '.openclaude')
-    const legacyClaudeDir = join(homeDir, '.claude')
+    const awakenedDir = getAwakenedConfigHomePath(homeDir)
 
-    if (
-      !configDirEnv &&
-      !migrationSucceeded &&
-      !pathIsDirectory(openClaudeDir) &&
-      pathExists(legacyClaudeDir)
-    ) {
-      return legacyClaudeDir.normalize('NFC')
+    if (!configDirEnv && !migrationSucceeded && !pathIsDirectory(awakenedDir)) {
+      for (const legacyName of LEGACY_CONFIG_DIR_NAMES) {
+        const legacyDir = join(homeDir, legacyName)
+        if (pathExists(legacyDir)) {
+          return legacyDir.normalize('NFC')
+        }
+      }
     }
 
     return resolveClaudeConfigHomeDir({

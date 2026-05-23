@@ -304,16 +304,20 @@ export function AttachmentMessage({
         if (attachment.hookEvent === 'Stop' || attachment.hookEvent === 'SubagentStop') {
           return null;
         }
-        // Full hook output is logged to debug log via hookEvents.ts
-        return <Line color="error">{attachment.hookName} hook error</Line>;
+        // Show first line of stderr (truncated) so failures are debuggable
+        const errText = (attachment.stderr ?? '').trim().split('\n')[0]?.slice(0, 120);
+        return <>
+          <Line color="error">{attachment.hookName} hook error{errText ? `: ${errText}` : ''}</Line>
+        </>;
       }
     case 'hook_error_during_execution':
       // Stop hooks are rendered as a summary in SystemStopHookSummaryMessage
       if (attachment.hookEvent === 'Stop' || attachment.hookEvent === 'SubagentStop') {
         return null;
       }
-      // Full hook output is logged to debug log via hookEvents.ts
-      return <Line>{attachment.hookName} hook warning</Line>;
+      // Show content when present so users see what went wrong
+      const warnText = (attachment.content ?? '').trim().split('\n')[0]?.slice(0, 120);
+      return <Line>{attachment.hookName} hook warning{warnText ? `: ${warnText}` : ''}</Line>;
     case 'hook_success':
       // Full hook output is logged to debug log via hookEvents.ts
       return null;

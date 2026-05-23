@@ -11,6 +11,7 @@ import {
 import { getProjectRoot } from '../bootstrap/state.js'
 import { createCombinedAbortSignal } from './combinedAbortSignal.js'
 import { logForDebugging } from './debug.js'
+import { PROJECT_CONFIG_DIR_NAMES } from '../constants/brand.js'
 import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js'
 import { isFsInaccessible } from './errors.js'
 import { normalizePathForComparison } from './file.js'
@@ -37,8 +38,6 @@ export const CLAUDE_CONFIG_DIRECTORIES = [
 ] as const
 
 export type ClaudeConfigDirectory = (typeof CLAUDE_CONFIG_DIRECTORIES)[number]
-
-const PROJECT_CONFIG_DIR_NAMES = ['.claude', '.openclaude'] as const
 
 export type MarkdownFile = {
   filePath: string

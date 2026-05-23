@@ -1,6 +1,7 @@
 import memoize from 'lodash-es/memoize.js'
 import { homedir } from 'os'
 import { join } from 'path'
+import { resolveGlobalConfigFilePath } from '../constants/brand.js'
 import { fileSuffixForOauthConfig } from '../constants/oauth.js'
 import { isRunningWithBun } from './bundledMode.js'
 import { createCombinedAbortSignal } from './combinedAbortSignal.js'
@@ -22,20 +23,13 @@ export function resolveGlobalClaudeFile(options: {
   migrationSucceeded?: boolean
   existsSync: (path: string) => boolean
 }): string {
-  const oauthSuffix = options.oauthSuffix ?? ''
   const configDir = options.configDirEnv || options.homeDir || homedir()
-  const hasExplicitConfigDir = Boolean(options.configDirEnv)
-  const newFilename = `.openclaude${oauthSuffix}.json`
-  const legacyFilename = `.claude${oauthSuffix}.json`
-
-  if (
-    (hasExplicitConfigDir || options.migrationSucceeded === false) &&
-    !options.existsSync(join(configDir, newFilename)) &&
-    options.existsSync(join(configDir, legacyFilename))
-  ) {
-    return join(configDir, legacyFilename)
-  }
-  return join(configDir, newFilename)
+  return resolveGlobalConfigFilePath({
+    configDir,
+    oauthSuffix: options.oauthSuffix,
+    existsSync: options.existsSync,
+    hasExplicitConfigDir: Boolean(options.configDirEnv),
+  })
 }
 
 // Config and data paths
@@ -58,7 +52,7 @@ export const getGlobalClaudeFile = memoize((): string => {
     migrationSucceeded = migrateLegacyClaudeConfigHome({ homeDir: configDir })
   }
 
-  // Default installs hard-cut to .openclaude.json after the migration above.
+  // Default installs hard-cut to .awakened.json after the migration above.
   // Explicit CLAUDE_CONFIG_DIR users keep the legacy filename fallback because
   // that env var is the opt-out for automatic migration.
   return resolveGlobalClaudeFile({

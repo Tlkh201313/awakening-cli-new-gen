@@ -1,9 +1,10 @@
 /**
  * Regression tests for issue #402 — NODE_OPTIONS heap cap
- * Closes: Gitlawb/openclaude#402 — JavaScript heap OOM during large tasks
+ * Closes: Gitlawb/Awakened#402 — JavaScript heap OOM during large tasks
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
+import { getDefaultMaxOldSpaceSizeMb } from '../utils/awakenedMemory.js'
 
 describe('cli.tsx — NODE_OPTIONS --max-old-space-size (issue #402)', () => {
   const originalNodeOptions = process.env.NODE_OPTIONS
@@ -44,26 +45,20 @@ describe('cli.tsx — NODE_OPTIONS --max-old-space-size (issue #402)', () => {
 
   it('appends --max-old-space-size when NODE_OPTIONS has other flags', () => {
     process.env.NODE_OPTIONS = '--inspect=9229'
+    const heapMb = getDefaultMaxOldSpaceSizeMb()
 
-    const result = `${process.env.NODE_OPTIONS} --max-old-space-size=8192`
-    expect(result).toBe('--inspect=9229 --max-old-space-size=8192')
+    const result = `${process.env.NODE_OPTIONS} --max-old-space-size=${heapMb}`
+    expect(result).toBe(`--inspect=9229 --max-old-space-size=${heapMb}`)
   })
 })
 
-describe('useMemoryUsage.ts — threshold constants (issue #402)', () => {
-  it('HIGH_MEMORY_THRESHOLD documented as 1.5 GB', async () => {
+describe('useMemoryUsage.ts — tier-relative thresholds', () => {
+  it('uses awakenedMemory profile for heap limits', async () => {
     const src = await Bun.file(
       `${import.meta.dir}/../hooks/useMemoryUsage.ts`,
     ).text()
 
-    expect(src).toContain('HIGH_MEMORY_THRESHOLD = 1.5 * 1024 * 1024 * 1024')
-  })
-
-  it('CRITICAL_MEMORY_THRESHOLD documented as 2.5 GB', async () => {
-    const src = await Bun.file(
-      `${import.meta.dir}/../hooks/useMemoryUsage.ts`,
-    ).text()
-
-    expect(src).toContain('CRITICAL_MEMORY_THRESHOLD = 2.5 * 1024 * 1024 * 1024')
+    expect(src).toContain('getRamProfile')
+    expect(src).toContain('updateMemoryPressureFromHeap')
   })
 })

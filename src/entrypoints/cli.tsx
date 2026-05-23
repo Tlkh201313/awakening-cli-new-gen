@@ -1,5 +1,11 @@
 import { feature } from 'bun:bundle';
 import {
+  applyAwakenedMemoryProfile,
+  getDefaultMaxOldSpaceSizeMb,
+} from '../utils/awakenedMemory.js'
+
+applyAwakenedMemoryProfile()
+import {
   applyProfileEnvToProcessEnv,
   buildStartupEnvFromProfile,
 } from '../utils/providerProfile.js'
@@ -8,7 +14,7 @@ import {
   validateProviderEnvForStartupOrExit,
 } from '../utils/providerValidation.js'
 
-// OpenClaude: polyfill globalThis.File for Node < 20.
+// Awakened: polyfill globalThis.File for Node < 20.
 // undici v7 references `File` at module evaluation time (webidl type
 // assertions). Node 18 lacks the global, causing a ReferenceError inside
 // the bundled __commonJS require chain which deadlocks the process when a
@@ -36,7 +42,7 @@ if (typeof globalThis.File === 'undefined') {
   }
 }
 
-// OpenClaude: disable experimental API betas by default.
+// Awakened: disable experimental API betas by default.
 // Tool search (defer_loading), global cache scope, and context management
 // require internal API support not available to external accounts → 500.
 // Users can opt-in with CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=false.
@@ -55,13 +61,16 @@ process.env.COREPACK_ENABLE_AUTO_PIN = '0';
 // CCR (Claude Code Remote / container) environments are covered by the same
 // unconditional assignment — the previous CLAUDE_CODE_REMOTE guard was too
 // restrictive, preventing local users from benefiting from the raised limit.
-// Closes: Gitlawb/openclaude#402 — JavaScript heap OOM during large tasks.
+// Closes: Gitlawb/Awakened#402 — JavaScript heap OOM during large tasks.
 // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level, custom-rules/safe-env-boolean-check
 if (!process.env.NODE_OPTIONS?.includes('--max-old-space-size')) {
   // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
   const existing = process.env.NODE_OPTIONS || ''
+  const heapMb = getDefaultMaxOldSpaceSizeMb()
   // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
-  process.env.NODE_OPTIONS = existing ? `${existing} --max-old-space-size=8192` : '--max-old-space-size=8192'
+  process.env.NODE_OPTIONS = existing
+    ? `${existing} --max-old-space-size=${heapMb}`
+    : `--max-old-space-size=${heapMb}`
 }
 
 // Harness-science L0 ablation baseline. Inlined here (not init.ts) because
@@ -167,7 +176,8 @@ async function main(): Promise<void> {
   const { eagerParseCliFlag } = await import('../utils/cliArgs.js')
   const earlyModelFlag = eagerParseCliFlag('--model')
 
-  // Print the gradient startup screen before the Ink UI loads
+  // Overlap main bundle load with the startup screen
+  const mainImportPromise = import('../main.js')
   const { printStartupScreen } = await import('../components/StartupScreen.js')
   printStartupScreen(earlyModelFlag)
 
@@ -424,7 +434,7 @@ async function main(): Promise<void> {
   profileCheckpoint('cli_before_main_import');
   const {
     main: cliMain
-  } = await import('../main.js');
+  } = await mainImportPromise;
   profileCheckpoint('cli_after_main_import');
   await cliMain();
   profileCheckpoint('cli_after_main_complete');

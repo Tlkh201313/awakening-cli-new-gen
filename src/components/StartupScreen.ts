@@ -2,7 +2,7 @@
  * Awakened startup screen — filled-block text logo with gold shimmer.
  * Called once at CLI startup before the Ink UI renders.
  *
- * Addresses: https://github.com/Gitlawb/openclaude/issues/55
+ * Addresses: https://github.com/Gitlawb/Awakened/issues/55
  */
 
 import { isLocalProviderUrl, resolveProviderRequest } from '../services/api/providerConfig.js'
@@ -293,7 +293,7 @@ function frameForStartup(
 
 function isFastStartupScreen(): boolean {
   return (
-    isEnvTruthy(process.env.AWAKENED_FAST_STARTUP) ||
+    isEnvTruthy(process.env.OPENCLAUDE_FAST_STARTUP) ||
     isEnvTruthy(process.env.CLAUDE_CODE_FAST_STARTUP) ||
     (getGlobalConfig().numStartups ?? 0) > 0 ||
     isAwakenedPerformanceMode() // Skip animation when perf mode active

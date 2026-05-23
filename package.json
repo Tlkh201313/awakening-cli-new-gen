@@ -1,10 +1,11 @@
 {
-  "name": "@gitlawb/openclaude",
+  "name": "@gitlawb/awakened",
   "version": "0.12.19",
-  "description": "OpenClaude opens coding-agent workflows to any LLM — OpenAI, Gemini, DeepSeek, Ollama, and 200+ models",
+  "description": "Awakened — coding-agent CLI for any LLM (OpenAI, Gemini, DeepSeek, Ollama, 200+ models). `openclaude` bin kept as alias.",
   "type": "module",
   "bin": {
-    "openclaude": "./bin/openclaude"
+    "awakened": "./bin/awakened",
+    "openclaude": "./bin/awakened"
   },
   "exports": {
     "./package.json": "./package.json",

@@ -14,7 +14,7 @@ const originalEnv = { ...process.env }
 const originalMacro = (globalThis as Record<string, unknown>).MACRO
 
 beforeEach(async () => {
-  await acquireSharedMutationLock('utils/openclaudeInstallSurfaces.test.ts')
+  await acquireSharedMutationLock('utils/AwakenedInstallSurfaces.test.ts')
 })
 
 afterEach(() => {
@@ -42,7 +42,7 @@ async function importFreshInstaller() {
   return import(`./nativeInstaller/installer.ts?ts=${Date.now()}-${Math.random()}`)
 }
 
-test('install command displays ~/.local/bin/openclaude on non-Windows', async () => {
+test('install command displays ~/.local/bin/Awakened on non-Windows', async () => {
   mock.module('../utils/env.js', () => ({
     ...realEnv,
     env: { platform: 'darwin' },
@@ -50,10 +50,10 @@ test('install command displays ~/.local/bin/openclaude on non-Windows', async ()
 
   const { getInstallationPath } = await importFreshInstallCommand()
 
-  expect(getInstallationPath()).toBe('~/.local/bin/openclaude')
+  expect(getInstallationPath()).toBe('~/.local/bin/Awakened')
 })
 
-test('install command displays openclaude.exe path on Windows', async () => {
+test('install command displays Awakened.exe path on Windows', async () => {
   mock.module('../utils/env.js', () => ({
     ...realEnv,
     env: { platform: 'win32' },
@@ -62,14 +62,14 @@ test('install command displays openclaude.exe path on Windows', async () => {
   const { getInstallationPath } = await importFreshInstallCommand()
 
   expect(getInstallationPath()).toBe(
-    join(homedir(), '.local', 'bin', 'openclaude.exe').replace(/\//g, '\\'),
+    join(homedir(), '.local', 'bin', 'Awakened.exe').replace(/\//g, '\\'),
   )
 })
 
-test('cleanupNpmInstallations removes both openclaude and legacy claude local install dirs', async () => {
+test('cleanupNpmInstallations removes both Awakened and legacy claude local install dirs', async () => {
   const removedPaths: string[] = []
   ;(globalThis as Record<string, unknown>).MACRO = {
-    PACKAGE_URL: '@gitlawb/openclaude',
+    PACKAGE_URL: '@gitlawb/Awakened',
   }
 
   mock.module('fs/promises', () => ({
@@ -89,13 +89,13 @@ test('cleanupNpmInstallations removes both openclaude and legacy claude local in
 
   mock.module('./envUtils.js', () => ({
     ...realEnvUtils,
-    getClaudeConfigHomeDir: () => join(homedir(), '.openclaude'),
+    getClaudeConfigHomeDir: () => join(homedir(), '.awakened'),
     isEnvTruthy: (value: string | undefined) => value === '1',
   }))
 
   const { cleanupNpmInstallations } = await importFreshInstaller()
   await cleanupNpmInstallations()
 
-  expect(removedPaths).toContain(join(homedir(), '.openclaude', 'local'))
+  expect(removedPaths).toContain(join(homedir(), '.awakened', 'local'))
   expect(removedPaths).toContain(join(homedir(), '.claude', 'local'))
 })

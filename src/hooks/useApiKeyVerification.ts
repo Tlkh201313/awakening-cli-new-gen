@@ -95,6 +95,11 @@ export function useApiKeyVerification(): ApiKeyVerificationResult {
     }
   }, [])
 
+  useEffect(() => {
+    if (!anthropicVerificationEnabled) return
+    void verify()
+  }, [anthropicVerificationEnabled, verify])
+
   return {
     status,
     reverify: verify,

@@ -33,8 +33,8 @@ beforeAll(async () => {
     DISPLAY_VERSION: '0.0.0-test',
     BUILD_TIME: new Date().toISOString(),
     ISSUES_EXPLAINER:
-      'report the issue at https://github.com/Gitlawb/openclaude/issues',
-    PACKAGE_URL: '@gitlawb/openclaude',
+      'report the issue at https://github.com/Gitlawb/Awakened/issues',
+    PACKAGE_URL: '@gitlawb/Awakened',
     NATIVE_PACKAGE_URL: undefined,
   }
 
@@ -77,24 +77,24 @@ afterEach(() => {
   clearSystemPromptSections()
 })
 
-test('CLI identity prefixes describe OpenClaude instead of Claude Code', () => {
-  expect(getCLISyspromptPrefix()).toContain('OpenClaude')
+test('CLI identity prefixes describe Awakened instead of Claude Code', () => {
+  expect(getCLISyspromptPrefix()).toContain('Awakened')
   expect(getCLISyspromptPrefix()).not.toContain('Claude Code')
   expect(getCLISyspromptPrefix()).not.toContain("Anthropic's official CLI for Claude")
 
   for (const prefix of CLI_SYSPROMPT_PREFIXES) {
-    expect(prefix).toContain('OpenClaude')
+    expect(prefix).toContain('Awakened')
     expect(prefix).not.toContain('Claude Code')
     expect(prefix).not.toContain("Anthropic's official CLI for Claude")
   }
 })
 
-test('simple mode identity describes OpenClaude instead of Claude Code', async () => {
+test('simple mode identity describes Awakened instead of Claude Code', async () => {
   process.env.CLAUDE_CODE_SIMPLE = '1'
 
   const prompt = await getSystemPrompt([], 'gpt-4o')
 
-  expect(prompt[0]).toContain('OpenClaude')
+  expect(prompt[0]).toContain('Awakened')
   expect(prompt[0]).not.toContain('Claude Code')
   expect(prompt[0]).not.toContain("Anthropic's official CLI for Claude")
 })
@@ -114,35 +114,35 @@ test('system prompt model identity updates when model changes mid-session', asyn
   expect(secondText).not.toContain('You are powered by the model old-test-model.')
 })
 
-test('built-in agent prompts describe OpenClaude instead of Claude Code', () => {
-  expect(DEFAULT_AGENT_PROMPT).toContain('OpenClaude')
+test('built-in agent prompts describe Awakened instead of Claude Code', () => {
+  expect(DEFAULT_AGENT_PROMPT).toContain('Awakened')
   expect(DEFAULT_AGENT_PROMPT).not.toContain('Claude Code')
   expect(DEFAULT_AGENT_PROMPT).not.toContain("Anthropic's official CLI for Claude")
 
   const generalPrompt = GENERAL_PURPOSE_AGENT.getSystemPrompt({
     toolUseContext: { options: {} as never },
   })
-  expect(generalPrompt).toContain('OpenClaude')
+  expect(generalPrompt).toContain('Awakened')
   expect(generalPrompt).not.toContain('Claude Code')
   expect(generalPrompt).not.toContain("Anthropic's official CLI for Claude")
 
   const explorePrompt = EXPLORE_AGENT.getSystemPrompt({
     toolUseContext: { options: {} as never },
   })
-  expect(explorePrompt).toContain('OpenClaude')
+  expect(explorePrompt).toContain('Awakened')
   expect(explorePrompt).not.toContain('Claude Code')
   expect(explorePrompt).not.toContain("Anthropic's official CLI for Claude")
 
   const planPrompt = PLAN_AGENT.getSystemPrompt({
     toolUseContext: { options: {} as never },
   })
-  expect(planPrompt).toContain('OpenClaude')
+  expect(planPrompt).toContain('Awakened')
   expect(planPrompt).not.toContain('Claude Code')
 
   const statuslinePrompt = STATUSLINE_SETUP_AGENT.getSystemPrompt({
     toolUseContext: { options: {} as never },
   })
-  expect(statuslinePrompt).toContain('OpenClaude')
+  expect(statuslinePrompt).toContain('Awakened')
   expect(statuslinePrompt).not.toContain('Claude Code')
 
   const guidePrompt = CLAUDE_CODE_GUIDE_AGENT.getSystemPrompt({
@@ -154,9 +154,9 @@ test('built-in agent prompts describe OpenClaude instead of Claude Code', () => 
       } as never,
     },
   })
-  expect(guidePrompt).toContain('OpenClaude')
-  expect(guidePrompt).toContain('You are the OpenClaude guide agent.')
-  expect(guidePrompt).toContain('**OpenClaude** (the CLI tool)')
+  expect(guidePrompt).toContain('Awakened')
+  expect(guidePrompt).toContain('You are the Awakened guide agent.')
+  expect(guidePrompt).toContain('**Awakened** (the CLI tool)')
   expect(guidePrompt).not.toContain('You are the Claude guide agent.')
   expect(guidePrompt).not.toContain('**Claude Code** (the CLI tool)')
 })

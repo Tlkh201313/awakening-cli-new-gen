@@ -378,6 +378,28 @@ function isPreToolHookSummary(
 }
 
 /**
+ * Check if a message is a Pre/PostToolUse hook error attachment whose
+ * toolUseID belongs to the current collapse group. These should be absorbed
+ * into the group instead of rendered as separate rows.
+ */
+function isHookErrorForGroup(
+  msg: RenderableMessage,
+  groupToolUseIds: Set<string>,
+): boolean {
+  if (msg.type !== 'attachment') return false
+  const att = msg.attachment
+  if (
+    att.type !== 'hook_non_blocking_error' &&
+    att.type !== 'hook_blocking_error'
+  ) {
+    return false
+  }
+  // Only absorb Pre/PostToolUse hooks (Stop hooks have their own summary)
+  if (att.hookEvent === 'Stop' || att.hookEvent === 'SubagentStop') return false
+  return groupToolUseIds.has(att.toolUseID)
+}
+
+/**
  * Check if a message should be skipped (not break the group, just passed through).
  * This includes thinking blocks, redacted thinking, attachments, etc.
  */
@@ -616,6 +638,9 @@ type GroupAccumulator = {
   hookTotalMs: number
   hookCount: number
   hookInfos: StopHookInfo[]
+  // Hook error stderr snippets absorbed from Pre/PostToolUse hook failures.
+  // Deduped by stderr text so repeated identical errors collapse to one line.
+  hookErrors: string[]
   // relevant_memories attachments absorbed into this group (auto-injected
   // memories, not explicit Read calls). Paths mirrored into readFilePaths +
   // memoryReadFilePaths so the inline "recalled N memories" text is accurate.
@@ -638,6 +663,7 @@ function createEmptyGroup(): GroupAccumulator {
     hookTotalMs: 0,
     hookCount: 0,
     hookInfos: [],
+    hookErrors: [],
   }
   if (feature('TEAMMEM')) {
     group.teamMemorySearchCount = 0
@@ -744,6 +770,9 @@ function createCollapsedGroup(
     result.hookTotalMs = group.hookTotalMs
     result.hookCount = group.hookCount
     result.hookInfos = group.hookInfos
+  }
+  if (group.hookErrors.length > 0) {
+    result.hookErrors = group.hookErrors
   }
   if (group.relevantMemories && group.relevantMemories.length > 0) {
     result.relevantMemories = group.relevantMemories
@@ -901,6 +930,16 @@ export function collapseReadSearchGroups(
         msg.totalDurationMs ??
         msg.hookInfos.reduce((sum, h) => sum + (h.durationMs ?? 0), 0)
       currentGroup.hookInfos.push(...msg.hookInfos)
+    } else if (
+      currentGroup.messages.length > 0 &&
+      isHookErrorForGroup(msg, currentGroup.toolUseIds)
+    ) {
+      // Absorb hook error attachments into the group — dedupe by stderr text
+      // so N identical Bash hook failures collapse to one summary line.
+      const errText = (msg.attachment.stderr ?? msg.attachment.blockingError?.blockingError ?? '').trim().split('\n')[0]?.slice(0, 120) || msg.attachment.hookName
+      if (errText && !currentGroup.hookErrors.includes(errText)) {
+        currentGroup.hookErrors.push(errText)
+      }
     } else if (
       currentGroup.messages.length > 0 &&
       msg.type === 'attachment' &&

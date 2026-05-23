@@ -56,6 +56,23 @@ awakened
 
 > Primary command: **`awakened`** (`bin.awakened` in `package.json`). **`openclaude`** is kept as an alias to the same binary for compatibility.
 
+## Where Awakened stores your data
+
+Same model as OpenClaude / Claude Code — everything lives under your **user home**, not inside this git repo:
+
+| Path | Purpose |
+|------|---------|
+| `~/.awakened/` | Global settings, skills, plugins, session storage, optional `local/` npm install |
+| `~/.awakened.json` | Global config file (preferences, OAuth bookkeeping) |
+| `~/.awakened-profile.json` | Optional saved provider profile |
+| `.awakened/` (in a project) | Project settings, agents, skills, commands |
+
+**First run:** if you already have `~/.openclaude` or `~/.claude`, Awakened **copies** missing files into `~/.awakened` (legacy dirs are left in place).
+
+**Override:** set `CLAUDE_CONFIG_DIR` to use a different config root.
+
+**Never commit** your `.env`, `auth.json`, or real API keys — see [SECURITY.md](./SECURITY.md).
+
 ## Quick start
 
 ```bash

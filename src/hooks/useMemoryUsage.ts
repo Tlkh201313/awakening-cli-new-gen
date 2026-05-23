@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import { useInterval } from 'usehooks-ts'
+import {
+  getRamProfile,
+  updateMemoryPressureFromHeap,
+} from '../utils/awakenedMemory.js'
 
 export type MemoryUsageStatus = 'normal' | 'high' | 'critical'
 
@@ -7,9 +11,6 @@ export type MemoryUsageInfo = {
   heapUsed: number
   status: MemoryUsageStatus
 }
-
-const HIGH_MEMORY_THRESHOLD = 1.5 * 1024 * 1024 * 1024 // 1.5GB in bytes
-const CRITICAL_MEMORY_THRESHOLD = 2.5 * 1024 * 1024 * 1024 // 2.5GB in bytes
 
 /**
  * Hook to monitor Node.js process memory usage.
@@ -20,10 +21,14 @@ export function useMemoryUsage(): MemoryUsageInfo | null {
 
   useInterval(() => {
     const heapUsed = process.memoryUsage().heapUsed
+    const { heapHighMb, heapCriticalMb } = getRamProfile()
+    const highBytes = heapHighMb * 1024 * 1024
+    const criticalBytes = heapCriticalMb * 1024 * 1024
+    const pressure = updateMemoryPressureFromHeap(heapUsed)
     const status: MemoryUsageStatus =
-      heapUsed >= CRITICAL_MEMORY_THRESHOLD
+      pressure === 2 || heapUsed >= criticalBytes
         ? 'critical'
-        : heapUsed >= HIGH_MEMORY_THRESHOLD
+        : pressure === 1 || heapUsed >= highBytes
           ? 'high'
           : 'normal'
     setMemoryUsage(prev => {

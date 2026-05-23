@@ -6,6 +6,10 @@ import { access, chmod, writeFile } from 'fs/promises'
 import { homedir } from 'os'
 import { join } from 'path'
 import { type ReleaseChannel, saveGlobalConfig } from './config.js'
+import {
+  CLI_BINARY_NAME,
+  LEGACY_CLI_BINARY_NAME,
+} from '../constants/brand.js'
 import { getClaudeConfigHomeDir } from './envUtils.js'
 import { getErrnoCode } from './errors.js'
 import { execFileNoThrowWithCwd } from './execFileNoThrow.js'
@@ -38,7 +42,8 @@ export function getCandidateLocalInstallDirs(options?: {
 
 function getCandidateLocalBinaryPaths(localInstallDir: string): string[] {
   return [
-    join(localInstallDir, 'node_modules', '.bin', 'openclaude'),
+    join(localInstallDir, 'node_modules', '.bin', CLI_BINARY_NAME),
+    join(localInstallDir, 'node_modules', '.bin', LEGACY_CLI_BINARY_NAME),
     join(localInstallDir, 'node_modules', '.bin', 'claude'),
   ]
 }
@@ -46,13 +51,14 @@ function getCandidateLocalBinaryPaths(localInstallDir: string): string[] {
 export function isManagedLocalInstallationPath(execPath: string): boolean {
   const normalizedExecPath = execPath.replace(/\\+/g, '/')
   return (
+    normalizedExecPath.includes('/.awakened/local/node_modules/') ||
     normalizedExecPath.includes('/.openclaude/local/node_modules/') ||
     normalizedExecPath.includes('/.claude/local/node_modules/')
   )
 }
 
 export function getLocalClaudePath(): string {
-  return join(getLocalInstallDir(), 'openclaude')
+  return join(getLocalInstallDir(), CLI_BINARY_NAME)
 }
 
 /**
@@ -95,7 +101,7 @@ export async function ensureLocalPackageEnvironment(): Promise<boolean> {
     await writeIfMissing(
       join(localInstallDir, 'package.json'),
       jsonStringify(
-        { name: 'openclaude-local', version: '0.0.1', private: true },
+        { name: 'awakened-local', version: '0.0.1', private: true },
         null,
         2,
       ),
@@ -105,7 +111,7 @@ export async function ensureLocalPackageEnvironment(): Promise<boolean> {
     const wrapperPath = getLocalClaudePath()
     const created = await writeIfMissing(
       wrapperPath,
-      `#!/bin/sh\nexec "${localInstallDir}/node_modules/.bin/openclaude" "$@"`,
+      `#!/bin/sh\nexec "${localInstallDir}/node_modules/.bin/${CLI_BINARY_NAME}" "$@"`,
       0o755,
     )
     if (created) {

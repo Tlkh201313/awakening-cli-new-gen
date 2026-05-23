@@ -129,10 +129,10 @@ result = await Bun.build({
     'MACRO.DISPLAY_VERSION': JSON.stringify(version),
     'MACRO.BUILD_TIME': JSON.stringify(new Date().toISOString()),
     'MACRO.ISSUES_EXPLAINER':
-      JSON.stringify('report the issue at https://github.com/Gitlawb/openclaude/issues'),
+      JSON.stringify('report the issue at https://github.com/Tlkh201313/awakening-cli-new-gen/issues'),
     'MACRO.FEEDBACK_CHANNEL':
-      JSON.stringify('https://github.com/Gitlawb/openclaude/issues'),
-    'MACRO.PACKAGE_URL': JSON.stringify('@gitlawb/openclaude'),
+      JSON.stringify('https://github.com/Tlkh201313/awakening-cli-new-gen/issues'),
+    'MACRO.PACKAGE_URL': JSON.stringify('@gitlawb/awakened'),
     'MACRO.NATIVE_PACKAGE_URL': 'undefined',
   },
   plugins: [
@@ -413,7 +413,7 @@ if (!result.success) {
   }
   process.exitCode = 1
 } else {
-  console.log(`✓ Built openclaude v${version} → dist/cli.mjs`)
+  console.log(`✓ Built awakened v${version} → dist/cli.mjs`)
 }
 
 // ── SDK Bundle Build ──────────────────────────────────────────────────────
@@ -434,10 +434,10 @@ sdkResult = await Bun.build({
     'MACRO.DISPLAY_VERSION': JSON.stringify(version),
     'MACRO.BUILD_TIME': JSON.stringify(new Date().toISOString()),
     'MACRO.ISSUES_EXPLAINER':
-      JSON.stringify('report the issue at https://github.com/Gitlawb/openclaude/issues'),
+      JSON.stringify('report the issue at https://github.com/Tlkh201313/awakening-cli-new-gen/issues'),
     'MACRO.FEEDBACK_CHANNEL':
-      JSON.stringify('https://github.com/Gitlawb/openclaude/issues'),
-    'MACRO.PACKAGE_URL': JSON.stringify('@gitlawb/openclaude'),
+      JSON.stringify('https://github.com/Tlkh201313/awakening-cli-new-gen/issues'),
+    'MACRO.PACKAGE_URL': JSON.stringify('@gitlawb/awakened'),
     'MACRO.NATIVE_PACKAGE_URL': 'undefined',
   },
   // External: everything TUI-related + native modules

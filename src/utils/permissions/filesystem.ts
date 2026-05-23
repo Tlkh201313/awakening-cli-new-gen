@@ -14,6 +14,10 @@ import {
 } from 'src/tools/FileEditTool/constants.js'
 import type { z } from 'zod/v4'
 import { getOriginalCwd, getSessionId } from '../../bootstrap/state.js'
+import {
+  CONFIG_DIR_NAME,
+  LEGACY_CONFIG_DIR_NAMES,
+} from '../../constants/brand.js'
 import { PRODUCT_DISPLAY_NAME } from '../../constants/product.js'
 import { checkStatsigFeatureGate_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js'
 import type { AnyObject, Tool, ToolPermissionContext } from '../../Tool.js'
@@ -66,6 +70,7 @@ export const DANGEROUS_FILES = [
   '.profile',
   '.ripgreprc',
   '.mcp.json',
+  '.awakened.json',
   '.openclaude.json',
   '.claude.json',
 ] as const
@@ -80,6 +85,7 @@ export const DANGEROUS_DIRECTORIES = [
   '.idea',
   '.claude',
   '.openclaude',
+  '.awakened',
 ] as const
 
 /**
@@ -97,23 +103,40 @@ export function normalizeCaseForComparison(path: string): string {
 
 /**
  * If filePath is inside a .claude/skills/{name}/ directory (project) or
- * .openclaude/skills/{name}/ directory (global), plus the legacy global
+ * .awakened/skills/{name}/ directory (global), plus the legacy global
  * .claude/skills path, return the skill name and a session-allow pattern
  * scoped to just that skill.
  * Used to offer a narrower "allow edits to this skill only" option in the
  * permission dialog and SDK suggestions, so iterating on one skill doesn't
  * require granting session access to all of .claude/ (settings.json, hooks/, etc.).
  */
+function getGlobalSkillScopePrefix(configHomeDir: string): string | null {
+  const configHome = normalizeCaseForComparison(expandPath(configHomeDir))
+  if (configHome === normalizeCaseForComparison(expandPath(join(homedir(), CONFIG_DIR_NAME)))) {
+    return `~/${CONFIG_DIR_NAME}/skills/`
+  }
+  for (const legacyName of LEGACY_CONFIG_DIR_NAMES) {
+    if (configHome === normalizeCaseForComparison(expandPath(join(homedir(), legacyName)))) {
+      return `~/${legacyName}/skills/`
+    }
+  }
+  return null
+}
+
 export function getClaudeSkillScope(
   filePath: string,
 ): { skillName: string; pattern: string } | null {
   const absolutePath = expandPath(filePath)
   const absolutePathLower = normalizeCaseForComparison(absolutePath)
 
-  const bases = [
+  const bases: Array<{ dir: string; prefix: string }> = [
     {
       dir: expandPath(join(getOriginalCwd(), '.claude', 'skills')),
       prefix: '/.claude/skills/',
+    },
+    {
+      dir: expandPath(join(getOriginalCwd(), CONFIG_DIR_NAME, 'skills')),
+      prefix: `/${CONFIG_DIR_NAME}/skills/`,
     },
     {
       dir: expandPath(join(homedir(), '.openclaude', 'skills')),
@@ -124,6 +147,14 @@ export function getClaudeSkillScope(
       prefix: '~/.claude/skills/',
     },
   ]
+
+  const globalSkillPrefix = getGlobalSkillScopePrefix(getClaudeConfigHomeDir())
+  if (globalSkillPrefix) {
+    bases.splice(1, 0, {
+      dir: expandPath(join(getClaudeConfigHomeDir(), 'skills')),
+      prefix: globalSkillPrefix,
+    })
+  }
 
   for (const { dir, prefix } of bases) {
     const dirLower = normalizeCaseForComparison(dir)
@@ -218,8 +249,8 @@ export function isClaudeSettingsPath(filePath: string): boolean {
 
   // Use platform separator so endsWith checks work on both Unix (/) and Windows (\)
   if (
-    normalizedPath.endsWith(`${sep}.openclaude${sep}settings.json`) ||
-    normalizedPath.endsWith(`${sep}.openclaude${sep}settings.local.json`) ||
+    normalizedPath.endsWith(`${sep}.awakened${sep}settings.json`) ||
+    normalizedPath.endsWith(`${sep}.awakened${sep}settings.local.json`) ||
     normalizedPath.endsWith(`${sep}.claude${sep}settings.json`) ||
     normalizedPath.endsWith(`${sep}.claude${sep}settings.local.json`)
   ) {
@@ -245,9 +276,9 @@ function isClaudeConfigFilePath(filePath: string): boolean {
   const commandsDir = join(getOriginalCwd(), '.claude', 'commands')
   const agentsDir = join(getOriginalCwd(), '.claude', 'agents')
   const skillsDir = join(getOriginalCwd(), '.claude', 'skills')
-  const openCommandsDir = join(getOriginalCwd(), '.openclaude', 'commands')
-  const openAgentsDir = join(getOriginalCwd(), '.openclaude', 'agents')
-  const openSkillsDir = join(getOriginalCwd(), '.openclaude', 'skills')
+  const openCommandsDir = join(getOriginalCwd(), '.awakened', 'commands')
+  const openAgentsDir = join(getOriginalCwd(), '.awakened', 'agents')
+  const openSkillsDir = join(getOriginalCwd(), '.awakened', 'skills')
 
   return (
     pathInWorkingPath(filePath, commandsDir) ||
@@ -1291,8 +1322,8 @@ export function checkWritePermissionForTool<Input extends AnyObject>(
   if (claudeFolderAllowRule) {
     // Check if this rule is scoped under a Claude config folder.
     // Accepts broad project/global patterns ('/.claude/**',
-    // '~/.openclaude/**', and legacy '~/.claude/**') plus narrowed skill
-    // patterns like '~/.openclaude/skills/my-skill/**' so users can grant
+    // '~/.awakened/**', and legacy '~/.claude/**') plus narrowed skill
+    // patterns like '~/.awakened/skills/my-skill/**' so users can grant
     // session access to a single skill without also exposing settings.json
     // or hooks/. The rule already matched the path via matchingRuleForInput;
     // this is an additional scope check. Reject '..' to prevent a rule like

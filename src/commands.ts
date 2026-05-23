@@ -161,6 +161,7 @@ import antTrace from './commands/ant-trace/index.js'
 import perfIssue from './commands/perf-issue/index.js'
 import sandboxToggle from './commands/sandbox-toggle/index.js'
 import awakened from './commands/awakened/index.js'
+import hardware from './commands/hardware/index.js'
 import chrome from './commands/chrome/index.js'
 import stickers from './commands/stickers/index.js'
 import advisor from './commands/advisor.js'
@@ -204,7 +205,7 @@ import stats from './commands/stats/index.js'
 const usageReport: Command = {
   type: 'prompt',
   name: 'insights',
-  description: 'Generate a report analyzing your OpenClaude sessions',
+  description: 'Generate a report analyzing your Awakened sessions',
   contentLength: 0,
   progressMessage: 'analyzing your sessions',
   source: 'builtin',
@@ -362,6 +363,7 @@ const COMMANDS = memoize((): Command[] => [
   exportCommand,
   sandboxToggle,
   awakened,
+  hardware,
   ...(!isUsing3PServices() ? [logout, login()].filter(Boolean) : []),
   passes,
   ...(peersCmd ? [peersCmd] : []),

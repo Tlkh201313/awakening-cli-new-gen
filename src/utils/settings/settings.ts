@@ -300,9 +300,9 @@ export function getRelativeSettingsFilePathForSource(
 ): string {
   switch (source) {
     case 'projectSettings':
-      return '.openclaude/settings.json'
+      return '.awakened/settings.json'
     case 'localSettings':
-      return '.openclaude/settings.local.json'
+      return '.awakened/settings.local.json'
   }
 }
 
@@ -639,14 +639,14 @@ export function getManagedSettingsKeysForLogging(
 function isSettingsLoadInProgress(): boolean {
   return (
     (globalThis as Record<string, unknown>)[
-      '__openclaudeSettingsLoadInProgress'
+      '__AwakenedSettingsLoadInProgress'
     ] === true
   )
 }
 
 function setSettingsLoadInProgress(value: boolean): void {
   ;(globalThis as Record<string, unknown>)[
-    '__openclaudeSettingsLoadInProgress'
+    '__AwakenedSettingsLoadInProgress'
   ] = value
 }
 
