@@ -16,8 +16,8 @@ const { ChatController, OpenClaudeChatViewProvider, OpenClaudeChatPanelManager }
 const { SessionManager } = require('./chat/sessionManager');
 const { DiffContentProvider, SCHEME: DIFF_SCHEME } = require('./chat/diffController');
 
-const OPENCLAUDE_REPO_URL = 'https://github.com/Gitlawb/openclaude';
-const OPENCLAUDE_SETUP_URL = 'https://github.com/Gitlawb/openclaude/blob/main/README.md#quick-start';
+const OPENCLAUDE_REPO_URL = 'https://github.com/Tlkh201313/awakening-cli-new-gen';
+const OPENCLAUDE_SETUP_URL = 'https://github.com/Tlkh201313/awakening-cli-new-gen/blob/master/README.md#quick-start';
 const PROFILE_FILE_NAME = '.openclaude-profile.json';
 
 function escapeHtml(value) {

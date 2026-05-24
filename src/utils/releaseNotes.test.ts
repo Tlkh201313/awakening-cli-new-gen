@@ -77,7 +77,7 @@ test('release-please changelog headings are normalized for version lookups', () 
 
 test('getReleaseTagUrl normalizes build metadata to the public tag', () => {
   expect(getReleaseTagUrl('0.8.0+abc123')).toBe(
-    'https://github.com/Gitlawb/Awakened/releases/tag/v0.8.0',
+    'https://github.com/Tlkh201313/awakening-cli-new-gen/releases/tag/v0.8.0',
   )
 })
 

@@ -2,7 +2,7 @@
  * Awakened startup screen — filled-block text logo with gold shimmer.
  * Called once at CLI startup before the Ink UI renders.
  *
- * Addresses: https://github.com/Gitlawb/Awakened/issues/55
+ * Addresses: https://github.com/Tlkh201313/awakening-cli-new-gen/issues/55
  */
 
 import { isLocalProviderUrl, resolveProviderRequest } from '../services/api/providerConfig.js'
@@ -185,7 +185,7 @@ export function detectProvider(modelOverride?: string): {
     else if (/nvidia/i.test(rawModel)) name = 'NVIDIA NIM'
     else if (/minimax/i.test(rawModel)) name = 'MiniMax'
     else if (/\bkimi-for-coding\b/i.test(rawModel)) name = 'Moonshot AI - Kimi Code'
-    else if (/\bkimi-k\b/i.test(rawModel) || /moonshot/i.test(rawModel)) {
+    else if (/kimi-k/i.test(rawModel) || /moonshot/i.test(rawModel)) {
       name = 'Moonshot AI - API'
     } else if (/deepseek/i.test(rawModel)) name = 'DeepSeek'
     else if (/mistral/i.test(rawModel)) name = 'Mistral'

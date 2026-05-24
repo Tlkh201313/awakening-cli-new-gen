@@ -25,8 +25,8 @@ export const LEGACY_PROFILE_FILE_NAMES = [
 ] as const
 
 export const PROJECT_CONFIG_DIR_NAMES = [
-  CONFIG_DIR_NAME,
   ...LEGACY_CONFIG_DIR_NAMES,
+  CONFIG_DIR_NAME,
 ] as const
 
 export const NPM_PACKAGE_NAME = '@gitlawb/awakened'

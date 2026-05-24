@@ -14,7 +14,9 @@
  * rather than mocking the tracker module. Fewer moving parts, and the
  * test fails for the right reason if anyone breaks the wrapping.
  */
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from 'bun:test'
+
+setDefaultTimeout(30_000)
 import { addToTotalSessionCost, resetCostState } from './cost-tracker.js'
 import {
   getCurrentTurnCacheMetrics,

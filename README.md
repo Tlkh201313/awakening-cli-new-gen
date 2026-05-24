@@ -16,7 +16,7 @@
 
 ## Install
 
-Requires **Bun**, **Node 18+**, and **ripgrep** (`rg --version` in your PATH).
+Requires **Bun** (to install deps and build), **Node.js 22+** (to run `dist/cli.mjs`), and **ripgrep** (`rg --version` in your PATH).
 
 ### From this repo (recommended)
 
@@ -41,11 +41,15 @@ bun link
 awakened
 ```
 
-On Windows (PowerShell), after `bun link`:
+On Windows (PowerShell), prefer `bun link`. If you use `npm link` and see `EEXIST` for `openclaude.cmd`, a previous global install left shims in `%AppData%\npm\`:
 
 ```powershell
-awakened
+npm link --force
+# or: npm unlink -g @gitlawb/awakened; npm unlink -g openclaude; npm link
+awakened --version
 ```
+
+Both **`awakened`** and **`openclaude`** point at the same binary (`package.json` `bin` map).
 
 ### One-line global install from GitHub
 
@@ -72,6 +76,10 @@ Same model as OpenClaude / Claude Code — everything lives under your **user ho
 **Override:** set `CLAUDE_CONFIG_DIR` to use a different config root.
 
 **Never commit** your `.env`, `auth.json`, or real API keys — see [SECURITY.md](./SECURITY.md).
+
+### Permission modes
+
+Awakened can run with different tool-permission policies (`default`, `acceptEdits`, `plan`, `dontAsk`, and `bypassPermissions`). **`bypassPermissions` auto-approves every tool** (shell, file writes, MCP) — only use it when you fully trust the repo and model. See [docs/FEATURE_MATRIX.md](./docs/FEATURE_MATRIX.md) for compile-time features and safety notes.
 
 ## Quick start
 
@@ -219,13 +227,14 @@ Install upstream tools when prompted (e.g. `pip install graphifyy`, `npx antigra
 
 ## Develop
 
-Same repo — useful scripts:
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for PR checks, TypeScript layout, and feature flags. Compile-time capabilities: [docs/FEATURE_MATRIX.md](./docs/FEATURE_MATRIX.md).
 
 ```bash
 bun run dev          # build + run
 bun run build        # production bundle → dist/cli.mjs
 bun run test         # unit tests
 bun run smoke        # build + --version check
+bun run typecheck    # app source (excludes *.test.*)
 ```
 
 ## License

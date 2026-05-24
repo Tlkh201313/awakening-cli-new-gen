@@ -56,7 +56,9 @@
     "test:coverage:ui": "bun run scripts/render-coverage-heatmap.ts",
     "security:pr-scan": "bun run scripts/pr-intent-scan.ts",
     "test:provider-recommendation": "bun test src/utils/providerRecommendation.test.ts src/utils/providerProfile.test.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "typecheck:all": "bun run typecheck && bun run typecheck:test",
     "benchmark:awakened": "bun run scripts/benchmark-awakened.ts",
     "smoke": "bun run build && node dist/cli.mjs --version",
     "verify:privacy": "bun run scripts/verify-no-phone-home.ts",
@@ -151,7 +153,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Gitlawb/openclaude.git"
+    "url": "https://github.com/Tlkh201313/awakening-cli-new-gen.git"
   },
   "keywords": [
     "claude-code",

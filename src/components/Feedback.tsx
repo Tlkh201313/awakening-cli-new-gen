@@ -28,11 +28,12 @@ import { ConfigurableShortcutHint } from './ConfigurableShortcutHint.js';
 import { Byline } from './design-system/Byline.js';
 import { Dialog } from './design-system/Dialog.js';
 import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js';
+import { ISSUES_URL } from '../constants/brand.js';
 import TextInput from './TextInput.js';
 
 // This value was determined experimentally by testing the URL length limit
 const GITHUB_URL_LIMIT = 7250;
-const GITHUB_ISSUES_REPO_URL = 'https://github.com/Gitlawb/Awakened/issues';
+const GITHUB_ISSUES_REPO_URL = ISSUES_URL;
 type Props = {
   abortSignal: AbortSignal;
   messages: Message[];

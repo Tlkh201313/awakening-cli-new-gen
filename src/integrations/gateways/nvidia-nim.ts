@@ -68,7 +68,6 @@ export default defineGateway({
         apiName: 'nvidia/llama-3.1-nemotron-70b-instruct',
         label: 'Llama 3.1 Nemotron 70B',
         modelDescriptorId: 'nvidia/llama-3.1-nemotron-70b-instruct',
-        default: true,
       },
     ],
   },

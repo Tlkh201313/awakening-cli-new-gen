@@ -1,21 +1,39 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import {
-  addProviderProfile,
-  getProviderProfiles,
-  updateProviderProfile,
-} from './providerProfiles.js'
+  acquireSharedMutationLock,
+  releaseSharedMutationLock,
+} from '../test/sharedMutationLock.js'
 
 const originalConfigDir = process.env.CLAUDE_CONFIG_DIR
 
+type ProviderProfilesModule = typeof import('./providerProfiles.js')
+
+let providerProfiles: ProviderProfilesModule
+
+async function importFreshProviderProfiles(): Promise<ProviderProfilesModule> {
+  mock.restore()
+  return import(`./providerProfiles.js?ts=${Date.now()}-${Math.random()}`)
+}
+
+beforeEach(async () => {
+  await acquireSharedMutationLock('providerApiKeyPersistence.test.ts')
+  providerProfiles = await importFreshProviderProfiles()
+})
+
 afterEach(() => {
-  if (originalConfigDir === undefined) {
-    delete process.env.CLAUDE_CONFIG_DIR
-  } else {
-    process.env.CLAUDE_CONFIG_DIR = originalConfigDir
+  try {
+    if (originalConfigDir === undefined) {
+      delete process.env.CLAUDE_CONFIG_DIR
+    } else {
+      process.env.CLAUDE_CONFIG_DIR = originalConfigDir
+    }
+  } finally {
+    mock.restore()
+    releaseSharedMutationLock()
   }
 })
 
@@ -24,6 +42,9 @@ describe('provider API key persistence', () => {
     const dir = mkdtempSync(join(tmpdir(), 'awakened-provider-key-'))
     process.env.CLAUDE_CONFIG_DIR = dir
     try {
+      const { addProviderProfile, getProviderProfiles, updateProviderProfile } =
+        providerProfiles
+
       const created = addProviderProfile(
         {
           provider: 'openai',

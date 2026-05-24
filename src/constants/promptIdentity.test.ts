@@ -33,8 +33,8 @@ beforeAll(async () => {
     DISPLAY_VERSION: '0.0.0-test',
     BUILD_TIME: new Date().toISOString(),
     ISSUES_EXPLAINER:
-      'report the issue at https://github.com/Gitlawb/Awakened/issues',
-    PACKAGE_URL: '@gitlawb/Awakened',
+      'report the issue at https://github.com/Tlkh201313/awakening-cli-new-gen/issues',
+    PACKAGE_URL: '@gitlawb/awakened',
     NATIVE_PACKAGE_URL: undefined,
   }
 

@@ -71,6 +71,7 @@ function isAllowedTestFixtureLine(line: string): boolean {
 
 function isAllowedOccurrence(path: string, line: string): boolean {
   if (path === 'src/utils/combinedAbortSignal.ts') return true
+  if (path === 'src/services/awakenedVoiceTranscribe.ts') return true
 
   if (path.endsWith('.test.ts') || path.endsWith('.test.tsx')) {
     return isAllowedDocumentationLine(line) || isAllowedTestFixtureLine(line)

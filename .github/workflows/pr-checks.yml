@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
+      - master
 
 permissions:
   contents: read
@@ -39,6 +39,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Check integration artifacts
+        run: bun run integrations:check
+
+      - name: Build
+        run: bun run build
+
+      - name: Verify privacy (no phone-home strings in bundle)
+        run: bun run verify:privacy
+
       - name: Smoke check
         run: bun run smoke
 
@@ -52,7 +61,7 @@ jobs:
         run: python -m pytest -q python/tests
 
       - name: Suspicious PR intent scan
-        run: bun run security:pr-scan -- --base ${{ github.event.pull_request.base.sha || 'origin/main' }}
+        run: bun run security:pr-scan -- --base ${{ github.event.pull_request.base.sha || 'origin/master' }}
       - name: Provider tests
         run: bun run test:provider
 
