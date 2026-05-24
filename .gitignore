@@ -31,3 +31,4 @@ docs/superpowers/plans/*
 !docs/superpowers/plans/*.md
 .cursor/
 *.backup
+graphify-out/
