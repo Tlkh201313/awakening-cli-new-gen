@@ -113,6 +113,15 @@ async function main(): Promise<void> {
     }
   }
 
+  // Start loading the heavy main bundle + REPL modules immediately so they
+  // overlap config/profile/validation work (~hundreds of ms to seconds saved).
+  const mainImportPromise = import('../main.js')
+  const replPreloadPromise = import('../replLauncher.js').then(m => {
+    if (!args.includes('-p') && !args.includes('--print')) {
+      m.preloadReplModules()
+    }
+  })
+
   // Enable configs first so we can read settings
   {
     const { enableConfigs } = await import('../utils/config.js')
@@ -145,24 +154,19 @@ async function main(): Promise<void> {
     }
   }
 
-  // Hydrate GitHub credentials after profile apply; run validation in parallel
-  // so interactive startup is not blocked on token refresh when GitHub is off.
+  // Hydrate GitHub from disk synchronously; network token refresh runs in the
+  // background so startup is not blocked on OAuth when GitHub is enabled.
   {
-    const githubCredsPromise = (async () => {
-      const {
-        hydrateGithubModelsTokenFromSecureStorage,
-        refreshGithubModelsTokenIfNeeded,
-      } = await import('../utils/githubModelsCredentials.js')
-      const { isEnvTruthy } = await import('../utils/envUtils.js')
-      if (isEnvTruthy(process.env.CLAUDE_CODE_USE_GITHUB)) {
-        await refreshGithubModelsTokenIfNeeded()
-      }
-      hydrateGithubModelsTokenFromSecureStorage()
-    })()
-    await Promise.all([
-      githubCredsPromise,
-      validateProviderEnvForStartupOrExit(),
-    ])
+    const {
+      hydrateGithubModelsTokenFromSecureStorage,
+      refreshGithubModelsTokenIfNeeded,
+    } = await import('../utils/githubModelsCredentials.js')
+    const { isEnvTruthy } = await import('../utils/envUtils.js')
+    hydrateGithubModelsTokenFromSecureStorage()
+    if (isEnvTruthy(process.env.CLAUDE_CODE_USE_GITHUB)) {
+      void refreshGithubModelsTokenIfNeeded().catch(() => {})
+    }
+    await validateProviderEnvForStartupOrExit()
   }
 
   // #808: --model alone (no --provider) — route to the env var matching the
@@ -176,8 +180,6 @@ async function main(): Promise<void> {
   const { eagerParseCliFlag } = await import('../utils/cliArgs.js')
   const earlyModelFlag = eagerParseCliFlag('--model')
 
-  // Overlap main bundle load with the startup screen
-  const mainImportPromise = import('../main.js')
   const { printStartupScreen } = await import('../components/StartupScreen.js')
   printStartupScreen(earlyModelFlag)
 
@@ -432,6 +434,7 @@ async function main(): Promise<void> {
     startCapturingEarlyInput();
   }
   profileCheckpoint('cli_before_main_import');
+  await replPreloadPromise
   const {
     main: cliMain
   } = await mainImportPromise;

@@ -14,6 +14,7 @@ import { getLocalOpenAICompatibleProviderLabel } from '../utils/providerDiscover
 import { getSettings_DEPRECATED } from '../utils/settings/settings.js'
 import { parseUserSpecifiedModel } from '../utils/model/model.js'
 import { DEFAULT_GEMINI_MODEL } from '../utils/providerProfile.js'
+import { awakenedEnv } from '../constants/brand.js'
 import { isEnvTruthy } from '../utils/envUtils.js'
 import { ANSI_DIM, ANSI_RESET, ansiRgb } from '../utils/terminalAnsi.js'
 import {
@@ -294,6 +295,16 @@ function isFastStartupScreen(): boolean {
   return true
 }
 
+/** Skip the full-screen banner (logo + box) for repeat launches / perf mode. */
+export function shouldSkipStartupBanner(): boolean {
+  if (process.env.CI || !process.stdout.isTTY) return true
+  return (
+    isEnvTruthy(process.env.OPENCLAUDE_FAST_STARTUP) ||
+    isEnvTruthy(process.env.AWAKENED_FAST_STARTUP) ||
+    isEnvTruthy(awakenedEnv('FAST_STARTUP'))
+  )
+}
+
 let _bannerCache: ReturnType<typeof detectProvider> | null = null
 let _bannerCacheKey = ''
 
@@ -364,7 +375,7 @@ function _detectProviderForBanner(modelOverride?: string): ReturnType<typeof det
 }
 
 export function printStartupScreen(modelOverride?: string): void {
-  if (process.env.CI || !process.stdout.isTTY) return
+  if (shouldSkipStartupBanner()) return
 
   const frames = 6
   const delayMs = 25

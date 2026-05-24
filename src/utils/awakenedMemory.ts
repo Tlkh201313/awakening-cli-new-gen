@@ -323,8 +323,9 @@ export function applyAwakenedMemoryProfile(): void {
     const flushMs = perf ? profile.streamFlushMs : Math.max(profile.streamFlushMs, 20)
     setEnvIfUnset('CLAUDE_CODE_STREAM_UI_FLUSH_MS', String(flushMs))
   }
-  if (perf && !process.env.OPENCLAUDE_FAST_STARTUP?.trim()) {
+  if (perf) {
     setEnvIfUnset('OPENCLAUDE_FAST_STARTUP', '1')
+    setEnvIfUnset('AWAKENED_FAST_STARTUP', '1')
   }
 
   logForDebugging(

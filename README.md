@@ -180,7 +180,7 @@ Measured on Windows (2026-05-23):
 | Benchmark | Result | Notes |
 |-----------|--------|--------|
 | Logo animation (first launch) | **~210ms** | 6-frame shimmer before Ink |
-| Logo fast path (returning / `AWAKENED_FAST_STARTUP`) | **under 1ms** | Single frame, no sleeps |
+| Logo fast path (`AWAKENED_FAST_STARTUP` / perf mode) | **skipped** | No full-screen banner; main bundle loads in parallel with config |
 | Stream UI coalescing | **2 updates** for 50 scheduled token deltas | Default 24ms flush on Windows |
 | Graphify corpus query (upstream) | **~71.5×** token reduction | Mixed code + papers + images; see [graphify README](https://github.com/safishamsi/graphify) |
 
