@@ -694,6 +694,13 @@ export function applyProviderProfileToProcessEnv(profile: ProviderProfile): void
   process.env[PROFILE_ENV_APPLIED_FLAG] = '1'
   process.env[PROFILE_ENV_APPLIED_ID] = profile.id
 
+  // Sync route-specific keys (e.g. OPENGATEWAY_API_KEY) into OPENAI_API_KEY for the shim.
+  void import('../services/api/openaiShim.js').then(m => {
+    if (typeof m.hydrateOpenAIShimCompatibilityEnv === 'function') {
+      m.hydrateOpenAIShimCompatibilityEnv()
+    }
+  })
+
   // Overlap TLS handshake with REPL render / first prompt (init may have run
   // before profile env was applied).
   void import('./apiPreconnect.js').then(m => m.preconnectOpenAICompatibleApi())
@@ -778,11 +785,31 @@ export function addProviderProfile(
   return profile
 }
 
+function mergeApiKeyForProfileUpdate(
+  existing: ProviderProfile,
+  input: ProviderProfileInput,
+): string | undefined {
+  const nextKey = trimOrUndefined(input.apiKey)
+  if (nextKey) return nextKey
+  return existing.apiKey
+}
+
 export function updateProviderProfile(
   profileId: string,
   input: ProviderProfileInput,
 ): ProviderProfile | null {
-  const updatedProfile = toProfile(input, profileId)
+  const existingProfile = getProviderProfiles().find(p => p.id === profileId)
+  if (!existingProfile) {
+    return null
+  }
+
+  const updatedProfile = toProfile(
+    {
+      ...input,
+      apiKey: mergeApiKeyForProfileUpdate(existingProfile, input),
+    },
+    profileId,
+  )
   if (!updatedProfile) {
     return null
   }
@@ -984,8 +1011,15 @@ function buildOpenAICompatibleStartupEnv(
     ) {
       env.MIMO_API_KEY = activeProfile.apiKey
     }
+    if (
+      activeProfile.baseUrl?.toLowerCase().includes('opengateway.gitlawb.com') ||
+      activeProfile.baseUrl?.toLowerCase().includes('opengateway.fly.dev')
+    ) {
+      env.OPENGATEWAY_API_KEY = activeProfile.apiKey
+    }
   } else {
     delete env.OPENAI_API_KEY
+    delete env.OPENGATEWAY_API_KEY
   }
   return applySupportedProfileCustomHeaders(activeProfile, env)
 }

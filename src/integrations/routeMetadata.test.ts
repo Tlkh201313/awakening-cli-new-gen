@@ -7,6 +7,7 @@ import {
   getRouteDefaultModel,
   getRouteProviderTypeLabel,
   resolveActiveRouteIdFromEnv,
+  resolveRouteCredentialValue,
   resolveRouteIdFromBaseUrl,
 } from './routeMetadata.js'
 
@@ -52,6 +53,21 @@ test('getRouteCredentialEnvVars keeps descriptor env vars and openai fallback fo
     'MIMO_API_KEY',
     'OPENAI_API_KEY',
   ])
+  expect(getRouteCredentialEnvVars('gitlawb-opengateway')).toEqual([
+    'OPENGATEWAY_API_KEY',
+    'OPENAI_API_KEY',
+  ])
+})
+
+test('resolveRouteCredentialValue prefers OPENGATEWAY_API_KEY for opengateway route', () => {
+  expect(
+    resolveRouteCredentialValue({
+      routeId: 'gitlawb-opengateway',
+      processEnv: {
+        OPENGATEWAY_API_KEY: 'ogw_live_test',
+      },
+    }),
+  ).toBe('ogw_live_test')
 })
 
 test('getRouteCredentialValue reads the first configured route credential', () => {

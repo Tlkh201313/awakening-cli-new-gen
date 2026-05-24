@@ -47,7 +47,15 @@ export async function call(
         }
 
         if (result.type === 'provider-setup') {
-          onDone(result.message, { display: 'system' })
+          context.onChangeAPIKey()
+          context.setAppState(prev => ({
+            ...prev,
+            authVersion: prev.authVersion + 1,
+          }))
+          onDone(
+            `${result.message}\nProvider credentials are active for this session.`,
+            { display: 'system' },
+          )
           return
         }
 

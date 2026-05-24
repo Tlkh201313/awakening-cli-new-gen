@@ -852,6 +852,16 @@ export default class Ink {
    * was cleared externally (macOS Cmd+K) and Ink's diff engine thinks
    * unchanged cells don't need repainting. Scrollback is preserved.
    */
+  /**
+   * Refresh the screen without ERASE_SCREEN — safe when a Select/permission
+   * modal is open (forceRedraw clears the terminal and breaks keyboard focus).
+   */
+  softRecoverTerminal(): void {
+    if (!this.options.stdout.isTTY || this.isUnmounted || this.isPaused) return;
+    this.invalidatePrevFrame();
+    this.onRender();
+  }
+
   forceRedraw(): void {
     if (!this.options.stdout.isTTY || this.isUnmounted || this.isPaused) return;
     this.options.stdout.write(ERASE_SCREEN + CURSOR_HOME);

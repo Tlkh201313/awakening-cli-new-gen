@@ -1,6 +1,7 @@
 import { c as _c } from "react-compiler-runtime";
 // biome-ignore-all assist/source/organizeImports: internal-only import markers must not be reordered
 import { feature } from 'bun:bundle';
+import { isAwakenedCommandVoiceUx } from '../../voice/awakenedVoiceConfig.js';
 // Dead code elimination: conditional import for COORDINATOR_MODE
 /* eslint-disable @typescript-eslint/no-require-imports */
 const coordinatorModule = feature('COORDINATOR_MODE') ? require('../../coordinator/coordinatorMode.js') as typeof import('../../coordinator/coordinatorMode.js') : undefined;
@@ -447,9 +448,13 @@ function ModeIndicator({
           {isXtermJs() && (altClickFailed ? <Text>set macOptionClickForcesSelection in VS Code settings</Text> : <KeyboardShortcutHint shortcut={isMac ? 'option+click' : 'shift+click'} action="native select" />)}
         </Byline>
       </Text>);
+  } else if (feature('VOICE_MODE') && parts.length > 0 && showHint && voiceEnabled && voiceState === 'recording' && hintParts.length === 0) {
+    parts.push(<Text dimColor key="voice-recording-hint">
+        {isAwakenedCommandVoiceUx() ? 'press Enter when done' : `release ${voiceKeyShortcut} to finish`}
+      </Text>);
   } else if (feature('VOICE_MODE') && parts.length > 0 && showHint && voiceEnabled && voiceState === 'idle' && hintParts.length === 0 && voiceHintUnderCap) {
     parts.push(<Text dimColor key="voice-hint">
-        hold {voiceKeyShortcut} to speak
+        {isAwakenedCommandVoiceUx() ? '/voice to dictate' : `hold ${voiceKeyShortcut} to speak`}
       </Text>);
   }
   if ((tasksPart || hasCoordinatorTasks) && showHint && !hasTeams) {

@@ -1,19 +1,16 @@
+import { feature } from 'bun:bundle'
 import type { Command } from '../../commands.js'
-import {
-  isVoiceGrowthBookEnabled,
-  isVoiceModeEnabled,
-} from '../../voice/voiceModeEnabled.js'
+import { isVoiceGrowthBookEnabled } from '../../voice/voiceModeEnabled.js'
 
 const voice = {
-  type: 'local',
+  type: 'local-jsx',
   name: 'voice',
-  description: 'Toggle voice mode',
-  availability: ['claude-ai'],
-  isEnabled: () => isVoiceGrowthBookEnabled(),
+  description: 'Speech-to-text dictation (/voice, Enter when done)',
+  argumentHint: '[config|startup]',
+  isEnabled: () => feature('VOICE_MODE') && isVoiceGrowthBookEnabled(),
   get isHidden() {
-    return !isVoiceModeEnabled()
+    return !feature('VOICE_MODE')
   },
-  supportsNonInteractive: false,
   load: () => import('./voice.js'),
 } satisfies Command
 

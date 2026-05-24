@@ -14,8 +14,6 @@ import { getLocalOpenAICompatibleProviderLabel } from '../utils/providerDiscover
 import { getSettings_DEPRECATED } from '../utils/settings/settings.js'
 import { parseUserSpecifiedModel } from '../utils/model/model.js'
 import { DEFAULT_GEMINI_MODEL } from '../utils/providerProfile.js'
-import { isAwakenedPerformanceMode } from '../utils/awakenedPerformance.js'
-import { getGlobalConfig } from '../utils/config.js'
 import { isEnvTruthy } from '../utils/envUtils.js'
 import { ANSI_DIM, ANSI_RESET, ansiRgb } from '../utils/terminalAnsi.js'
 import {
@@ -230,7 +228,7 @@ function frameForStartup(
   frameIndex: number,
   totalFrames: number,
 ): string[] {
-  const p = detectProvider(modelOverride)
+  const p = detectProviderForBanner(modelOverride)
   const W = 62
   const out: string[] = []
 
@@ -292,12 +290,77 @@ function frameForStartup(
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 function isFastStartupScreen(): boolean {
-  return (
-    isEnvTruthy(process.env.OPENCLAUDE_FAST_STARTUP) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_FAST_STARTUP) ||
-    (getGlobalConfig().numStartups ?? 0) > 0 ||
-    isAwakenedPerformanceMode() // Skip animation when perf mode active
-  )
+  if (isEnvTruthy(process.env.OPENCLAUDE_ANIMATED_STARTUP)) return false
+  return true
+}
+
+let _bannerCache: ReturnType<typeof detectProvider> | null = null
+let _bannerCacheKey = ''
+
+/** Banner-only provider line — no settings.json read (faster startup). */
+function detectProviderForBanner(modelOverride?: string): ReturnType<typeof detectProvider> {
+  const key = `${modelOverride}:${process.env.ANTHROPIC_BASE_URL}:${process.env.ANTHROPIC_MODEL}:${process.env.CLAUDE_MODEL}:${process.env.CLAUDE_CODE_USE_OPENAI}:${process.env.CLAUDE_CODE_USE_GEMINI}:${process.env.CLAUDE_CODE_USE_GITHUB}:${process.env.CLAUDE_CODE_USE_MISTRAL}`
+  if (_bannerCache && _bannerCacheKey === key) return _bannerCache
+  _bannerCacheKey = key
+  _bannerCache = _detectProviderForBanner(modelOverride)
+  return _bannerCache
+}
+
+function _detectProviderForBanner(modelOverride?: string): ReturnType<typeof detectProvider> {
+  const useGemini =
+    process.env.CLAUDE_CODE_USE_GEMINI === '1' ||
+    process.env.CLAUDE_CODE_USE_GEMINI === 'true'
+  const useGithub =
+    process.env.CLAUDE_CODE_USE_GITHUB === '1' ||
+    process.env.CLAUDE_CODE_USE_GITHUB === 'true'
+  const useOpenAI =
+    process.env.CLAUDE_CODE_USE_OPENAI === '1' ||
+    process.env.CLAUDE_CODE_USE_OPENAI === 'true'
+  const useMistral =
+    process.env.CLAUDE_CODE_USE_MISTRAL === '1' ||
+    process.env.CLAUDE_CODE_USE_MISTRAL === 'true'
+
+  if (useGemini) {
+    return {
+      name: 'Google Gemini',
+      model: modelOverride || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
+      baseUrl:
+        process.env.GEMINI_BASE_URL ||
+        'https://generativelanguage.googleapis.com/v1beta/openai',
+      isLocal: false,
+    }
+  }
+  if (useMistral) {
+    return {
+      name: 'Mistral',
+      model: modelOverride || process.env.MISTRAL_MODEL || 'devstral-latest',
+      baseUrl: process.env.MISTRAL_BASE_URL || 'https://api.mistral.ai/v1',
+      isLocal: false,
+    }
+  }
+  if (useGithub) {
+    return {
+      name: 'GitHub Copilot',
+      model: modelOverride || process.env.OPENAI_MODEL || 'github:copilot',
+      baseUrl: process.env.OPENAI_BASE_URL || 'https://api.githubcopilot.com',
+      isLocal: false,
+    }
+  }
+  if (useOpenAI) {
+    return detectProvider(modelOverride)
+  }
+
+  const model =
+    modelOverride ||
+    process.env.ANTHROPIC_MODEL ||
+    process.env.CLAUDE_MODEL ||
+    'claude-sonnet-4-6'
+  return {
+    name: 'Anthropic',
+    model: parseUserSpecifiedModel(model),
+    baseUrl: process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com',
+    isLocal: isLocalProviderUrl(process.env.ANTHROPIC_BASE_URL ?? ''),
+  }
 }
 
 export function printStartupScreen(modelOverride?: string): void {

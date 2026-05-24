@@ -1,3 +1,4 @@
+import { awakenedAgentsCapability } from './bundled/awakenedAgents.js'
 import { awakenedAntigravityCapability } from './bundled/awakenedAntigravity.js'
 import { awakenedBrowserCapability } from './bundled/awakenedBrowser.js'
 import { awakenedGraphifyCapability } from './bundled/awakenedGraphify.js'
@@ -13,6 +14,7 @@ export const BUNDLED_AUTO_CAPABILITIES: AutoCapabilityDefinition[] = [
   awakenedAntigravityCapability,
   awakenedGraphifyCapability,
   awakenedProductivityCapability,
+  awakenedAgentsCapability,
 ]
 
 export function getAwakenedCapabilityById(

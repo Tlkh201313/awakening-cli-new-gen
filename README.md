@@ -84,7 +84,7 @@ Inside the app:
 - `/provider` — set up API keys and saved profiles  
 - `/awakened` — enable or disable auto skill packs (Space toggle, Enter save)  
 - `/help` — commands and shortcuts  
-- `/hardware` — live CPU, RAM, and GPU panel (Esc to close)  
+- `/hardware` — live CPU/RAM/heap bars with % (Esc to close, 1s refresh)  
 
 ### Fastest OpenAI-style setup
 
@@ -131,7 +131,15 @@ awakened
 - **Cloud APIs** (Anthropic, OpenAI, etc.): GPU in your machine **does not** accelerate tokens. Speed is API-bound (region, model size, context length).
 - **Local Ollama/vLLM**: GPU matters. Awakened stays HTTP client; GPU work lives in Ollama daemon. Use `/hardware` to monitor GPU utilization (system-wide, not CLI-specific).
 
-This widens the libuv thread pool, uses faster stream/Ink timing (12–16ms), skips throttled startup prefetches, and shows the fast logo. Set `AWAKENED_ECO=1` to disable auto performance mode.
+This widens the libuv thread pool, uses faster stream/Ink timing (~8–10ms flush), skips throttled startup prefetches, and shows a single-frame logo. Set `AWAKENED_ECO=1` to disable auto performance mode.
+
+**Client latency (no extra API calls):**
+
+| Env | Effect |
+|-----|--------|
+| `CLAUDE_CODE_STREAM_UI_FLUSH_MS=8` | Snappier token display (more CPU) |
+| `CLAUDE_CODE_DEFERRED_HOOK_WAIT_MS=2000` | Don't block first message on slow SessionStart hooks (default) |
+| `OPENCLAUDE_ANIMATED_STARTUP=1` | Re-enable gold logo shimmer (~150ms) |
 
 ### Even faster startup (optional)
 

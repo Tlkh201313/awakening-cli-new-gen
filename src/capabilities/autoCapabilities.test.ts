@@ -114,6 +114,22 @@ describe('getAutoCapabilityAttachments', () => {
     expect(attachments).toHaveLength(0)
   })
 
+  test('surfaces Awaken agent harness for orchestration keywords', () => {
+    resetSentAutoCapabilities()
+    setTestDisabledAwakenedCapabilities([])
+    const attachments = getAutoCapabilityAttachments({
+      userText: 'orchestrate subagents for this feature',
+      tools: [],
+    })
+    expect(
+      attachments.some(
+        a =>
+          a.type === 'reading_skill' &&
+          a.skillName === 'Awaken',
+      ),
+    ).toBe(true)
+  })
+
   test('does not resurface same capability in one session', () => {
     resetSentAutoCapabilities()
     setTestDisabledAwakenedCapabilities([])

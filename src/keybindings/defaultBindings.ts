@@ -1,5 +1,6 @@
 import { feature } from 'bun:bundle'
 import { satisfies } from 'src/utils/semver.js'
+import { isAwakenedCommandVoiceUx } from '../voice/awakenedVoiceConfig.js'
 import { isRunningWithBun } from '../utils/bundledMode.js'
 import { getPlatform } from '../utils/platform.js'
 import type { KeybindingBlock } from './types.js'
@@ -109,7 +110,11 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       // add a voice:pushToTalk entry (last wins); to disable, use /voice
       // — null-unbinding space hits a pre-existing useKeybinding.ts trap
       // where 'unbound' swallows the event (space dead for typing).
-      ...(feature('VOICE_MODE') ? { space: 'voice:pushToTalk' } : {}),
+      // Awakened: /voice + Enter (see awakenedVoiceConfig). Hold-Space only when
+      // AWAKENED_VOICE_HOLD_SPACE=1 or upstream OpenClaude hold-to-talk UX.
+      ...(feature('VOICE_MODE') && !isAwakenedCommandVoiceUx()
+        ? { space: 'voice:pushToTalk' }
+        : {}),
     },
   },
   {

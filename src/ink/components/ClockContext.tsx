@@ -67,7 +67,9 @@ export function createClock(tickIntervalMs: number): Clock {
   };
 }
 export const ClockContext = createContext<Clock | null>(null);
-const BLURRED_TICK_INTERVAL_MS = getFrameIntervalMs() * 2;
+function getBlurredTickIntervalMs(): number {
+  return Math.min(80, getFrameIntervalMs() * 2)
+}
 
 // Own component so App.tsx doesn't re-render when the clock is created.
 // The clock value is stable (created once via useState), so the provider
@@ -83,7 +85,7 @@ export function ClockProvider(t0) {
   let t2;
   if ($[0] !== clock || $[1] !== focused) {
     t1 = () => {
-      clock.setTickInterval(focused ? getFrameIntervalMs() : BLURRED_TICK_INTERVAL_MS);
+      clock.setTickInterval(focused ? getFrameIntervalMs() : getBlurredTickIntervalMs());
     };
     t2 = [clock, focused];
     $[0] = clock;

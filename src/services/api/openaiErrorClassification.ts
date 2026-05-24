@@ -350,7 +350,7 @@ export function classifyOpenAIHttpFailure(options: {
       hint: isExpiredOAuthToken
         ? 'OAuth token expired. Re-authenticate with /onboard-github (GitHub Models) or /login (Codex / Claude) and try again.'
         : opengatewayAuth
-          ? 'Gitlawb Opengateway requires an API key. Sign in at https://gitlawb.com/opengateway to create one (ogw_live_…), then set OPENGATEWAY_API_KEY or run /provider and paste it.'
+          ? 'Gitlawb Opengateway requires an API key. Mint one at https://gitlawb.com/opengateway/keys (ogw_live_…), then set OPENGATEWAY_API_KEY or run /provider and paste it.'
           : 'Authentication failed. Verify API key, token source, and endpoint-specific auth headers.',
     }
   }

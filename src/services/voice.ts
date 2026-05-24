@@ -10,6 +10,10 @@ import { logForDebugging } from '../utils/debug.js'
 import { isEnvTruthy, isRunningOnHomespace } from '../utils/envUtils.js'
 import { logError } from '../utils/log.js'
 import { getPlatform } from '../utils/platform.js'
+import {
+  resolveWindowsSoxExecutable,
+  windowsSoxInstallHint,
+} from './windowsSoxPath.js'
 
 // Lazy-loaded native audio module. audio-capture.node links against
 // CoreAudio.framework + AudioUnit.framework; dlopen is synchronous and
@@ -18,19 +22,70 @@ import { getPlatform } from '../utils/platform.js'
 // preload, because there's no way to make dlopen non-blocking and a
 // startup freeze is worse than a first-press delay.
 type AudioNapi = typeof import('audio-capture-napi')
-let audioNapi: AudioNapi | null = null
-let audioNapiPromise: Promise<AudioNapi> | null = null
 
-function loadAudioNapi(): Promise<AudioNapi> {
+/** Used when native addon is missing (open build stub) or failed to load. */
+const audioNapiUnavailable = {
+  isNativeAudioAvailable: (): boolean => false,
+  isNativeRecordingActive: (): boolean => false,
+  startNativeRecording: (): boolean => false,
+  stopNativeRecording: (): void => {},
+} satisfies Pick<
+  AudioNapi,
+  | 'isNativeAudioAvailable'
+  | 'isNativeRecordingActive'
+  | 'startNativeRecording'
+  | 'stopNativeRecording'
+>
+
+let audioNapi: AudioNapi | typeof audioNapiUnavailable | null = null
+let audioNapiPromise: Promise<AudioNapi | typeof audioNapiUnavailable> | null =
+  null
+
+function resolveAudioNapiModule(imported: unknown): AudioNapi | typeof audioNapiUnavailable {
+  if (!imported || typeof imported !== 'object') return audioNapiUnavailable
+  const record = imported as Record<string, unknown>
+  if (record.__stub === true) return audioNapiUnavailable
+
+  const candidates = [record, record.default].filter(
+    (v): v is Record<string, unknown> => Boolean(v) && typeof v === 'object',
+  )
+  for (const candidate of candidates) {
+    if (typeof candidate.isNativeAudioAvailable === 'function') {
+      return candidate as unknown as AudioNapi
+    }
+  }
+  return audioNapiUnavailable
+}
+
+/** SoX on Windows when the native addon is not shipped in the build. */
+function hasWindowsSoxFallback(): boolean {
+  if (process.platform !== 'win32') return false
+  return resolveWindowsSoxExecutable() !== null || hasCommand('rec') || hasCommand('sox')
+}
+
+function loadAudioNapi(): Promise<AudioNapi | typeof audioNapiUnavailable> {
   audioNapiPromise ??= (async () => {
     const t0 = Date.now()
-    const mod = await import('audio-capture-napi')
-    // vendor/audio-capture-src/index.ts defers require(...node) until the
-    // first function call — trigger it here so timing reflects real cost.
-    mod.isNativeAudioAvailable()
-    audioNapi = mod
-    logForDebugging(`[voice] audio-capture-napi loaded in ${Date.now() - t0}ms`)
-    return mod
+    try {
+      const imported = await import('audio-capture-napi')
+      const mod = resolveAudioNapiModule(imported)
+      if (mod !== audioNapiUnavailable) {
+        mod.isNativeAudioAvailable()
+        logForDebugging(
+          `[voice] audio-capture-napi loaded in ${Date.now() - t0}ms`,
+        )
+      } else {
+        logForDebugging(
+          `[voice] audio-capture-napi unavailable (stub or missing); fallbacks only`,
+        )
+      }
+      audioNapi = mod
+      return mod
+    } catch (err) {
+      logForDebugging(`[voice] audio-capture-napi import failed: ${String(err)}`)
+      audioNapi = audioNapiUnavailable
+      return audioNapiUnavailable
+    }
   })()
   return audioNapiPromise
 }
@@ -47,17 +102,27 @@ const SILENCE_THRESHOLD = '3%'
 // ─── Dependency check ────────────────────────────────────────────────
 
 function hasCommand(cmd: string): boolean {
-  // Spawn the target directly instead of `which cmd`. On Termux/Android
-  // `which` is a shell builtin — the external binary is absent or
-  // kernel-blocked (EPERM) when spawned from Node. Only reached on
-  // non-Windows (win32 returns early from all callers), no PATHEXT issue.
-  // result.error is set iff the spawn itself fails (ENOENT/EACCES); exit
-  // code is irrelevant — an unrecognized --version still means cmd exists.
-  const result = spawnSync(cmd, ['--version'], {
-    stdio: 'ignore',
-    timeout: 3000,
-  })
-  return result.error === undefined
+  const names =
+    process.platform === 'win32' && !cmd.toLowerCase().endsWith('.exe')
+      ? [cmd, `${cmd}.exe`]
+      : [cmd]
+  for (const name of names) {
+    const result = spawnSync(name, ['--version'], {
+      stdio: 'ignore',
+      timeout: 3000,
+      windowsHide: true,
+    })
+    if (result.error === undefined) return true
+  }
+  if (process.platform === 'win32') {
+    const viaCmd = spawnSync('cmd.exe', ['/d', '/s', '/c', `${cmd} --version`], {
+      stdio: 'ignore',
+      timeout: 5000,
+      windowsHide: true,
+    })
+    return viaCmd.status === 0
+  }
+  return false
 }
 
 // Probe whether arecord can actually open a capture device. hasCommand()
@@ -198,12 +263,14 @@ export async function checkVoiceDependencies(): Promise<{
     return { available: true, missing: [], installCommand: null }
   }
 
-  // Windows has no supported fallback — native module is required
   if (process.platform === 'win32') {
+    if (hasWindowsSoxFallback()) {
+      return { available: true, missing: [], installCommand: null }
+    }
     return {
       available: false,
-      missing: ['Voice mode requires the native audio module (not loaded)'],
-      installCommand: null,
+      missing: ['SoX (rec/sox) for microphone capture'],
+      installCommand: windowsSoxInstallHint(),
     }
   }
 
@@ -272,12 +339,13 @@ export async function checkRecordingAvailability(): Promise<RecordingAvailabilit
     return { available: true, reason: null }
   }
 
-  // Windows has no supported fallback
   if (process.platform === 'win32') {
+    if (hasWindowsSoxFallback()) {
+      return { available: true, reason: null }
+    }
     return {
       available: false,
-      reason:
-        'Voice recording requires the native audio module, which could not be loaded.',
+      reason: `Voice recording needs SoX on Windows.\n\n${windowsSoxInstallHint()}`,
     }
   }
 
@@ -372,9 +440,11 @@ export async function startRecording(
     // Native recording failed — fall through to platform fallbacks
   }
 
-  // Windows has no supported fallback
   if (process.platform === 'win32') {
-    logForDebugging('[voice] Windows native recording unavailable, no fallback')
+    if (hasWindowsSoxFallback()) {
+      return startSoxRecording(onData, onEnd, options)
+    }
+    logForDebugging('[voice] Windows: no native audio and SoX not installed')
     return false
   }
 
@@ -402,15 +472,33 @@ function startSoxRecording(
 ): boolean {
   const useSilenceDetection = options?.silenceDetection !== false
 
+  let executable: string | null = null
+  if (process.platform === 'win32') {
+    executable = resolveWindowsSoxExecutable()
+  }
+  if (!executable) {
+    executable = hasCommand('rec')
+      ? 'rec'
+      : hasCommand('sox')
+        ? 'sox'
+        : null
+  }
+  if (!executable) return false
+
   // Record raw PCM: 16 kHz, 16-bit signed, mono, to stdout.
   // --buffer 1024 forces SoX to flush audio in small chunks instead of
   // accumulating data in its internal buffer. Without this, SoX may buffer
   // several seconds of audio before writing anything to stdout when piped,
   // causing zero data flow until the process exits.
-  const args = [
-    '-q', // quiet
-    '--buffer',
-    '1024',
+  const args = ['-q', '--buffer', '1024']
+
+  // Windows: native addon is often missing from npm builds; waveaudio is the
+  // SoX input backend for the default microphone.
+  if (process.platform === 'win32') {
+    args.push('-t', 'waveaudio', 'default')
+  }
+
+  args.push(
     '-t',
     'raw',
     '-r',
@@ -422,7 +510,7 @@ function startSoxRecording(
     '-c',
     String(RECORDING_CHANNELS),
     '-', // stdout
-  ]
+  )
 
   // Add silence detection filter (auto-stop on silence).
   // Omit for push-to-talk where the user manually controls start/stop.
@@ -438,7 +526,7 @@ function startSoxRecording(
     )
   }
 
-  const child = spawn('rec', args, {
+  const child = spawn(executable, args, {
     stdio: ['pipe', 'pipe', 'pipe'],
   })
 

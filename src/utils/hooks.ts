@@ -357,7 +357,7 @@ export function getSessionEndHookTimeoutMs(): number {
 }
 
 /** Cap SessionStart hook work so turn-1 TTFT is not blocked for minutes. */
-const SESSION_START_HOOK_TIMEOUT_MS_DEFAULT = 4_000
+const SESSION_START_HOOK_TIMEOUT_MS_DEFAULT = 2_500
 export function getSessionStartHookTimeoutMs(): number {
   const raw = process.env.CLAUDE_CODE_SESSIONSTART_HOOKS_TIMEOUT_MS
   const parsed = raw ? parseInt(raw, 10) : NaN

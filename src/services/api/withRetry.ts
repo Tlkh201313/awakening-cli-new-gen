@@ -21,6 +21,7 @@ import {
   isClaudeAISubscriber,
   isEnterpriseSubscriber,
 } from '../../utils/auth.js'
+import { clearAnthropicClientCache } from './client.js'
 import { isEnvTruthy } from '../../utils/envUtils.js'
 import { errorMessage } from '../../utils/errors.js'
 import {
@@ -250,6 +251,10 @@ export async function* withRetry<T>(
         isVertexAuthError(lastError) ||
         isStaleConnection
       ) {
+        // On auth errors, evict the session-level client cache so the next
+        // getClient() call builds a fresh instance with refreshed credentials.
+        if (lastError !== null) clearAnthropicClientCache()
+
         // On 401 "token expired" or 403 "token revoked", force a token refresh
         if (
           (lastError instanceof APIError && lastError.status === 401) ||

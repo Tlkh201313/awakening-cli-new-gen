@@ -375,6 +375,19 @@ export type GlobalConfig = {
   voiceLangHintShownCount?: number // Number of times the /voice dictation-language hint has been shown
   voiceLangHintLastLanguage?: string // Resolved STT language code when the hint was last shown — reset count when it changes
   voiceFooterHintSeenCount?: number // Number of sessions the "hold X to speak" footer hint has been shown
+  /** Built-in Whisper STT (Awakened) — env AWAKENED_VOICE_STT_* overrides */
+  voiceStt?: {
+    provider?: 'groq' | 'deepgram' | 'huggingface' | 'compatible'
+    apiKey?: string
+    baseUrl?: string
+    model?: string
+  }
+  /** Enable hold-to-talk automatically when the CLI starts (/voice startup) */
+  voiceEnableOnStartup?: boolean
+  /** User completed the voice STT setup panel */
+  voiceSetupComplete?: boolean
+  /** User skipped startup voice setup (Esc) */
+  voiceSetupDismissed?: boolean
 
   // Opus 1M merge notice tracking
   opus1mMergeNoticeSeenCount?: number // Number of times the opus-1m-merge notice has been shown

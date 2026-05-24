@@ -10,12 +10,24 @@ function defaultDeltaFlushMs(): number {
   return getStreamFlushMsForTier()
 }
 
+let cachedFlushMs: number | null = null
+let cachedFlushMsEnvValue: string | undefined
+
 function parseFlushMs(): number {
   const raw = process.env.CLAUDE_CODE_STREAM_UI_FLUSH_MS?.trim()
-  if (!raw) return defaultDeltaFlushMs()
+  // Re-parse only when env var changes or memory pressure updates the tier.
+  // Memory pressure updates invalidate via resetStreamUiThrottleState().
+  if (raw === cachedFlushMsEnvValue && cachedFlushMs !== null) {
+    return cachedFlushMs
+  }
+  cachedFlushMsEnvValue = raw
+  if (!raw) {
+    cachedFlushMs = defaultDeltaFlushMs()
+    return cachedFlushMs
+  }
   const n = Number.parseInt(raw, 10)
-  if (!Number.isFinite(n) || n < 8 || n > 200) return defaultDeltaFlushMs()
-  return n
+  cachedFlushMs = !Number.isFinite(n) || n < 4 || n > 200 ? defaultDeltaFlushMs() : n
+  return cachedFlushMs
 }
 
 type PendingFlush = {
@@ -53,6 +65,9 @@ export function resetStreamUiThrottleState(): void {
   thinkingFirstUpdatePending = true
   textFirstUpdatePending = true
   toolInputFirstUpdatePending = true
+  // Invalidate flush-ms cache so memory pressure changes take effect next turn.
+  cachedFlushMs = null
+  cachedFlushMsEnvValue = undefined
   for (const state of [thinkingState, textState, toolInputState]) {
     if (state.timer !== null) {
       clearTimeout(state.timer)

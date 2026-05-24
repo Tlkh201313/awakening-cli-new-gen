@@ -1240,6 +1240,17 @@ export function ProviderManager({ mode, onDone }: Props): React.ReactNode {
       return
     }
 
+    const enteredKey = nextDraft.apiKey.trim()
+    if (enteredKey) {
+      const persisted = getProviderProfiles().find(p => p.id === saved.id)
+      if (!persisted?.apiKey) {
+        setErrorMessage(
+          'API key did not save. Check write access to ~/.awakened (or CLAUDE_CONFIG_DIR), then try again.',
+        )
+        return
+      }
+    }
+
     const isActiveSavedProfile = getActiveProviderProfile()?.id === saved.id
     if (isActiveSavedProfile) {
       setAppState(prev => ({

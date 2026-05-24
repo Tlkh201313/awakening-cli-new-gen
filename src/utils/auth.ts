@@ -1108,14 +1108,16 @@ export const getApiKeyFromConfigOrMacOSKeychain = memoize(
 )
 
 function isValidApiKey(apiKey: string): boolean {
-  // Only allow alphanumeric characters, dashes, and underscores
-  return /^[a-zA-Z0-9-_]+$/.test(apiKey)
+  const trimmed = apiKey.trim()
+  if (trimmed.length < 8 || trimmed.length > 512) return false
+  // Allow common provider key chars (Bearer tokens, base64, sk-ant-…, ogw_live_…).
+  return !/[\s\x00-\x1f]/.test(trimmed)
 }
 
 export async function saveApiKey(apiKey: string): Promise<void> {
   if (!isValidApiKey(apiKey)) {
     throw new Error(
-      'Invalid API key format. API key must contain only alphanumeric characters, dashes, and underscores.',
+      'Invalid API key format. Use your full key (no spaces or line breaks, 8–512 characters).',
     )
   }
 

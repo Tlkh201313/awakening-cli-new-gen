@@ -160,6 +160,7 @@ import {
 import antTrace from './commands/ant-trace/index.js'
 import perfIssue from './commands/perf-issue/index.js'
 import sandboxToggle from './commands/sandbox-toggle/index.js'
+import awaken from './commands/awaken/index.js'
 import awakened from './commands/awakened/index.js'
 import hardware from './commands/hardware/index.js'
 import chrome from './commands/chrome/index.js'
@@ -362,6 +363,7 @@ const COMMANDS = memoize((): Command[] => [
   hooks,
   exportCommand,
   sandboxToggle,
+  awaken,
   awakened,
   hardware,
   ...(!isUsing3PServices() ? [logout, login()].filter(Boolean) : []),

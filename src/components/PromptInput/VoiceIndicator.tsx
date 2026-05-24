@@ -2,6 +2,7 @@ import { c as _c } from "react-compiler-runtime";
 import { feature } from 'bun:bundle';
 import * as React from 'react';
 import { useSettings } from '../../hooks/useSettings.js';
+import { isAwakenedCommandVoiceUx } from '../../voice/awakenedVoiceConfig.js';
 import { Box, Text, useAnimationFrame } from '../../ink.js';
 import { interpolateColor, toRGBColor } from '../Spinner/utils.js';
 type Props = {
@@ -44,14 +45,10 @@ function VoiceIndicatorImpl(t0) {
   switch (voiceState) {
     case "recording":
       {
-        let t1;
-        if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-          t1 = <Text dimColor={true}>listening…</Text>;
-          $[0] = t1;
-        } else {
-          t1 = $[0];
-        }
-        return t1;
+        const label = isAwakenedCommandVoiceUx()
+          ? 'Recording — press Enter when done'
+          : 'listening…';
+        return <Text dimColor={true}>{label}</Text>;
       }
     case "processing":
       {

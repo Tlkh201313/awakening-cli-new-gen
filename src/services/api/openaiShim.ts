@@ -439,7 +439,7 @@ function isGeminiMode(): boolean {
   )
 }
 
-function hydrateOpenAIShimCompatibilityEnv(
+export function hydrateOpenAIShimCompatibilityEnv(
   processEnv: NodeJS.ProcessEnv = process.env,
 ): void {
   // Provider selection, base URL defaults, and model defaults now flow

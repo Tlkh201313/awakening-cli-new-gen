@@ -83,6 +83,12 @@ import { prependModeCharacterToInput } from '../components/PromptInput/inputMode
 import { prependToShellHistoryCache } from '../utils/suggestions/shellHistoryCompletion.js';
 import { useApiKeyVerification } from '../hooks/useApiKeyVerification.js';
 import { GlobalKeybindingHandlers } from '../hooks/useGlobalKeybindings.js';
+import { useTerminalFocusRecovery } from '../hooks/useTerminalFocusRecovery.js';
+import instances from '../ink/instances.js';
+import { recoverClientUiAfterTerminalFocus, registerLongSessionMemoryWatchdog } from '../utils/awakenedMemory.js';
+import { isAwakenedCommandVoiceUx } from '../voice/awakenedVoiceConfig.js';
+import { getVoiceSessionUiState, requestVoiceRecordingStop } from '../voice/voiceSessionControl.js';
+import { flushStreamUiThrottleState } from '../utils/streamUiThrottle.js';
 import { CommandKeybindingHandlers } from '../hooks/useCommandKeybindings.js';
 import { KeybindingSetup } from '../keybindings/KeybindingProviderSetup.js';
 import { useShortcutDisplay } from '../keybindings/useShortcutDisplay.js';
@@ -102,6 +108,9 @@ const useVoiceIntegration: typeof import('../hooks/useVoiceIntegration.js').useV
   resetAnchor: () => { }
 });
 const VoiceKeybindingHandler: typeof import('../hooks/useVoiceIntegration.js').VoiceKeybindingHandler = feature('VOICE_MODE') ? require('../hooks/useVoiceIntegration.js').VoiceKeybindingHandler : () => null;
+const useVoiceStartup: typeof import('../hooks/useVoiceStartup.js').useVoiceStartup = feature('VOICE_MODE') ? require('../hooks/useVoiceStartup.js').useVoiceStartup : () => {};
+const useVoiceSetupPrompt: typeof import('../hooks/useVoiceSetupPrompt.js').useVoiceSetupPrompt = feature('VOICE_MODE') ? require('../hooks/useVoiceSetupPrompt.js').useVoiceSetupPrompt : () => {};
+const VoiceConfigPanel: typeof import('../commands/voice/VoiceConfigPanel.js').VoiceConfigPanel = feature('VOICE_MODE') ? require('../commands/voice/VoiceConfigPanel.js').VoiceConfigPanel : () => null;
 // Frustration detection is internal-only (dogfooding). Conditional require so external
 // builds eliminate the module entirely (including its two O(n) useMemos that run
 // on every messages change, plus the GrowthBook fetch).
@@ -732,6 +741,7 @@ export function REPL({
   const [ideToInstallExtension, setIDEToInstallExtension] = useState<IdeType | null>(null);
   const [ideInstallationStatus, setIDEInstallationStatus] = useState<IDEExtensionInstallationStatus | null>(null);
   const [showIdeOnboarding, setShowIdeOnboarding] = useState(false);
+  const [showVoiceSetup, setShowVoiceSetup] = useState(false);
   // Dead code elimination: model switch callout state (internal-only)
   const [showModelSwitchCallout, setShowModelSwitchCallout] = useState(() => {
     if ("external" === 'ant') {
@@ -1324,6 +1334,10 @@ export function REPL({
   // hook messages are injected when they resolve. awaitPendingHooks()
   // must be called before the first API call so the model sees hook context.
   const awaitPendingHooks = useDeferredHookMessages(pendingHookMessages, setMessages);
+  useTerminalFocusRecovery(focusedInputDialogRef);
+  useEffect(() => registerLongSessionMemoryWatchdog(), []);
+  useVoiceStartup();
+  useVoiceSetupPrompt(setShowVoiceSetup);
 
   // Deferred messages for the Messages component — renders at transition
   // priority so the reconciler yields every 5ms, keeping input responsive
@@ -1719,6 +1733,11 @@ export function REPL({
   // Check if any permission or ask question prompt is currently visible
   // This is used to prevent the survey from opening while prompts are active
   const hasActivePrompt = toolUseConfirmQueue.length > 0 || promptQueue.length > 0 || sandboxPermissionRequestQueue.length > 0 || elicitation.queue.length > 0 || workerSandboxPermissions.queue.length > 0;
+  useEffect(() => {
+    if (hasActivePrompt) {
+      setIsPromptInputActive(false);
+    }
+  }, [hasActivePrompt]);
   const feedbackSurveyOriginal = useFeedbackSurvey(messages, isLoading, submitCount, 'session', hasActivePrompt);
   const skillImprovementSurvey = useSkillImprovementSurvey(setMessages);
   const showIssueFlagBanner = useIssueFlagBanner(messages, submitCount);
@@ -2054,26 +2073,27 @@ export function REPL({
   // Permission and interactive dialogs can show even when toolJSX is set,
   // as long as shouldContinueAnimation is true. This prevents deadlocks when
   // agents set background hints while waiting for user interaction.
-  function getFocusedInputDialog(): 'message-selector' | 'sandbox-permission' | 'tool-permission' | 'prompt' | 'worker-sandbox-permission' | 'elicitation' | 'cost' | 'idle-return' | 'init-onboarding' | 'ide-onboarding' | 'model-switch' | 'undercover-callout' | 'effort-callout' | 'remote-callout' | 'lsp-recommendation' | 'plugin-hint' | 'desktop-upsell' | 'ultraplan-choice' | 'ultraplan-launch' | undefined {
+  function getFocusedInputDialog(): 'message-selector' | 'sandbox-permission' | 'tool-permission' | 'prompt' | 'worker-sandbox-permission' | 'elicitation' | 'cost' | 'idle-return' | 'voice-setup' | 'init-onboarding' | 'ide-onboarding' | 'model-switch' | 'undercover-callout' | 'effort-callout' | 'remote-callout' | 'lsp-recommendation' | 'plugin-hint' | 'desktop-upsell' | 'ultraplan-choice' | 'ultraplan-launch' | undefined {
     // Exit states always take precedence
     if (isExiting || exitFlow) return undefined;
 
     // High priority dialogs (always show regardless of typing)
     if (isMessageSelectorVisible) return 'message-selector';
 
-    // Suppress interrupt dialogs while user is actively typing
-    if (promptTypingSuppressionActive) return undefined;
-    if (sandboxPermissionRequestQueue[0]) return 'sandbox-permission';
-
-    // Permission/interactive dialogs (show unless blocked by toolJSX)
+    // Permission/interactive dialogs (show unless blocked by toolJSX).
+    // These MUST beat promptTypingSuppression — draft text in the input must
+    // not hide MCP/tool permission prompts (looks like a freeze).
     const allowDialogsWithAnimation = !toolJSX || toolJSX.shouldContinueAnimation;
+    if (sandboxPermissionRequestQueue[0]) return 'sandbox-permission';
     if (allowDialogsWithAnimation && toolUseConfirmQueue[0]) return 'tool-permission';
     if (allowDialogsWithAnimation && promptQueue[0]) return 'prompt';
-    // Worker sandbox permission prompts (network access) from swarm workers
     if (allowDialogsWithAnimation && workerSandboxPermissions.queue[0]) return 'worker-sandbox-permission';
     if (allowDialogsWithAnimation && elicitation.queue[0]) return 'elicitation';
     if (allowDialogsWithAnimation && showingCostDialog) return 'cost';
     if (allowDialogsWithAnimation && idleReturnPending) return 'idle-return';
+    if (allowDialogsWithAnimation && showVoiceSetup) return 'voice-setup';
+
+    if (promptTypingSuppressionActive) return undefined;
     if (feature('ULTRAPLAN') && allowDialogsWithAnimation && !isLoading && ultraplanPendingChoice) return 'ultraplan-choice';
     if (feature('ULTRAPLAN') && allowDialogsWithAnimation && !isLoading && ultraplanLaunchPending) return 'ultraplan-launch';
 
@@ -3227,6 +3247,15 @@ export function REPL({
   }, options?: {
     fromKeybinding?: boolean;
   }) => {
+    if (
+      feature('VOICE_MODE') &&
+      isAwakenedCommandVoiceUx() &&
+      getVoiceSessionUiState() === 'recording'
+    ) {
+      requestVoiceRecordingStop();
+      return;
+    }
+
     // Re-pin scroll to bottom on submit so the user always sees the new
     // exchange (matches OpenCode's auto-scroll behavior).
     repinScroll();
@@ -4187,6 +4216,9 @@ export function REPL({
       process.stdout.write(`\nAwakened has been suspended. Run \`fg\` to bring Awakened back.\nNote: ctrl + z now suspends Awakened, ctrl + _ undoes input.\n`);
     };
     const handleResume = () => {
+      recoverClientUiAfterTerminalFocus();
+      flushStreamUiThrottleState();
+      instances.get(process.stdout)?.softRecoverTerminal();
       // Force complete component tree replacement instead of terminal clear
       // Ink now handles line count reset internally on SIGCONT
       setRemountKey(prev => prev + 1);
@@ -4865,6 +4897,16 @@ export function REPL({
             });
           }} />}
           {focusedInputDialog === 'ide-onboarding' && <IdeOnboardingDialog onDone={() => setShowIdeOnboarding(false)} installationStatus={ideInstallationStatus} />}
+          {feature('VOICE_MODE') && focusedInputDialog === 'voice-setup' && <VoiceConfigPanel variant="startup" offerEnableAfterSave onDone={(msg) => {
+            setShowVoiceSetup(false);
+            if (msg) {
+              addNotification({
+                key: 'voice-setup',
+                text: msg,
+                priority: 'medium'
+              });
+            }
+          }} />}
           {"external" === 'ant' && focusedInputDialog === 'model-switch' && AntModelSwitchCallout && <AntModelSwitchCallout onDone={(selection: string, modelAlias?: string) => {
             setShowModelSwitchCallout(false);
             if (selection === 'switch' && modelAlias) {

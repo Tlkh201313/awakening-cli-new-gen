@@ -8,14 +8,19 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSetVoiceState } from '../context/voice.js'
+import { isAwakenedCommandVoiceUx } from '../voice/awakenedVoiceConfig.js'
+import {
+  registerVoiceSessionHandlers,
+  setVoiceSessionUiState,
+} from '../voice/voiceSessionControl.js'
 import { useTerminalFocus } from '../ink/hooks/use-terminal-focus.js'
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from '../services/analytics/index.js'
 import { getVoiceKeyterms } from '../services/voiceKeyterms.js'
+import { connectSpeechToText } from '../services/voiceSTTRouter.js'
 import {
-  connectVoiceStream,
   type FinalizeSource,
   isVoiceStreamAvailable,
   type VoiceStreamConnection,
@@ -265,6 +270,10 @@ export function useVoice({
   // dimension and error-message branching. Reset in startRecordingSession.
   const everConnectedRef = useRef(false)
   const audioLevelsRef = useRef<number[]>([])
+  // Throttle audio-level React state updates to ~8fps. We accumulate every
+  // chunk into audioLevelsRef (for accuracy) but only push to voice state
+  // when the timer fires, preventing ~30 setVoiceState calls per second.
+  const audioLevelFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFocused = useTerminalFocus()
   const setVoiceState = useSetVoiceState()
 
@@ -275,6 +284,7 @@ export function useVoice({
   function updateState(newState: VoiceState): void {
     stateRef.current = newState
     setState(newState)
+    setVoiceSessionUiState(newState)
     setVoiceState(prev => {
       if (prev.voiceState === newState) return prev
       return { ...prev, voiceState: newState }
@@ -302,6 +312,10 @@ export function useVoice({
     if (focusSilenceTimerRef.current) {
       clearTimeout(focusSilenceTimerRef.current)
       focusSilenceTimerRef.current = null
+    }
+    if (audioLevelFlushTimerRef.current) {
+      clearTimeout(audioLevelFlushTimerRef.current)
+      audioLevelFlushTimerRef.current = null
     }
     silenceTimedOutRef.current = false
     voiceModule?.stopRecording()
@@ -377,6 +391,7 @@ export function useVoice({
         // backoff clears the same-pod rapid-reconnect race (same gap as the
         // early-error retry path below).
         if (
+          isVoiceStreamAvailable() &&
           finalizeSource === 'no_data_timeout' &&
           hadAudioSignal &&
           wsConnected &&
@@ -405,7 +420,7 @@ export function useVoice({
           const keyterms = await getVoiceKeyterms()
           if (isStale()) return
           await new Promise<void>(resolve => {
-            void connectVoiceStream(
+            void connectSpeechToText(
               {
                 onTranscript: (t, isFinal) => {
                   if (isStale()) return
@@ -716,10 +731,16 @@ export function useVoice({
           levels.shift()
         }
         levels.push(level)
-        // Copy the array so React sees a new reference
-        const snapshot = [...levels]
-        audioLevelsRef.current = snapshot
-        setVoiceState(prev => ({ ...prev, voiceAudioLevels: snapshot }))
+        // Throttle React state updates to ~8fps — audio chunks arrive at up
+        // to ~30Hz, so updating state every chunk causes excessive re-renders.
+        // The timer fires once per 125ms and copies the latest snapshot.
+        if (audioLevelFlushTimerRef.current === null) {
+          audioLevelFlushTimerRef.current = setTimeout(() => {
+            audioLevelFlushTimerRef.current = null
+            const snapshot = [...audioLevelsRef.current]
+            setVoiceState(prev => ({ ...prev, voiceAudioLevels: snapshot }))
+          }, 125)
+        }
       },
       () => {
         // External end (e.g. device error) - treat as stop
@@ -778,7 +799,7 @@ export function useVoice({
 
     const attemptConnect = (keyterms: string[]): void => {
       const myAttemptGen = attemptGenRef.current
-      void connectVoiceStream(
+      void connectSpeechToText(
         {
           onTranscript: (text: string, isFinal: boolean) => {
             if (isStale()) return
@@ -1136,6 +1157,23 @@ export function useVoice({
       cleanup()
     }
   }, [enabled, cleanup])
+
+  useEffect(() => {
+    if (!isAwakenedCommandVoiceUx()) return
+    return registerVoiceSessionHandlers({
+      start: () => {
+        if (!enabled || stateRef.current !== 'idle') return
+        logForDebugging('[voice] /voice command: starting recording')
+        void startRecordingSession()
+      },
+      stop: () => {
+        if (stateRef.current === 'recording') {
+          logForDebugging('[voice] Enter or /voice: finishing recording')
+          finishRecording()
+        }
+      },
+    })
+  }, [enabled, finishRecording, startRecordingSession])
 
   return {
     state,

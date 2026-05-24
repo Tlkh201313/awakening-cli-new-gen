@@ -15,30 +15,30 @@ export type MemoryPressureLevel = 0 | 1 | 2
 const RAM_PROFILES = {
   constrained: {
     uvThreadPool: 4,
-    uiFrameMs: 32,
-    streamFlushMs: 32,
+    uiFrameMs: 28,
+    streamFlushMs: 24,
     deferredStaggerMs: 500,
     perfMode: false,
-    heapHighMb: 900,
-    heapCriticalMb: 1400,
+    heapHighMb: 1600,
+    heapCriticalMb: 2400,
   },
   balanced: {
     uvThreadPool: 8,
-    uiFrameMs: 24,
-    streamFlushMs: 20,
+    uiFrameMs: 16,
+    streamFlushMs: 10,
     deferredStaggerMs: 250,
     perfMode: true,
-    heapHighMb: 1200,
-    heapCriticalMb: 2000,
+    heapHighMb: 2400,
+    heapCriticalMb: 3600,
   },
   spacious: {
     uvThreadPool: 16,
-    uiFrameMs: 16,
-    streamFlushMs: 12,
+    uiFrameMs: 12,
+    streamFlushMs: 8,
     deferredStaggerMs: 120,
     perfMode: true,
-    heapHighMb: 1500,
-    heapCriticalMb: 2500,
+    heapHighMb: 2800,
+    heapCriticalMb: 4500,
   },
 } as const satisfies Record<
   RamTier,
@@ -57,6 +57,9 @@ let cachedTier: RamTier | undefined
 let profileApplied = false
 let memoryPressureLevel: MemoryPressureLevel = 0
 let autoPerfEnabled: boolean | undefined
+const sessionStartedAt = Date.now()
+let lastElevatedPressureAt = 0
+let longSessionWatchdog: ReturnType<typeof setInterval> | null = null
 
 /** Test-only: reset cached tier / pressure between cases. */
 export function resetAwakenedMemoryStateForTests(): void {
@@ -64,6 +67,22 @@ export function resetAwakenedMemoryStateForTests(): void {
   profileApplied = false
   memoryPressureLevel = 0
   autoPerfEnabled = undefined
+  lastElevatedPressureAt = 0
+  if (longSessionWatchdog !== null) {
+    clearInterval(longSessionWatchdog)
+    longSessionWatchdog = null
+  }
+}
+
+function isEcoMode(): boolean {
+  return (
+    isEnvTruthy(process.env.OPENCLAUDE_ECO) ||
+    isEnvTruthy(process.env.AWAKENED_ECO)
+  )
+}
+
+export function getSessionAgeMs(): number {
+  return Date.now() - sessionStartedAt
 }
 
 export function getTotalRamMb(): number {
@@ -72,7 +91,14 @@ export function getTotalRamMb(): number {
 
 export function getRamTier(): RamTier {
   if (cachedTier !== undefined) return cachedTier
-  if (isEnvTruthy(process.env.OPENCLAUDE_ECO)) {
+  if (isEcoMode()) {
+    cachedTier = 'constrained'
+    return cachedTier
+  }
+  if (
+    !isEnvTruthy(process.env.AWAKENED_NO_AUTO_ECO) &&
+    getTotalRamMb() < 10_240
+  ) {
     cachedTier = 'constrained'
     return cachedTier
   }
@@ -97,7 +123,7 @@ export function getDefaultMaxOldSpaceSizeMb(): number {
 }
 
 export function isAwakenedPerformanceMode(): boolean {
-  if (isEnvTruthy(process.env.OPENCLAUDE_ECO)) return false
+  if (isEcoMode()) return false
   if (
     isEnvTruthy(process.env.OPENCLAUDE_PERFORMANCE) ||
     isEnvTruthy(process.env.CLAUDE_CODE_FAST_UI)
@@ -123,18 +149,37 @@ export function getMemoryPressureLevel(): MemoryPressureLevel {
   return memoryPressureLevel
 }
 
-/** Multiplier for Ink frame interval under pressure (1 = no change). */
+/** Multiplier for Ink frame interval under pressure (1 = no change). Kept mild — heavy throttling freezes UI after tab switch. */
+function isMemoryUiThrottleDisabled(): boolean {
+  return (
+    isEnvTruthy(process.env.OPENCLAUDE_DISABLE_MEMORY_UI_THROTTLE) ||
+    isEnvTruthy(process.env.AWAKENED_DISABLE_MEMORY_UI_THROTTLE)
+  )
+}
+
 export function getMemoryPressureFrameMultiplier(): number {
-  if (memoryPressureLevel === 2) return 2.25
-  if (memoryPressureLevel === 1) return 1.5
+  if (isMemoryUiThrottleDisabled()) return 1
+  if (memoryPressureLevel === 2) return 1.2
+  if (memoryPressureLevel === 1) return 1.08
   return 1
 }
 
+const LONG_SESSION_COALESCE_MS = 5 * 60 * 1000
+
 export function getStreamFlushMsForTier(): number {
   const base = getRamProfile().streamFlushMs
-  if (memoryPressureLevel === 2) return Math.min(48, base * 2)
-  if (memoryPressureLevel === 1) return Math.min(36, Math.round(base * 1.35))
-  return base
+  if (isMemoryUiThrottleDisabled()) return base
+  let ms = base
+  if (memoryPressureLevel === 2) ms = Math.min(28, base + 10)
+  else if (memoryPressureLevel === 1) ms = Math.min(24, base + 4)
+  // After ~5 min, coalesce stream UI more (CPU/RAM) without slowing Ink frames.
+  if (
+    memoryPressureLevel === 0 &&
+    getSessionAgeMs() >= LONG_SESSION_COALESCE_MS
+  ) {
+    ms = Math.min(32, ms + 6)
+  }
+  return ms
 }
 
 export function getDeferredPrefetchStaggerMs(): number {
@@ -143,22 +188,111 @@ export function getDeferredPrefetchStaggerMs(): number {
   return base
 }
 
+function setMemoryPressureLevel(next: MemoryPressureLevel, heapMb: number): void {
+  if (next === memoryPressureLevel) return
+  if (next > 0) {
+    lastElevatedPressureAt = Date.now()
+  } else {
+    lastElevatedPressureAt = 0
+  }
+  memoryPressureLevel = next
+  logForDebugging(
+    `[memory] pressure=${next} heap=${Math.round(heapMb)}MiB tier=${getRamTier()}`,
+    { level: next > 0 ? 'warn' : 'info' },
+  )
+}
+
+/**
+ * Step pressure down when heap has cooled but sits in the hysteresis band.
+ * Prevents "frozen" UI after long sessions that briefly crossed heapHigh.
+ */
+export function tickMemoryPressureDecay(heapUsedBytes?: number): void {
+  if (memoryPressureLevel === 0) return
+  const heapMb =
+    (heapUsedBytes ?? process.memoryUsage().heapUsed) / (1024 * 1024)
+  const { heapHighMb, heapCriticalMb } = getRamProfile()
+  if (heapMb >= heapCriticalMb) return
+
+  const recoverBelowMb = heapHighMb * 0.88
+  if (heapMb < recoverBelowMb) {
+    setMemoryPressureLevel(0, heapMb)
+    return
+  }
+
+  const elevatedForMs =
+    lastElevatedPressureAt > 0 ? Date.now() - lastElevatedPressureAt : 0
+  if (heapMb < heapHighMb && elevatedForMs >= 45_000) {
+    const next = (memoryPressureLevel - 1) as MemoryPressureLevel
+    setMemoryPressureLevel(next, heapMb)
+  }
+}
+
 /**
  * Update runtime pressure from current heap (bytes). Called by useMemoryUsage.
  */
 export function updateMemoryPressureFromHeap(heapUsedBytes: number): MemoryPressureLevel {
   const { heapHighMb, heapCriticalMb } = getRamProfile()
   const heapMb = heapUsedBytes / (1024 * 1024)
-  const next: MemoryPressureLevel =
-    heapMb >= heapCriticalMb ? 2 : heapMb >= heapHighMb ? 1 : 0
-  if (next !== memoryPressureLevel) {
-    memoryPressureLevel = next
+  const recoverBelowMb = heapHighMb * 0.88
+  let next: MemoryPressureLevel
+  if (heapMb >= heapCriticalMb) {
+    next = 2
+  } else if (heapMb >= heapHighMb) {
+    next = memoryPressureLevel === 0 ? 1 : Math.max(memoryPressureLevel, 1)
+  } else if (heapMb < recoverBelowMb) {
+    next = 0
+  } else if (memoryPressureLevel > 0 && heapMb < heapHighMb) {
+    // Hysteresis band: decay instead of holding elevated pressure forever.
+    next = (memoryPressureLevel - 1) as MemoryPressureLevel
+  } else {
+    next = memoryPressureLevel
+  }
+  setMemoryPressureLevel(next, heapMb)
+  return memoryPressureLevel
+}
+
+/**
+ * Periodic relief during long REPL sessions (heap sample + pressure decay).
+ * Returns cleanup for useEffect.
+ */
+export function registerLongSessionMemoryWatchdog(): () => void {
+  if (longSessionWatchdog !== null) {
+    clearInterval(longSessionWatchdog)
+  }
+  longSessionWatchdog = setInterval(() => {
+    const heapUsed = process.memoryUsage().heapUsed
+    updateMemoryPressureFromHeap(heapUsed)
+    tickMemoryPressureDecay(heapUsed)
+    const { heapHighMb } = getRamProfile()
+    const heapMb = heapUsed / (1024 * 1024)
+    if (memoryPressureLevel > 0 && heapMb < heapHighMb * 0.94) {
+      setMemoryPressureLevel(0, heapMb)
+    }
+  }, 30_000)
+  return () => {
+    if (longSessionWatchdog !== null) {
+      clearInterval(longSessionWatchdog)
+      longSessionWatchdog = null
+    }
+  }
+}
+
+/**
+ * After terminal tab regains focus: re-sample heap and drop pressure if we recovered.
+ * Prevents "frozen" UI from aggressive coalescing left over while backgrounded.
+ */
+export function recoverClientUiAfterTerminalFocus(): void {
+  const heapUsed = process.memoryUsage().heapUsed
+  updateMemoryPressureFromHeap(heapUsed)
+  const { heapHighMb } = getRamProfile()
+  const heapMb = heapUsed / (1024 * 1024)
+  if (memoryPressureLevel > 0 && heapMb < heapHighMb * 0.92) {
+    setMemoryPressureLevel(0, heapMb)
     logForDebugging(
-      `[memory] pressure=${next} heap=${Math.round(heapMb)}MiB tier=${getRamTier()}`,
-      { level: next > 0 ? 'warn' : 'info' },
+      `[memory] pressure=0 after focus (heap=${Math.round(heapMb)}MiB)`,
+      { level: 'info' },
     )
   }
-  return memoryPressureLevel
 }
 
 function setEnvIfUnset(key: string, value: string): void {
@@ -186,8 +320,11 @@ export function applyAwakenedMemoryProfile(): void {
     setEnvIfUnset('CLAUDE_CODE_UI_FRAME_MS', String(frameMs))
   }
   if (!process.env.CLAUDE_CODE_STREAM_UI_FLUSH_MS?.trim()) {
-    const flushMs = perf ? profile.streamFlushMs : Math.max(profile.streamFlushMs, 24)
+    const flushMs = perf ? profile.streamFlushMs : Math.max(profile.streamFlushMs, 20)
     setEnvIfUnset('CLAUDE_CODE_STREAM_UI_FLUSH_MS', String(flushMs))
+  }
+  if (perf && !process.env.OPENCLAUDE_FAST_STARTUP?.trim()) {
+    setEnvIfUnset('OPENCLAUDE_FAST_STARTUP', '1')
   }
 
   logForDebugging(

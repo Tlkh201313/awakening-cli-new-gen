@@ -192,6 +192,13 @@ function applyXaiEnvOnlyDefaults(): void {
   delete process.env.OPENAI_AUTH_HEADER_VALUE
 }
 
+let _cachedClient: { key: string; client: Anthropic } | null = null
+
+/** Call on 401/403/token-revoked errors so the next request gets a fresh client. */
+export function clearAnthropicClientCache(): void {
+  _cachedClient = null
+}
+
 export async function getAnthropicClient({
   apiKey,
   maxRetries,
@@ -498,21 +505,37 @@ export async function getAnthropicClient({
   }
 
   // Determine authentication method based on available tokens
+  const resolvedApiKey = isClaudeAiSubscriber ? null : (apiKey || getAnthropicApiKey())
+  const resolvedAuthToken = isClaudeAiSubscriber
+    ? getClaudeAIOAuthTokens()?.accessToken
+    : undefined
+  const resolvedBaseUrl = (
+    process.env.USER_TYPE === 'ant' && isEnvTruthy(process.env.USE_STAGING_OAUTH)
+      ? getOauthConfig().BASE_API_URL
+      : process.env.ANTHROPIC_BASE_URL
+  ) ?? 'https://api.anthropic.com'
+
+  // Cache key covers auth credentials + request config. Token change → new client.
+  // fetchOverride skips cache: custom fetch means caller controls the instance.
+  const cacheKey = fetchOverride
+    ? null
+    : `${resolvedApiKey ?? ''}:${resolvedAuthToken ?? ''}:${maxRetries}:${resolvedBaseUrl}:${isDebugToStdErr()}`
+
+  if (cacheKey && _cachedClient?.key === cacheKey) {
+    return _cachedClient.client
+  }
+
   const clientConfig: ConstructorParameters<typeof Anthropic>[0] = {
-    apiKey: isClaudeAiSubscriber ? null : apiKey || getAnthropicApiKey(),
-    authToken: isClaudeAiSubscriber
-      ? getClaudeAIOAuthTokens()?.accessToken
-      : undefined,
-    // Set baseURL from OAuth config when using staging OAuth
-    ...(process.env.USER_TYPE === 'ant' &&
-    isEnvTruthy(process.env.USE_STAGING_OAUTH)
-      ? { baseURL: getOauthConfig().BASE_API_URL }
-      : {}),
+    apiKey: resolvedApiKey,
+    authToken: resolvedAuthToken,
+    ...(resolvedBaseUrl !== 'https://api.anthropic.com' ? { baseURL: resolvedBaseUrl } : {}),
     ...ARGS,
     ...(isDebugToStdErr() && { logger: createStderrLogger() }),
   }
 
-  return new Anthropic(clientConfig)
+  const client = new Anthropic(clientConfig)
+  if (cacheKey) _cachedClient = { key: cacheKey, client }
+  return client
 }
 
 async function configureApiKeyHeaders(

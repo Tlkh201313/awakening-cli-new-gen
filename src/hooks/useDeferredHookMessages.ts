@@ -11,7 +11,7 @@ import { logForDebugging } from '../utils/debug.js'
  * request to ensure the model always sees hook context.
  */
 
-const DEFAULT_DEFERRED_HOOK_WAIT_MS = 4_000
+const DEFAULT_DEFERRED_HOOK_WAIT_MS = 2_000
 
 function getDeferredHookWaitMs(): number {
   const raw = process.env.CLAUDE_CODE_DEFERRED_HOOK_WAIT_MS?.trim()

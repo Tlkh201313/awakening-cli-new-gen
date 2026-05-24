@@ -416,6 +416,24 @@ export function getRouteCredentialEnvVars(
   }
 
   const envVars = [...(descriptor.setup.credentialEnvVars ?? [])]
+
+  const presetApiKeyEnvVars =
+    'preset' in descriptor && descriptor.preset?.apiKeyEnvVars
+      ? descriptor.preset.apiKeyEnvVars
+      : []
+  for (const name of presetApiKeyEnvVars) {
+    if (!envVars.includes(name)) {
+      envVars.push(name)
+    }
+  }
+
+  const legacyApiKeyEnvVar = (
+    descriptor.setup as { apiKeyEnvVar?: string }
+  ).apiKeyEnvVar
+  if (legacyApiKeyEnvVar && !envVars.includes(legacyApiKeyEnvVar)) {
+    envVars.push(legacyApiKeyEnvVar)
+  }
+
   if (
     (descriptor.transportConfig.kind === 'openai-compatible' ||
       descriptor.transportConfig.kind === 'local') &&
