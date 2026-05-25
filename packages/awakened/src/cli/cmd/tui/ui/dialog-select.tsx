@@ -444,7 +444,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                         current={current}
                         option={option}
                         category={category}
-                        flatten={flatten()}
+                        flatten={!!flatten()}
                         onMouseMove={() => setStore("input", "mouse")}
                         onMouseUp={() => {
                           option.onSelect?.(dialog)
@@ -539,7 +539,7 @@ function SelectRow(props: {
     if (!props.active()) return RGBA.fromInts(0, 0, 0, 0)
     return activeRowSurface(theme.primary, theme.backgroundElement, 0.12 + 0.06 * pulse())
   }
-  const border = () => (props.active() ? (["left"] as const) : undefined)
+  const border = (): boolean | ("left")[] => (props.active() ? ["left"] : false)
   const borderColor = () => fadeColor(theme.primary, 0.75 + 0.25 * pulse())
 
   return (
