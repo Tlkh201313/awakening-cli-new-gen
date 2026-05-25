@@ -144,3 +144,28 @@ test("dialog prompt submit can be rebound separately from input submit", async (
     await prompt.cleanup()
   }
 })
+
+test("dialog prompt keeps managed word delete bindings", async () => {
+  await using tmp = await tmpdir()
+  const confirmed: string[] = []
+  const prompt = await mountPrompt({
+    root: tmp.path,
+    keybinds: {
+      input_delete_word_backward: "ctrl+backspace",
+    },
+    onConfirm: (value) => confirmed.push(value),
+  })
+
+  try {
+    await wait(() => prompt.app.renderer.currentFocusedEditor instanceof TextareaRenderable)
+    const textarea = prompt.app.renderer.currentFocusedEditor
+    if (!(textarea instanceof TextareaRenderable)) throw new Error("expected focused dialog textarea")
+
+    prompt.app.mockInput.pressBackspace({ ctrl: true })
+
+    expect(confirmed).toEqual([])
+    expect(textarea.plainText).toBe("")
+  } finally {
+    await prompt.cleanup()
+  }
+})

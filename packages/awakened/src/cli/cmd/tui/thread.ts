@@ -17,6 +17,7 @@ import { TuiConfig } from "./config/tui"
 import {
   AWAKENED_PROCESS_ROLE,
   AWAKENED_RUN_ID,
+  AWAKENED_START_DIRECTORY,
   ensureRunID,
   sanitizedProcessEnv,
 } from "@awakened-ai/core/util/awakened-process"
@@ -71,9 +72,10 @@ async function input(value?: string) {
 }
 
 export function resolveThreadDirectory(project?: string, envPWD = process.env.PWD, cwd = process.cwd()) {
-  const root = Filesystem.resolve(envPWD ?? cwd)
+  const launch = process.env[AWAKENED_START_DIRECTORY]
+  const root = Filesystem.resolve(envPWD ?? launch ?? cwd)
   if (project) return Filesystem.resolve(path.isAbsolute(project) ? project : path.join(root, project))
-  return Filesystem.resolve(cwd)
+  return Filesystem.resolve(launch ?? envPWD ?? cwd)
 }
 
 export const TuiThreadCommand = cmd({

@@ -2,6 +2,7 @@ import { dispatchPluginSlash } from "../../feature-plugins/system/plugins"
 import { dispatchMemorySlash } from "../../feature-plugins/system/memory"
 import { dispatchPersonalitySlash } from "../../feature-plugins/system/personality"
 import { dispatchPermissionSlash } from "../../feature-plugins/system/permission-bypass"
+import { dispatchVoiceSlash } from "../../util/voice/controller"
 import type { OpenTuiKeymap } from "../../keymap"
 
 export function parsePromptSlash(input: string) {
@@ -18,6 +19,7 @@ export function parsePromptSlash(input: string) {
 
 export function dispatchPromptSlash(keymap: OpenTuiKeymap, name: string, args?: string) {
   if (dispatchPermissionSlash(name, args)) return true
+  if (dispatchVoiceSlash(name, args)) return true
   if (dispatchMemorySlash(name, args)) return true
   if (dispatchPersonalitySlash(name, args)) return true
   if (dispatchPluginSlash(name, args)) return true

@@ -25,4 +25,18 @@ describe("tui thread", () => {
   test("uses the real cwd after resolving a relative project from PWD", async () => {
     await check(".")
   })
+
+  test("uses AWAKENED_START_DIRECTORY when the process cwd differs", async () => {
+    await using tmp = await tmpdir({ git: true })
+    const packageDir = path.join(tmp.path, "packages", "awakened")
+    await fs.mkdir(packageDir, { recursive: true })
+    const prev = process.env.AWAKENED_START_DIRECTORY
+    process.env.AWAKENED_START_DIRECTORY = tmp.path
+    try {
+      expect(resolveThreadDirectory(undefined, undefined, packageDir)).toBe(tmp.path)
+    } finally {
+      if (prev === undefined) delete process.env.AWAKENED_START_DIRECTORY
+      else process.env.AWAKENED_START_DIRECTORY = prev
+    }
+  })
 })

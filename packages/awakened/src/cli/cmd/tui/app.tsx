@@ -75,6 +75,7 @@ import {
   registerAwakenedKeymap,
   useBindings,
   useAwakenedKeymap,
+  useAwakenedModeStack,
 } from "./keymap"
 
 import type { EventSource } from "./context/sdk"
@@ -278,6 +279,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
   const local = useLocal()
   const kv = useKV()
   const keymap = useAwakenedKeymap()
+  const modeStack = useAwakenedModeStack()
   const event = useEvent()
   const sdk = useSDK()
   const toast = useToast()
@@ -649,6 +651,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
         title: "Connect provider",
         suggested: !connected(),
         slashName: "connect",
+        slashAliases: ["provider"],
         run: () => {
           dialog.replace(() => <DialogProviderList />)
         },
@@ -874,6 +877,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
   useBindings(() => ({
     mode: AWAKENED_BASE_MODE,
     enabled: () => {
+      if (modeStack.current() !== AWAKENED_BASE_MODE) return false
       const current = promptRef.current
       if (!current?.focused) return true
       return current.current.input === ""

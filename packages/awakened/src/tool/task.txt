@@ -32,4 +32,6 @@ Usage notes:
 6. If the agent description mentions that it should be used proactively, then you should try your best to use it without the user having to ask for it first. Use your judgement.
 7. For multi-file implementation, tell **builder** / **typescript-pro** / **frontend-developer** to use **apply_patch** (multiple file sections) or parallel edit/write calls in one turn.
 
+Background mode (when enabled in settings): pass `background: true` for explore, scout, reviewer, and architect so the parent keeps working. Poll with `task_status(task_id=..., wait=false)` or let results inject when the job completes.
+
 Load Skill **awakened-subagents** or run **/awakened-subagents** for the full routing table. Primary agents also receive auto-injected routing on the first message.

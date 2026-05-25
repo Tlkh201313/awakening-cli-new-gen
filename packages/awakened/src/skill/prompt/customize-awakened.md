@@ -97,7 +97,17 @@ Every field is optional.
       "type": "local",
       "command": ["npx", "-y", "@playwright/mcp"],
       "enabled": true,
-      "env": {}
+      "environment": {}
+    },
+    "obsidian": {
+      "type": "local",
+      "command": ["uvx", "mcp-obsidian"],
+      "enabled": true,
+      "environment": {
+        "OBSIDIAN_API_KEY": "PASTE_KEY_FROM_OBSIDIAN_PLUGIN",
+        "OBSIDIAN_HOST": "127.0.0.1",
+        "OBSIDIAN_PORT": "27124"
+      }
     },
     "remote-thing": {
       "type": "remote",
@@ -298,7 +308,7 @@ Special object-shaped (not callbacks): `tool: { my_tool: { ... } }`,
       "type": "local",
       "command": ["npx", "-y", "@playwright/mcp"],
       "enabled": true,
-      "env": { "BROWSER": "chromium" }
+      "environment": { "BROWSER": "chromium" }
     },
     "github": {
       "type": "remote",
@@ -310,6 +320,8 @@ Special object-shaped (not callbacks): `tool: { my_tool: { ... } }`,
   }
 }
 ```
+
+Obsidian requires the [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) plugin. See skill `obsidian` or capability **Awakened Obsidian** for the full 2-step setup.
 
 `command` is an array of strings. `type` is required. Use `enabled: false` to
 disable a server inherited from a parent config.

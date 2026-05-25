@@ -3,12 +3,12 @@ import { primaryBootstrap } from "../primaryBootstrap"
 import type { AutoCapabilityDefinition } from "../types"
 
 const MEMORY_RE =
-  /\b(claude[- ]?mem|engram|persistent memory|remember (?:this|across sessions)|session memory|memory search|did we already|cross[- ]?session|knowledge base|mem[- ]?search|awakened[- ]?memory|auto[- ]?save)\b/i
+  /\b(claude[- ]?mem|awakened[- ]?mem|engram|persistent memory|remember (?:this|across sessions)|session memory|memory search|did we already|cross[- ]?session|knowledge base|mem[- ]?search|awakened[- ]?memory|auto[- ]?save|get_observations)\b/i
 
 export const awakenedMemoryCapability: AutoCapabilityDefinition = {
   id: AWAKENED_CAPABILITY_IDS.memory,
   displayName: "Awakened Memory",
-  description: "Persistent memory and cross-session recall (Claude-mem style auto-save)",
+  description: "Persistent memory and cross-session recall (Claude-mem fork, aggressive save)",
   priority: 58,
   shouldActivate(ctx) {
     if (MEMORY_RE.test(ctx.userText)) return true
@@ -18,17 +18,24 @@ export const awakenedMemoryCapability: AutoCapabilityDefinition = {
   getContent() {
     return `# Awakened Memory
 
-Built-in **awakened-memory** (Claude-mem style, simplified for Awakened).
+Built-in **awakened-memory** — fork of Claude-mem workflows, simplified storage for Awakened.
+
+## Skills (load with skill tool)
+
+| Skill | When |
+|-------|------|
+| **awakened-mem** | Default — save on every meaningful output, tag vocabulary |
+| **mem-search** | "Did we already…?", prior sessions, before reversing decisions |
 
 ## Auto (default on)
 
 - **Auto-recall** — relevant saved notes injected each turn
-- **Auto-save** — user preferences ("remember this…"), tool outcomes, turn summaries
+- **Auto-save** — preferences, tool outcomes, assistant summaries (incl. without edits)
 - Configure in \`awakenedMemory\`: \`autoSave\`, \`autoRecall\`, \`maxRecall\`, \`defaultScope\`
 
 ## Tools
 
-- \`mem_save\` — persist decisions, conventions, commands
+- \`mem_save\` — persist decisions, conventions, commands (**use every turn** for durable facts)
 - \`mem_search\` — keyword search before re-deciding
 - \`mem_list\` — browse recent entries
 
@@ -45,9 +52,10 @@ Built-in **awakened-memory** (Claude-mem style, simplified for Awakened).
 
 ## Rules
 
-- Auto layer handles routine recall/save; use \`mem_save\` for critical facts it may miss.
-- Save concise bullets with paths and commands — not full transcripts.
-- Prefer project scope; global only for cross-repo preferences.
+1. **mem_search** before redoing prior fixes or architecture choices.
+2. **mem_save** after each turn with decisions, bugfixes, file paths, or verification commands.
+3. Concise bullets — not full transcripts. Tags: bugfix, feature, decision, discovery, change.
+4. Prefer project scope; global only for cross-repo preferences.
 `
   },
 }

@@ -13,6 +13,7 @@ import { TuiKeybind } from "./config/keybind"
 
 export const LEADER_TOKEN = "leader"
 export const AWAKENED_BASE_MODE = "base"
+export const AWAKENED_MODAL_MODE = "modal"
 export const COMMAND_PALETTE_COMMAND = "command.palette.show"
 
 const AWAKENED_MODE_KEY = "awakened.mode"

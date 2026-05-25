@@ -23,10 +23,16 @@ export const AWAKENED_CAPABILITY_IDS = {
   vercel: "awakened-vercel",
   githubAwesome: "awakened-github-awesome",
   design: "awakened-design",
+  taste: "awakened-taste",
   devops: "awakened-devops",
   aiMl: "awakened-ai-ml",
   mcpSkills: "awakened-mcp-skills",
   claudePlugins: "awakened-claude-plugins",
+  growth: "awakened-growth",
+  dtcMarketing: "awakened-dtc-marketing",
+  business: "awakened-business",
+  selfImprovement: "awakened-self-improvement",
+  obsidian: "awakened-obsidian",
 } as const
 
 export type AwakenedCapabilityId = (typeof AWAKENED_CAPABILITY_IDS)[keyof typeof AWAKENED_CAPABILITY_IDS]
@@ -56,8 +62,14 @@ export const ALL_AWAKENED_CAPABILITY_IDS: AwakenedCapabilityId[] = [
   AWAKENED_CAPABILITY_IDS.vercel,
   AWAKENED_CAPABILITY_IDS.githubAwesome,
   AWAKENED_CAPABILITY_IDS.design,
+  AWAKENED_CAPABILITY_IDS.taste,
   AWAKENED_CAPABILITY_IDS.devops,
   AWAKENED_CAPABILITY_IDS.aiMl,
   AWAKENED_CAPABILITY_IDS.mcpSkills,
   AWAKENED_CAPABILITY_IDS.claudePlugins,
+  AWAKENED_CAPABILITY_IDS.growth,
+  AWAKENED_CAPABILITY_IDS.dtcMarketing,
+  AWAKENED_CAPABILITY_IDS.business,
+  AWAKENED_CAPABILITY_IDS.selfImprovement,
+  AWAKENED_CAPABILITY_IDS.obsidian,
 ]

@@ -34,6 +34,7 @@ You are doing **visual UI work**. Do not ship generic gradient templates or stoc
 
 | Task | Skill |
 |------|-------|
+| Premium anti-slop UI (landings, redesigns) | \`awakened-taste\` |
 | Visual direction, typography, layout | \`frontend-design\` / @frontend-design |
 | Tailwind v4 patterns | @tailwind-patterns |
 | Forms / CRO | @form-cro |

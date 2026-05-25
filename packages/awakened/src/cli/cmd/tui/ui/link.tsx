@@ -1,6 +1,7 @@
 import type { JSX } from "solid-js"
 import type { RGBA } from "@opentui/core"
-import open from "open"
+import { useDialog } from "./dialog"
+import { openExternalLink } from "../util/open-external-link"
 
 export interface LinkProps {
   href: string
@@ -16,6 +17,7 @@ export interface LinkProps {
  * Clicking anywhere on the link text opens the URL in the default browser.
  */
 export function Link(props: LinkProps) {
+  const dialog = useDialog()
   const displayText = props.children ?? props.href
 
   return (
@@ -25,7 +27,7 @@ export function Link(props: LinkProps) {
       width={props.width}
       wrapMode={props.wrapMode}
       onMouseUp={() => {
-        open(props.href).catch(() => {})
+        void openExternalLink(dialog, props.href)
       }}
     >
       {displayText}

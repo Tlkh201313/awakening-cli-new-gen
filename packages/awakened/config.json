@@ -97,8 +97,11 @@
     "disabled": [],
     "autoSubagents": true,
     "autoCapabilities": true,
+    "backgroundSubagents": false,
+    "preferBackgroundSubagents": true,
     "tokenMode": "caveman",
-    "warmConnection": true
+    "warmConnection": true,
+    "webSearchProvider": "auto"
   },
   "awakenedPersonality": {
     "active": "caveman"

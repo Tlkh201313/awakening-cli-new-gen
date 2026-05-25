@@ -7,14 +7,10 @@ import { createStore } from "solid-js/store"
 import { useToast } from "./toast"
 import { Flag } from "@awakened-ai/core/flag/flag"
 import * as Selection from "@tui/util/selection"
-import { useBindings, useAwakenedModeStack } from "../keymap"
+import { AWAKENED_MODAL_MODE, useBindings, useAwakenedModeStack } from "../keymap"
 import { useKV } from "../context/kv"
 import { fadeBackground } from "../util/color"
 import { createDialogEnter } from "../util/signal"
-
-function DialogBody(props: { render: () => JSX.Element }) {
-  return props.render()
-}
 
 export function Dialog(
   props: ParentProps<{
@@ -59,6 +55,10 @@ export function Dialog(
       backgroundColor={fadeBackground(motion.overlay())}
     >
       <box
+        onMouseDown={(e: { stopPropagation(): void }) => {
+          dismiss = false
+          e.stopPropagation()
+        }}
         onMouseUp={(e: { stopPropagation(): void }) => {
           dismiss = false
           e.stopPropagation()
@@ -95,7 +95,7 @@ function init() {
 
   createEffect(() => {
     if (store.stack.length === 0) return
-    const popMode = modeStack.push("modal")
+    const popMode = modeStack.push(AWAKENED_MODAL_MODE)
     onCleanup(popMode)
   })
 
@@ -214,12 +214,17 @@ export function DialogProvider(props: ParentProps) {
           evt.stopPropagation()
         }}
         onMouseUp={
-          !Flag.AWAKENED_EXPERIMENTAL_DISABLE_COPY_ON_SELECT ? () => Selection.copy(renderer, toast) : undefined
+          !Flag.AWAKENED_EXPERIMENTAL_DISABLE_COPY_ON_SELECT
+            ? () => {
+                if (value.stack.length > 0) return
+                Selection.copy(renderer, toast)
+              }
+            : undefined
         }
       >
         <Show when={value.stack.length}>
           <Dialog onClose={() => value.clear()} size={value.size}>
-            <DialogBody render={() => value.stack.at(-1)!.render()} />
+            {value.stack.at(-1)?.render()}
           </Dialog>
         </Show>
       </box>

@@ -134,3 +134,72 @@ const table = sqliteTable("session", {
 ## Type Checking
 
 - Always run `bun typecheck` from package directories (e.g., `packages/awakened`), never `tsc` directly.
+
+
+<claude-mem-context>
+# Memory Context
+
+# [opencode] recent context, 2026-05-25 2:52pm GMT+1
+
+Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
+Format: ID TIME TYPE TITLE
+Fetch details: get_observations([IDs]) | Search: mem-search skill
+
+Stats: 27 obs (10,718t read) | 248,996t work | 96% savings
+
+### May 25, 2026
+271 10:58a 🔵 Slash Command Popup Layout Bug — Active Fix Effort in opencode/awakened
+272 10:59a 🔵 Autocomplete Popup Layout Architecture — Current State After Fix Attempts
+273 " 🔵 dialog-select.tsx Layout Strategy — Double setTimeout + Delayed Fade Animation
+274 " 🔵 OpenTUI Renderable API — markDirty is Protected, calculateLayout Available
+275 " 🔵 OpenTUI Bundle Layout Code Located in index-3fq5hq97.js
+276 11:00a 🔵 Root Cause Confirmed — visible setter calls requestRender but NOT calculateLayout
+277 " 🔵 Text Nodes Use yogaNode.markDirty() — Distinct from Protected Renderable.markDirty()
+278 11:01a 🔵 Render Loop Layout Trigger + layout-changed Event Discovered
+279 " 🔵 useRenderer() Hook Exposes Root Renderer to SolidJS Components
+280 " 🔵 Reverted Fix Identified — getLayoutNode().markDirty() in Ref Callbacks Caused Yoga Crashes
+281 11:03a 🔵 Coordinates Only Valid After updateLayout() — Runs After calculateLayout() in Same Render Frame
+282 11:04a 🔵 updateFromLayout() Reads getComputedLayout() + onLayoutResize Triggers Second requestRender
+284 11:05a 🔵 Autocomplete Has Uncommitted Changes — stackRows, labelMax, descMax Added Beyond Last Commit
+S43 Fix slash command autocomplete popup showing broken spacing on first paint (hover-to-fix bug) in opencode/awakened package (May 25, 11:05 AM)
+S42 Fix slash command popup spacing bug in awakened TUI — broken on first paint, fixed only after hover (May 25, 11:05 AM)
+285 11:06a 🔵 paddingLeft Setter Has No Same-Value Dedup — positionTick Comma Trick Will Work
+283 11:07a 🔵 updateLayout() Skips Invisible Nodes — Popup Children Have Stale Layout Until First Visible Frame
+S44 Fix slash command autocomplete popup broken spacing on first paint (hover-to-fix bug) (May 25, 11:08 AM)
+S46 Fix slash command autocomplete popup broken spacing on first paint (hover-to-fix bug) (May 25, 11:11 AM)
+S45 Fix slash command autocomplete popup broken spacing on first paint (hover-to-fix bug) (May 25, 11:17 AM)
+286 11:19a 🔴 Autocomplete popup spacing fix ineffective — bug still present after hover
+287 11:29a 🔵 AutocompleteRow edit applied but file still has old version with minHeight — idempotent edit ran again
+288 11:30a 🔄 popupVisible extracted as named createMemo in autocomplete.tsx
+289 11:31a 🔵 frameId increment location found in OpenTUI render loop
+290 " 🔵 OpenTUI render loop order: frameId++ → RAF callbacks → then layout/render
+291 11:32a 🔵 OpenTUI full render loop order: frameId++ → RAF → frameCallbacks → root.render → renderNative
+292 11:33a 🔵 Major autocomplete.tsx refactor: popupLayout() replaces position()/height() split
+293 11:34a 🔵 popupLayout memo uses autocompleteBounds() imported from external util, reads dimensions() + positionTick() + layoutEpoch()
+294 " 🟣 New autocomplete-layout.ts file extracts all popup geometry calculations
+295 " 🔵 AutocompleteRow REVERTED to minHeight toggle — paddingLeft={active() ? 1 : 2} kept but minHeight restored
+296 11:35a 🟣 AutocompleteRow description text adapts to narrow mode — word wrap vs truncation
+297 " 🔵 Two different autocomplete.tsx versions exist simultaneously — 993-line WIP and 911-line committed
+S47 Fix autocomplete popup spacing broken on first paint in awakened package — requires hover to fix (May 25, 11:38 AM)
+**Investigated**: - Root cause: OpenTUI's `updateFromLayout()` per-frame dedup guard (`if (this._lastLayoutFrame === frameId) return`) causes stale layout on first popup paint
+    - Secondary: Solid reconciler same-value guard (`if (value === prevProps[prop]) continue`) skips repeated yoga setter calls with same prop value
+    - Confirmed committed 911-line version was the running code — WIP 993-line file had fixes but wasn't applied to the app
+    - Read full autocomplete.tsx baseline (911 lines) to understand the unmodified state
+
+**Learned**: - `border=["left"]` (SplitBorder "▌") consumes 1 terminal column. Active rows need `paddingLeft={1}` not 2 to keep text aligned with inactive rows that have `paddingLeft={2}` and no border
+    - Direct property assignment on scroll renderable (`scroll.height = height()`) bypasses Solid reconciler, calls `yogaNode.setHeight()` directly — yoga always marks dirty on setHeight → fresh calculateLayout next frame → correct child positions
+    - `markDirty()` crashes (reentrant yoga calculateLayout during lifecycle), so direct height assignment is the safe bypass
+
+**Completed**: Two fixes applied directly to the committed autocomplete.tsx (911-line baseline, now ~924 lines):
+    
+    1. **`scroll.height` imperative bypass** — added `createEffect` that fires `setTimeout(0)` after popup becomes visible/layoutReady, sets `scroll.height = height()` directly on the renderable object, forcing yoga to mark dirty and recalculate
+    
+    2. **`paddingLeft={active() ? 1 : 2}`** — compensates for SplitBorder consuming 1 col when border active, keeping label alignment consistent between active/inactive rows
+
+**Next Steps**: - Rebuild the app and test whether the spacing fix works on first paint without hover
+    - If still broken, investigate whether `scroll.height` assignment actually triggers yoga dirty mark (may need to inspect @opentui/core setter for scrollbox height)
+    - Potential additional fix: add layoutEpoch gating (`layoutEpoch >= 2`) to delay popup visibility until after layout settles — requires adding layoutEpoch signal + three-bump effect (sync + setTimeout(0) + RAF)
+
+
+Access 249k tokens of past work via get_observations([IDs]) or mem-search skill.
+</claude-mem-context>

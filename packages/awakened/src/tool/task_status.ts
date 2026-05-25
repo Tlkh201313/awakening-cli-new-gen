@@ -7,10 +7,12 @@ import { SessionID } from "@/session/schema"
 import { SessionStatus } from "@/session/status"
 import { PositiveInt } from "@awakened-ai/core/schema"
 import { RuntimeFlags } from "@/effect/runtime-flags"
+import { BackgroundSubagents } from "@/agent/background-subagents"
+import { Config } from "@/config/config"
 import { Effect, Option, Schema } from "effect"
 
 const DEFAULT_TIMEOUT = 60_000
-const POLL_MS = 300
+const POLL_MS = 100
 
 const Parameters = Schema.Struct({
   task_id: SessionID.annotate({ description: "The task_id returned by the task tool" }),
@@ -53,6 +55,7 @@ export const TaskStatusTool = Tool.define(
     const sessions = yield* Session.Service
     const status = yield* SessionStatus.Service
     const flags = yield* RuntimeFlags.Service
+    const config = yield* Config.Service
 
     const inspect: (taskID: SessionID) => Effect.Effect<InspectResult> = Effect.fn("TaskStatusTool.inspect")(function* (
       taskID: SessionID,
@@ -111,8 +114,12 @@ export const TaskStatusTool = Tool.define(
       params: Schema.Schema.Type<typeof Parameters>,
       _ctx: Tool.Context,
     ) {
-      if (!flags.experimentalBackgroundSubagents) {
-        return yield* Effect.fail(new Error("task_status requires AWAKENED_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true"))
+      if (!BackgroundSubagents.enabled(flags, yield* config.get())) {
+        return yield* Effect.fail(
+          new Error(
+            "task_status requires awakenedCapabilities.backgroundSubagents or AWAKENED_EXPERIMENTAL_BACKGROUND_SUBAGENTS",
+          ),
+        )
       }
 
       const session = yield* sessions.get(params.task_id).pipe(Effect.catchCause(() => Effect.succeed(undefined)))

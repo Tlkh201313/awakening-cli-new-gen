@@ -1,4 +1,5 @@
 research
+vendor/openwhispr
 dist
 dist-*
 gen
@@ -6,3 +7,4 @@ app.log
 script/build-*.ts
 temporary-*.md
 .artifacts
+.test-cli

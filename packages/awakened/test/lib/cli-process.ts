@@ -17,6 +17,11 @@
 // builders (`awakened.serve(opts)`, `awakened.acp(opts)`, `awakened.auth(...)`)
 // without changing the fixture. Long-lived commands like `serve` will need a
 // different return shape — see the TODO at the bottom of AwakenedCli.
+//
+// Spawn speed (opt-in, safe default unchanged):
+//   bun run prebuild:test-cli
+//   AWAKENED_TEST_CLI=bundle bun test test/cli/...
+// Or point AWAKENED_TEST_CLI at a compiled binary path.
 import { test, type TestOptions } from "bun:test"
 import { AppFileSystem } from "@awakened-ai/core/filesystem"
 import { AppProcess } from "@awakened-ai/core/process"
@@ -30,8 +35,26 @@ import { it } from "./effect"
 
 const awakenedRoot = path.resolve(import.meta.dir, "../../")
 const cliEntry = path.join(awakenedRoot, "src/index.ts")
+const bundledCliEntry = path.join(awakenedRoot, ".test-cli/index.js")
 
 export const testModelID = "test/test-model"
+
+// Resolve argv prefix for subprocess spawns. Default: live transpile (safe for CI).
+// Opt-in speed path: `bun run prebuild:test-cli` then `AWAKENED_TEST_CLI=bundle`.
+// Explicit binary/script: `AWAKENED_TEST_CLI=/path/to/awakened`.
+function cliSpawnPrefix(): readonly [command: string, prefixArgs: readonly string[]] {
+  const mode = process.env.AWAKENED_TEST_CLI
+  if (mode === "bundle") return [process.execPath, [bundledCliEntry]]
+  if (mode && mode !== "0") return [mode, []]
+  // Keep `"bun"` for the default path — `process.execPath` breaks stdout capture on
+  // Windows when routed through cross-spawn (run-process happy-path tests go empty).
+  return ["bun", ["run", "--conditions=browser", cliEntry]]
+}
+
+function cliSpawnArgs(args: string[]): string[] {
+  const [command, prefixArgs] = cliSpawnPrefix()
+  return [command, ...prefixArgs, ...args]
+}
 
 // Wrap a Bun subprocess pipe (or any ReadableStream<Uint8Array>) as a Stream.
 // Centralizes the `evaluate` + `onError` boilerplate and tags errors with the
@@ -71,6 +94,8 @@ function isolatedEnv(home: string, configJson: string): Record<string, string> {
     AWAKENED_DISABLE_AUTOUPDATE: "1",
     AWAKENED_DISABLE_AUTOCOMPACT: "1",
     AWAKENED_DISABLE_MODELS_FETCH: "1",
+    AWAKENED_DISABLE_EXTERNAL_SKILLS: "1",
+    AWAKENED_DISABLE_CLAUDE_CODE_SKILLS: "1",
     AWAKENED_AUTH_CONTENT: "{}",
   }
 }
@@ -147,6 +172,12 @@ export type AcpHandle = {
 export type AwakenedCli = {
   // High-level: run a single prompt against the test model. Short-lived.
   readonly run: (message: string, opts?: RunOpts) => Effect.Effect<RunResult>
+  // Like `run`, but asserts exit code (and optional stdout/stderr substrings).
+  readonly runExpect: (
+    message: string,
+    expected: number,
+    opts?: RunOpts & { readonly stdout?: string; readonly stderr?: string; readonly label?: string },
+  ) => Effect.Effect<RunResult>
   // Spawn `awakened serve` and wait until it's listening. Long-lived: the
   // returned handle is killed when the caller's Scope closes. Fails if the
   // listening line doesn't appear within `readyTimeoutMs`.
@@ -157,14 +188,30 @@ export type AwakenedCli = {
   // Escape hatch: any CLI invocation with full control over argv. Used to test
   // commands that don't yet have a typed builder.
   readonly spawn: (args: string[], opts?: SpawnOpts) => Effect.Effect<RunResult>
+  // Like `spawn`, but asserts exit code (and optional stdout/stderr substrings).
+  readonly spawnExpect: (
+    args: string[],
+    expected: number,
+    opts?: SpawnOpts & { readonly stdout?: string; readonly stderr?: string; readonly label?: string },
+  ) => Effect.Effect<RunResult>
   // Convenience assertion. Dumps captured stderr/stdout on mismatch so CI
   // failures are debuggable without re-running locally.
   readonly expectExit: (result: RunResult, expected: number, label?: string) => void
+  // Assert stdout/stderr contain expected substrings; dumps full output on miss.
+  readonly expectOutput: (
+    result: RunResult,
+    expected: { readonly stdout?: string; readonly stderr?: string },
+    label?: string,
+  ) => void
   // Parse `--format json` stdout into one event object per non-empty line.
   // The CLI writes `JSON.stringify({ type, sessionID, ... }) + EOL` for each
   // event (see src/cli/cmd/run.ts `emit`). Throws on a malformed line so
   // tests fail loudly rather than silently skipping data.
   readonly parseJsonEvents: (stdout: string) => Array<Record<string, unknown>>
+  // Find the first JSON event with the given `type` field.
+  readonly findJsonEvent: (stdout: string, type: string) => Record<string, unknown> | undefined
+  // Non-empty stdout, else stderr — useful when the CLI routes through UI on TTY-ish spawns.
+  readonly outputText: (result: RunResult) => string
 }
 
 export type CliFixture = {
@@ -199,7 +246,8 @@ export function withCliFixture<A, E>(
       // on `Bun.stdin.text()` (see src/cli/cmd/run.ts — non-TTY stdin is
       // consumed as the prompt). The old Process.run wrapper defaulted to
       // ignore; ChildProcess.make defaults to pipe, so we set it explicitly.
-      const command = ChildProcess.make("bun", ["run", "--conditions=browser", cliEntry, ...args], {
+      const spawnArgv = cliSpawnArgs(args)
+      const command = ChildProcess.make(spawnArgv[0], spawnArgv.slice(1), {
         cwd: home,
         env: { ...env, ...opts?.env },
         extendEnv: true,
@@ -248,6 +296,32 @@ export function withCliFixture<A, E>(
       return spawn(argv, opts)
     }
 
+    const runExpect = (
+      message: string,
+      expected: number,
+      opts?: RunOpts & { readonly stdout?: string; readonly stderr?: string; readonly label?: string },
+    ): Effect.Effect<RunResult> =>
+      Effect.gen(function* () {
+        const result = yield* run(message, opts)
+        const label = opts?.label ?? "awakened run"
+        expectExit(result, expected, label)
+        expectOutput(result, { stdout: opts?.stdout, stderr: opts?.stderr }, label)
+        return result
+      })
+
+    const spawnExpect = (
+      args: string[],
+      expected: number,
+      opts?: SpawnOpts & { readonly stdout?: string; readonly stderr?: string; readonly label?: string },
+    ): Effect.Effect<RunResult> =>
+      Effect.gen(function* () {
+        const result = yield* spawn(args, opts)
+        const label = opts?.label ?? `awakened ${args.join(" ")}`
+        expectExit(result, expected, label)
+        expectOutput(result, { stdout: opts?.stdout, stderr: opts?.stderr }, label)
+        return result
+      })
+
     const serve = Effect.fn("awakened.serve")(function* (opts?: ServeOpts) {
       const argv = ["serve"]
       // Default port 0 — let the OS pick a free port, parse the actual one
@@ -261,7 +335,7 @@ export function withCliFixture<A, E>(
       // as a finalizer error during test teardown.
       const proc = yield* Effect.acquireRelease(
         Effect.sync(() =>
-          Bun.spawn(["bun", "run", "--conditions=browser", cliEntry, ...argv], {
+          Bun.spawn(cliSpawnArgs(argv), {
             cwd: home,
             env: { ...process.env, ...env, ...opts?.env },
             stdout: "pipe",
@@ -332,7 +406,7 @@ export function withCliFixture<A, E>(
       // Either way we await proc.exited so the test scope doesn't leak.
       const proc = yield* Effect.acquireRelease(
         Effect.sync(() =>
-          Bun.spawn(["bun", "run", "--conditions=browser", cliEntry, ...argv], {
+          Bun.spawn(cliSpawnArgs(argv), {
             cwd: opts?.cwd ?? home,
             env: { ...process.env, ...env, ...opts?.env },
             stdin: "pipe",
@@ -401,7 +475,19 @@ export function withCliFixture<A, E>(
       } satisfies AcpHandle
     })
 
-    const awakened: AwakenedCli = { run, serve, acp, spawn, expectExit, parseJsonEvents }
+    const awakened: AwakenedCli = {
+      run,
+      runExpect,
+      serve,
+      acp,
+      spawn,
+      spawnExpect,
+      expectExit,
+      expectOutput,
+      parseJsonEvents,
+      findJsonEvent,
+      outputText,
+    }
 
     return yield* fn({ llm, home, awakened })
     // FetchHttpClient is provided so test bodies can `yield* HttpClient.HttpClient`
@@ -418,7 +504,44 @@ function parseJsonEvents(stdout: string): Array<Record<string, unknown>> {
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
-    .map((line) => JSON.parse(line) as Record<string, unknown>)
+    .map((line, index) => {
+      try {
+        return JSON.parse(line) as Record<string, unknown>
+      } catch {
+        throw new Error(`parseJsonEvents: invalid JSON on line ${index + 1}: ${line.slice(0, 200)}`)
+      }
+    })
+}
+
+function findJsonEvent(stdout: string, type: string) {
+  return parseJsonEvents(stdout).find((event) => event.type === type)
+}
+
+function outputText(result: RunResult) {
+  return result.stdout.length > 0 ? result.stdout : result.stderr
+}
+
+function expectOutput(
+  result: RunResult,
+  expected: { readonly stdout?: string; readonly stderr?: string },
+  label = "awakened",
+) {
+  if (expected.stdout && !result.stdout.includes(expected.stdout)) {
+    const tail = (s: string, n: number) => (s.length > n ? "..." + s.slice(-n) : s)
+    // eslint-disable-next-line no-console
+    console.error(`[${label}] expected stdout to contain ${JSON.stringify(expected.stdout)}`)
+    // eslint-disable-next-line no-console
+    console.error(`[${label}] stdout (last 2000):\n${tail(result.stdout, 2000)}`)
+    throw new Error(`${label}: stdout missing ${JSON.stringify(expected.stdout)}`)
+  }
+  if (expected.stderr && !result.stderr.includes(expected.stderr)) {
+    const tail = (s: string, n: number) => (s.length > n ? "..." + s.slice(-n) : s)
+    // eslint-disable-next-line no-console
+    console.error(`[${label}] expected stderr to contain ${JSON.stringify(expected.stderr)}`)
+    // eslint-disable-next-line no-console
+    console.error(`[${label}] stderr (last 2000):\n${tail(result.stderr, 2000)}`)
+    throw new Error(`${label}: stderr missing ${JSON.stringify(expected.stderr)}`)
+  }
 }
 
 // Convenience for the common assertion pattern. Dumps stderr/stdout when

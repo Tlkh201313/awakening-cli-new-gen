@@ -434,13 +434,20 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       }),
     "gitlawb-opengateway": Effect.fnUntraced(function* (input: Info) {
       const env = yield* dep.env()
-      const apiKey = env.OPENGATEWAY_API_KEY || env.GITLAWB_OPENGATEWAY_API_KEY
+      const stored = yield* dep.auth(input.id)
+      const apiKey =
+        env.OPENGATEWAY_API_KEY ||
+        env.GITLAWB_OPENGATEWAY_API_KEY ||
+        (stored?.type === "api" ? stored.key : undefined)
       const baseURL = normalizeGitlawbBaseUrl(
         env.OPENGATEWAY_BASE_URL || env.OPENAI_BASE_URL || "https://opengateway.gitlawb.com/v1",
       )
       return {
         autoload: !!apiKey,
-        options: { apiKey, baseURL },
+        options: {
+          ...(apiKey ? { apiKey } : {}),
+          baseURL,
+        },
         async getModel(sdk, modelID) {
           return sdk.languageModel(modelID)
         },
@@ -1420,7 +1427,7 @@ export const layer = Layer.effect(
           if (!apiKey) continue
           mergeProvider(providerID, {
             source: "env",
-            key: provider.env.length === 1 ? apiKey : undefined,
+            key: apiKey,
           })
         }
 

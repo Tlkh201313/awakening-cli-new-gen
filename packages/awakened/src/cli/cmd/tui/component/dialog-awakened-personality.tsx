@@ -9,14 +9,12 @@ import { useSDK } from "@tui/context/sdk"
 import { useSync } from "@tui/context/sync"
 import { useProject } from "@tui/context/project"
 import { useToast } from "@tui/ui/toast"
-import { useBindings } from "@tui/keymap"
+import { AWAKENED_MODAL_MODE, useBindings } from "@tui/keymap"
 import type { Config } from "@awakened-ai/sdk/v2"
 import { getActivePersonalityId } from "@/personality"
 import * as PersonalityStore from "@/personality/store"
 import type { PersonalityEntry } from "@/personality/store"
 import { BorderedPanel, SectionTitle } from "../feature-plugins/sidebar/shared"
-
-const DIALOG_MODE = "awakened-personality"
 
 export function DialogAwakenedPersonality() {
   const dialog = useDialog()
@@ -81,7 +79,7 @@ export function DialogAwakenedPersonality() {
   }
 
   useBindings(() => ({
-    mode: DIALOG_MODE,
+    mode: AWAKENED_MODAL_MODE,
     bindings: [
       { key: "up", desc: "Previous", group: "Personality", cmd: () => setSelected((value) => Math.max(0, value - 1)) },
       { key: "k", desc: "Previous", group: "Personality", cmd: () => setSelected((value) => Math.max(0, value - 1)) },

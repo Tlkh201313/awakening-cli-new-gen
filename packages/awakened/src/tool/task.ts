@@ -15,6 +15,7 @@ import { TuiEvent } from "@/cli/cmd/tui/event"
 import { Cause, Effect, Exit, Option, Schema, Scope } from "effect"
 import { EffectBridge } from "@/effect/bridge"
 import { RuntimeFlags } from "@/effect/runtime-flags"
+import { BackgroundSubagents } from "@/agent/background-subagents"
 
 export interface TaskPromptOps {
   cancel(sessionID: SessionID): Effect.Effect<void>
@@ -29,6 +30,7 @@ const BACKGROUND_DESCRIPTION = [
   "",
   [
     "Background mode: background=true launches the subagent asynchronously.",
+    "Use for explore, scout, reviewer, and architect so the parent keeps working.",
     "Use task_status(task_id=..., wait=false) to poll, or wait=true to block until done.",
   ].join(" "),
 ].join("\n")
@@ -117,10 +119,13 @@ export const TaskTool = Tool.define(
       ctx: Tool.Context,
     ) {
       const cfg = yield* config.get()
+      const backgroundEnabled = BackgroundSubagents.enabled(flags, cfg)
       const runInBackground = params.background === true
-      if (runInBackground && !flags.experimentalBackgroundSubagents) {
+      if (runInBackground && !backgroundEnabled) {
         return yield* Effect.fail(
-          new Error("Background subagents require AWAKENED_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true"),
+          new Error(
+            "Background subagents require awakenedCapabilities.backgroundSubagents or AWAKENED_EXPERIMENTAL_BACKGROUND_SUBAGENTS",
+          ),
         )
       }
 

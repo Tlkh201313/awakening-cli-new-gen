@@ -29,7 +29,23 @@ const USER_REMEMBER_RES = [
   /\bnever use[:\s]+(.+)/is,
 ] as const
 
-const SIGNIFICANT_TOOLS = new Set(["edit", "write", "apply_patch", "bash", "task", "multiedit"])
+const SIGNIFICANT_TOOLS = new Set([
+  "edit",
+  "write",
+  "apply_patch",
+  "bash",
+  "task",
+  "multiedit",
+  "read",
+  "grep",
+  "glob",
+  "delete",
+  "patch",
+  "skill",
+])
+
+const DURABLE_ASSISTANT_RE =
+  /\b(fixed|root cause|decided|use `|packages\/|\.awakened\/|mem_save|bun (?:test|typecheck)|failed because|changed to|instead of|do not|never |always )\b/i
 
 export function extractUserRemember(text: string) {
   const trimmed = text.trim()
@@ -88,19 +104,29 @@ type TurnSaveInput = {
   cfg: MemoryAutoConfig
 }
 
+function turnSaveTags(toolNames: string[], assistantText: string) {
+  const tags = new Set<string>(["auto", "turn"])
+  if (/\b(fixed|bug|crash|error|regression)\b/i.test(assistantText)) tags.add("bugfix")
+  if (/\b(decided|choose|instead|pattern|convention)\b/i.test(assistantText)) tags.add("decision")
+  if (/\b(discovered|found that|root cause|turns out)\b/i.test(assistantText)) tags.add("discovery")
+  if (/\b(added|implemented|shipped|feature)\b/i.test(assistantText)) tags.add("feature")
+  if (toolNames.length) tags.add("change")
+  return [...tags]
+}
+
 export async function autoSaveFromTurn(input: TurnSaveInput) {
   if (!input.cfg.autoSave) return
   if (extractUserRemember(input.userText)) return
 
   const significant = input.toolNames.filter((name) => SIGNIFICANT_TOOLS.has(name))
-  if (significant.length === 0) return
-
-  const summary = input.assistantText.trim().slice(0, 600)
-  if (summary.length < 40) return
+  const summary = input.assistantText.trim().slice(0, 900)
+  const durableAssistant = summary.length >= 48 && DURABLE_ASSISTANT_RE.test(summary)
+  if (significant.length === 0 && !durableAssistant) return
+  if (summary.length < 24) return
 
   const title = input.userText.trim().split(/\n/)[0]?.slice(0, 72) || "Session note"
   const content = [
-    `Tools: ${[...new Set(significant)].join(", ")}`,
+    significant.length ? `Tools: ${[...new Set(significant)].join(", ")}` : "Tools: (assistant summary)",
     "",
     summary,
   ].join("\n")
@@ -108,7 +134,7 @@ export async function autoSaveFromTurn(input: TurnSaveInput) {
   return MemoryStore.saveUnique({
     title: title.length > 0 ? title : "Session note",
     content,
-    tags: ["auto", "turn"],
+    tags: turnSaveTags(significant, summary),
     scope: input.cfg.defaultScope,
     worktree: input.worktree,
   })
@@ -126,11 +152,11 @@ export async function autoSaveFromTool(input: {
   if (!SIGNIFICANT_TOOLS.has(input.tool)) return
 
   const output = input.output.trim()
-  if (output.length < 20) return
+  if (output.length < 12) return
 
   return MemoryStore.saveUnique({
     title: input.title.trim().slice(0, 72) || `${input.tool} result`,
-    content: output.slice(0, 1200),
+    content: output.slice(0, 1600),
     tags: ["auto", "tool", input.tool],
     scope: input.cfg.defaultScope,
     worktree: input.worktree,

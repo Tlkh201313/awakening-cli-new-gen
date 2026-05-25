@@ -228,6 +228,11 @@ export const Definitions = {
   plugin_manager: keybind("none", "Open plugin manager dialog"),
   plugin_install: keybind("none", "Install plugin"),
 
+  voice_toggle: keybind(
+    process.platform === "win32" ? "ctrl+alt+v,ctrl+super" : "ctrl+super",
+    "Hold to record voice; release to transcribe (/dictate toggles)",
+  ),
+
   which_key_toggle: keybind("ctrl+alt+k", "Toggle which-key panel"),
   which_key_layout_toggle: keybind("ctrl+alt+shift+k", "Switch which-key layout"),
   which_key_pending_toggle: keybind("ctrl+alt+shift+p", "Toggle which-key pending preview"),
@@ -401,6 +406,7 @@ export const CommandMap = {
   tips_toggle: "tips.toggle",
   plugin_manager: "plugins.list",
   plugin_install: "plugins.install",
+  voice_toggle: "voice.toggle",
   which_key_toggle: "which-key.toggle",
   which_key_layout_toggle: "which-key.layout.toggle",
   which_key_pending_toggle: "which-key.pending.toggle",

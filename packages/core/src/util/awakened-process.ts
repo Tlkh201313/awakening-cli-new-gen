@@ -1,5 +1,6 @@
 export const AWAKENED_RUN_ID = "AWAKENED_RUN_ID"
 export const AWAKENED_PROCESS_ROLE = "AWAKENED_PROCESS_ROLE"
+export const AWAKENED_START_DIRECTORY = "AWAKENED_START_DIRECTORY"
 
 export function ensureRunID() {
   return (process.env[AWAKENED_RUN_ID] ??= crypto.randomUUID())

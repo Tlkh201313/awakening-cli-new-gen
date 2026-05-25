@@ -3,10 +3,11 @@ import { Layer } from "effect"
 import { FetchHttpClient } from "effect/unstable/http"
 
 const agent = new Agent({
-  keepAliveTimeout: 30_000,
-  keepAliveMaxTimeout: 60_000,
-  connections: 128,
-  pipelining: 1,
+  keepAliveTimeout: 90_000,
+  keepAliveMaxTimeout: 300_000,
+  connections: 256,
+  pipelining: 6,
+  connect: { timeout: 10_000 },
 })
 
 /** Shared fetch with HTTP keep-alive for lower API latency (avoids new TCP/TLS per request). */

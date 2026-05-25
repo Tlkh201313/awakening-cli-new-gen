@@ -3,6 +3,7 @@ import { Effect, Layer } from "effect"
 import { Agent } from "@/agent/agent"
 import { BackgroundJob } from "@/background/job"
 import { Bus } from "@/bus"
+import { Config } from "@/config/config"
 import { CrossSpawnSpawner } from "@awakened-ai/core/cross-spawn-spawner"
 import { Session } from "@/session/session"
 import { MessageID } from "@/session/schema"
@@ -22,6 +23,7 @@ const layer = (flags: Partial<RuntimeFlags.Info> = {}) =>
     Agent.defaultLayer,
     BackgroundJob.defaultLayer,
     Bus.defaultLayer,
+    Config.defaultLayer,
     CrossSpawnSpawner.defaultLayer,
     Session.defaultLayer,
     SessionStatus.defaultLayer,

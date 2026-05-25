@@ -60,6 +60,9 @@ import { TodoItem } from "../../component/todo-item"
 import { DialogMessage } from "./dialog-message"
 import type { PromptInfo } from "../../component/prompt/history"
 import { DialogConfirm } from "@tui/ui/dialog-confirm"
+import { DialogSelect } from "@tui/ui/dialog-select"
+import { parseMarkdownLinks } from "../../util/parse-markdown-links"
+import { openExternalLink } from "../../util/open-external-link"
 import { DialogTimeline } from "./dialog-timeline"
 import { DialogForkFromTimeline } from "./dialog-fork-from-timeline"
 import { DialogSessionRename } from "../../component/dialog-session-rename"
@@ -1245,7 +1248,7 @@ export function Session() {
                   )}
                 </For>
               </scrollbox>
-              <box flexShrink={0}>
+              <box flexShrink={0} minWidth={0} width="100%">
                 <Show when={permissions().length > 0}>
                   <PermissionPrompt request={permissions()[0]} />
                 </Show>
@@ -1602,15 +1605,44 @@ function CollapsedReasoningText(props: { title: string | null; duration: number 
 
 function TextPart(props: { last: boolean; part: TextPart; message: AssistantMessage }) {
   const ctx = use()
+  const dialog = useDialog()
+  const renderer = useRenderer()
   const { theme, syntax } = useTheme()
+  const content = createMemo(() => props.part.text.trim())
+  const links = createMemo(() => parseMarkdownLinks(content()))
+
+  const handleClick = () => {
+    if (renderer.getSelection()?.getSelectedText()) return
+    const found = links()
+    if (found.length === 0) return
+    if (found.length === 1) {
+      void openExternalLink(dialog, found[0].href)
+      return
+    }
+    dialog.replace(() => (
+      <DialogSelect
+        title="Open link"
+        options={found.map((link) => ({
+          title: link.label,
+          description: link.href,
+          value: link.href,
+        }))}
+        onSelect={(option) => {
+          dialog.clear()
+          void openExternalLink(dialog, option.value)
+        }}
+      />
+    ))
+  }
+
   return (
-    <Show when={props.part.text.trim()}>
-      <box id={"text-" + props.part.id} paddingLeft={3} marginTop={1} flexShrink={0}>
+    <Show when={content()}>
+      <box id={"text-" + props.part.id} paddingLeft={3} marginTop={1} flexShrink={0} onMouseUp={handleClick}>
         <markdown
           syntaxStyle={syntax()}
           streaming={true}
           internalBlockMode="top-level"
-          content={props.part.text.trim()}
+          content={content()}
           tableOptions={{ style: "grid" }}
           conceal={ctx.conceal()}
           fg={theme.markdownText}

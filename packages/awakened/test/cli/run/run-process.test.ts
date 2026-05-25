@@ -75,8 +75,7 @@ describe("awakened run (non-interactive subprocess)", () => {
           expect(typeof evt.type).toBe("string")
           expect(typeof evt.sessionID).toBe("string")
         }
-        // At least one `text` event should appear with the LLM's response.
-        const text = events.find((e) => e.type === "text")
+        const text = awakened.findJsonEvent(result.stdout, "text")
         expect(text).toBeDefined()
       }),
     60_000,

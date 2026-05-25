@@ -7,12 +7,13 @@ import { awakenedContext7Capability } from "./bundled/awakenedContext7"
 import { awakenedDevToolsCapability } from "./bundled/awakenedDevTools"
 import { awakenedDocsCapability } from "./bundled/awakenedDocs"
 import { awakenedDesignCapability } from "./bundled/awakenedDesign"
+import { awakenedTasteCapability } from "./bundled/awakenedTaste"
 import { awakenedFrontendCapability } from "./bundled/awakenedFrontend"
 import { awakenedGraphifyCapability } from "./bundled/awakenedGraphify"
-import { awakenedMarketingCapability } from "./bundled/awakenedMarketing"
 import { awakenedMemoryCapability } from "./bundled/awakenedMemory"
 import { awakenedProductivityCapability } from "./bundled/awakenedProductivity"
-import { awakenedResearchCapability } from "./bundled/awakenedResearch"
+import { awakenedObsidianCapability } from "./bundled/awakenedObsidian"
+import { awakenedSelfImprovementCapability } from "./bundled/awakenedSelfImprovement"
 import { awakenedSecurityCapability } from "./bundled/awakenedSecurity"
 import { awakenedSimplifyCapability } from "./bundled/awakenedSimplify"
 import { awakenedSuperpowersCapability } from "./bundled/awakenedSuperpowers"
@@ -22,8 +23,6 @@ import type { AutoCapabilityDefinition } from "./types"
 
 export const BUNDLED_AUTO_CAPABILITIES: AutoCapabilityDefinition[] = [
   awakenedBrowserCapability,
-  awakenedResearchCapability,
-  awakenedMarketingCapability,
   awakenedAntigravityCapability,
   awakenedGraphifyCapability,
   awakenedProductivityCapability,
@@ -37,9 +36,12 @@ export const BUNDLED_AUTO_CAPABILITIES: AutoCapabilityDefinition[] = [
   awakenedAwsCapability,
   awakenedDocsCapability,
   awakenedDesignCapability,
+  awakenedTasteCapability,
   awakenedFrontendCapability,
   awakenedContext7Capability,
+  awakenedObsidianCapability,
   awakenedMemoryCapability,
+  awakenedSelfImprovementCapability,
   awakenedSimplifyCapability,
 ]
 

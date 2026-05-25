@@ -24,9 +24,11 @@ export async function AwakenedMemoryPlugin(input: PluginInput): Promise<Hooks> {
           "# Awakened memory (auto)",
           cfg.autoRecall ? "- Relevant notes are auto-recalled each turn." : "",
           cfg.autoSave
-            ? "- Durable facts, preferences, and tool outcomes auto-save to awakened-memory (like Claude mem)."
+            ? "- Auto-save: user prefs, tool outcomes, and turn summaries (Claude-mem style)."
             : "",
-          "- Still use mem_save for anything important the auto layer may miss.",
+          "- **Every turn:** call mem_save for decisions, bugfixes (root cause + file paths), discoveries, and commands — do not rely on auto-save alone.",
+          "- Before reversing prior work: mem_search first. Load skills awakened-mem or mem-search for full workflow.",
+          "- Tags: bugfix, feature, decision, discovery, change, refactor.",
         ]
           .filter(Boolean)
           .join("\n"),

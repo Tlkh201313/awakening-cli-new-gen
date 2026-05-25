@@ -1,0 +1,175 @@
+﻿# =============================================================================
+# Awakening CLI / OpenCode monorepo — Cursor context optimization
+# Generated from workspace scan. Uses standard gitignore glob syntax.
+# =============================================================================
+
+# --- 1. Package managers & install caches ---
+node_modules/
+**/node_modules/
+.bun/
+.pnpm-store/
+.yarn/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Lockfiles (large, regenerated; package.json is the source of truth)
+bun.lock
+**/bun.lock
+flake.lock
+**/Brewfile.lock.json
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# --- 2. Build outputs, compiled code & runtime caches ---
+dist/
+dist-*/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+Release/
+ts-dist/
+.turbo/
+.cache/
+*.tsbuildinfo
+*.bun-build
+target/
+gen/
+.artifacts/
+.test-cli/
+.sst/
+.next/
+.output/
+.vinxi/
+.solid/
+.wrangler/
+.vercel/
+.netlify/
+storybook-static/
+.storybook-cache/
+coverage/
+*.tgz
+
+# Awakened native/whisper build artifacts
+packages/awakened/out/
+
+# Desktop bundled CLI binaries
+packages/desktop/resources/awakened-cli*
+packages/desktop/resources/icons/
+
+# --- 3. IDE, editor, OS & VCS metadata ---
+.git/
+.vscode/
+.cursor/
+.zed/
+.idea/
+.codex/
+.husky/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*~
+*.swp
+*.swo
+Session.vim
+
+# --- 4. Secrets, local config & runtime state ---
+.env
+.env.*
+!.env.example
+.awakened/
+config.json
+awakened-dev
+awakened.json
+/result
+logs/
+*.log
+debug-*.log
+bun-install.log
+tmp/
+playground/
+.worktrees/
+.direnv/
+.serena/
+**/.serena/
+refs/
+.scripts/
+
+# --- 5. Unrelated / scratch directories in this workspace ---
+antigravity_for_loop_src/
+gsd-template/
+packages/awakened/research/
+
+# --- 6. Binaries, archives & model weights ---
+*.exe
+*.dll
+*.so
+*.dylib
+*.wasm
+*.gguf
+*.bin
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+
+# --- 7. Images, media & static web assets (no source logic) ---
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.mp4
+*.mp3
+*.wav
+*.pdf
+screenshot-*.png
+
+# UI icon library (~1000+ SVGs; not needed for architecture)
+packages/ui/src/assets/icons/
+
+# Brand/marketing preview assets
+packages/console/app/src/asset/brand/
+
+# Duplicated favicon/social/manifest static files across app packages
+packages/app/public/
+packages/web/public/
+packages/enterprise/public/
+packages/console/app/public/
+sdks/vscode/images/
+
+# --- 8. Generated / auto-regenerated code ---
+# SDK is regenerated via packages/sdk/js/script/build.ts
+packages/sdk/js/src/gen/
+packages/sdk/js/src/v2/gen/
+
+# Drizzle migration snapshots (schema lives in *.sql.ts + migration.sql)
+**/migrations/**/snapshot.json
+
+# --- 9. Large test fixtures & HTTP replay recordings ---
+**/test/fixtures/recordings/
+**/fixtures/recordings/
+packages/awakened/test/image/fixtures/
+packages/awakened/test/tool/fixtures/large-image.png
+packages/awakened/test.zip
+packages/app/e2e/test-results/
+packages/app/e2e/playwright-report/
+
+# --- 10. Storybook stories (UI demos; not core architecture) ---
+**/*.stories.tsx
+**/*.stories.ts
+**/*.stories.jsx
+**/*.stories.js
+
+# --- 11. Translated READMEs (keep root README.md only) ---
+README.*.md
+
+# --- 12. Misc low-value generated docs assets ---
+packages/docs/logo/
+packages/docs/favicon*.svg

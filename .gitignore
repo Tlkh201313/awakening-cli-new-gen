@@ -1,9 +1,17 @@
 .DS_Store
+Thumbs.db
+Desktop.ini
 node_modules
 .worktrees
 .sst
 .env
 .env.local
+.env.development
+.env.production
+.env.test
+.env.staging
+.env.*.local
+!.env.example
 .idea
 .vscode
 .codex
@@ -12,6 +20,7 @@ playground
 tmp
 dist
 ts-dist
+out/
 .turbo
 **/.serena
 .serena/
@@ -19,10 +28,23 @@ ts-dist
 refs
 Session.vim
 /awakened.json
+config.json
 a.out
 target
 .scripts
 .direnv/
+
+# Archives / binaries
+*.zip
+*.pem
+*.key
+*.gguf
+*.bin
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
 
 # Local dev files
 awakened-dev
@@ -34,3 +56,12 @@ bun-install.log
 .awakened/
 *.bun-build
 tsconfig.tsbuildinfo
+
+# Editor / IDE configuration directories
+.cursor/
+.zed/
+
+# Unrelated temporary directories
+antigravity_for_loop_src/
+gsd-template/
+

@@ -14,8 +14,10 @@ import Memory from "../feature-plugins/system/memory"
 import Personality from "../feature-plugins/system/personality"
 import Usage from "../feature-plugins/system/usage"
 import Notifications from "../feature-plugins/system/notifications"
+import AwakenedSoundNotify from "../feature-plugins/system/awakened-sound-notify"
 import SessionV2Debug from "../feature-plugins/system/session-v2"
 import WhichKey from "../feature-plugins/system/which-key"
+import Voice from "../feature-plugins/system/voice"
 import DiffViewer from "../feature-plugins/system/diff-viewer"
 import type { TuiPlugin, TuiPluginModule } from "@awakened-ai/plugin/tui"
 import type { RuntimeFlags } from "@/effect/runtime-flags"
@@ -38,6 +40,7 @@ export function internalTuiPlugins(flags: Pick<RuntimeFlags.Info, "experimentalE
     SidebarFiles,
     SidebarFooter,
     Notifications,
+    AwakenedSoundNotify,
     PermissionBypass,
     Doctor,
     Memory,
@@ -45,6 +48,7 @@ export function internalTuiPlugins(flags: Pick<RuntimeFlags.Info, "experimentalE
     Usage,
     PluginManager,
     WhichKey,
+    Voice,
     DiffViewer,
     ...(flags.experimentalEventSystem ? [SessionV2Debug] : []),
   ]

@@ -329,6 +329,14 @@ export const Info = Schema.Struct({
         description:
           "When true (default), reuse HTTP keep-alive connections to AI providers for lower latency.",
       }),
+      backgroundSubagents: Schema.optional(Schema.Boolean).annotate({
+        description:
+          "When true, enables task(background=true) and task_status for non-blocking subagent work. Faster parent turns when exploring or reviewing in parallel.",
+      }),
+      preferBackgroundSubagents: Schema.optional(Schema.Boolean).annotate({
+        description:
+          "When true (default when backgroundSubagents is on), nudge primary agents to launch explore/review/scout subagents in the background instead of blocking.",
+      }),
       webSearchProvider: Schema.optional(Schema.Literals(["auto", "exa", "parallel"])).annotate({
         description:
           "Web search backend. auto = session-stable Exa/Parallel mix (default). exa = Exa only. parallel = Parallel only.",

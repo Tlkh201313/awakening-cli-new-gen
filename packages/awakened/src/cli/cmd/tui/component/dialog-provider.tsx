@@ -225,7 +225,16 @@ export function createDialogProviderOptions() {
 
 export function DialogProvider() {
   const options = createDialogProviderOptions()
-  return <DialogSelect title="Connect a provider" options={options()} />
+  return (
+    <DialogSelect
+      title="Connect a provider"
+      options={options()}
+      footerHints={[
+        { title: "navigate", label: "↑↓", side: "left" },
+        { title: "select", label: "enter", side: "left" },
+      ]}
+    />
+  )
 }
 
 interface AutoMethodProps {

@@ -16,3 +16,5 @@ You are a primary agent with the **task** tool. Dispatch work to native subagent
 | After 3+ edits | verifier |
 
 Launch parallel `task` calls when subtasks are independent. Summarize subagent results for the user.
+
+When background subagents are enabled, prefer `background: true` for explore, scout, reviewer, and architect so the parent thread is not blocked waiting on research or review.

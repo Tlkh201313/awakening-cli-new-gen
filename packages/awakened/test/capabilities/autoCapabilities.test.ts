@@ -58,6 +58,17 @@ describe("getAutoCapabilityAttachments", () => {
       expect(attachments.some((attachment) => attachment.skillName === "Awakened Skills Vault")).toBe(true)
     }))
 
+  it.effect("surfaces Awakened Taste for taste-skill keywords", () =>
+    Effect.gen(function* () {
+      resetSentAutoCapabilities()
+      setTestDisabledAwakenedCapabilities([])
+      const attachments = yield* getAutoCapabilityAttachments({
+        userText: "redesign the landing with taste-skill — no AI slop",
+        toolNames: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Taste")).toBe(true)
+    }))
+
   it.effect("surfaces Awakened Graphify for graphify keywords", () =>
     Effect.gen(function* () {
       resetSentAutoCapabilities()
@@ -100,6 +111,72 @@ describe("getAutoCapabilityAttachments", () => {
         toolNames: [],
       })
       expect(attachments.some((attachment) => attachment.skillName === "Anthropic Official Skills")).toBe(true)
+    }))
+
+  it.effect("surfaces Awakened Growth for marketingskills keywords", () =>
+    Effect.sync(() => {
+      resetSentAutoCapabilities()
+      const attachments = resolveAutoCapabilityAttachments({
+        userText: "install from marketingskills.com using coreyhaines customer research skill",
+        toolNames: [],
+        disabled: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Growth")).toBe(true)
+    }))
+
+  it.effect("surfaces Awakened DTC Marketing for klaviyo keywords", () =>
+    Effect.sync(() => {
+      resetSentAutoCapabilities()
+      const attachments = resolveAutoCapabilityAttachments({
+        userText: "audit klaviyo flows with claude-marketing dtc pack",
+        toolNames: [],
+        disabled: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened DTC Marketing")).toBe(true)
+    }))
+
+  it.effect("surfaces Awakened Business for alirezarezvani keywords", () =>
+    Effect.sync(() => {
+      resetSentAutoCapabilities()
+      const attachments = resolveAutoCapabilityAttachments({
+        userText: "use alirezarezvani claude-skills litreview for grant proposal",
+        toolNames: [],
+        disabled: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Business")).toBe(true)
+    }))
+
+  it.effect("surfaces Awakened Research for orchestra keywords", () =>
+    Effect.sync(() => {
+      resetSentAutoCapabilities()
+      const attachments = resolveAutoCapabilityAttachments({
+        userText: "run autoresearch with orchestra-research ai-research-skills",
+        toolNames: [],
+        disabled: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Research")).toBe(true)
+    }))
+
+  it.effect("surfaces Awakened Self-Improvement for learn keywords", () =>
+    Effect.sync(() => {
+      resetSentAutoCapabilities()
+      const attachments = resolveAutoCapabilityAttachments({
+        userText: "run /learn and extract learnings to AGENTS.md",
+        toolNames: [],
+        disabled: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Self-Improvement")).toBe(true)
+    }))
+
+  it.effect("surfaces Awakened Obsidian for vault keywords", () =>
+    Effect.sync(() => {
+      resetSentAutoCapabilities()
+      const attachments = resolveAutoCapabilityAttachments({
+        userText: "search my obsidian vault for architecture meeting notes",
+        toolNames: [],
+        disabled: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Obsidian")).toBe(true)
     }))
 
   it.effect("respects disabled setting", () =>

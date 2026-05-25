@@ -10,9 +10,8 @@ import { useSDK } from "@tui/context/sdk"
 import { useSync } from "@tui/context/sync"
 import { getScrollAcceleration } from "../../util/scroll"
 import { useTuiConfig } from "../../context/tui-config"
-import { useTheme, tint } from "@tui/context/theme"
-import { AwakenedFrameBorder, SplitBorder } from "@tui/component/border"
-import { activeRowSurface } from "../../util/color"
+import { useTheme, selectedForeground } from "@tui/context/theme"
+import { SplitBorder } from "@tui/component/border"
 import { useTerminalDimensions } from "@opentui/solid"
 import { Locale } from "@/util/locale"
 import type { PromptInfo } from "./history"
@@ -67,6 +66,7 @@ function extractLineRange(input: string) {
 export type AutocompleteRef = {
   onInput: (value: string) => void
   visible: false | "@" | "/"
+  close: () => void
 }
 
 export type AutocompleteOption = {
@@ -660,7 +660,7 @@ export function Autocomplete(props: {
   function select() {
     const selected = options()[store.selected]
     if (!selected) return
-    hide()
+    close()
     selected.onSelect?.()
   }
 
@@ -754,17 +754,16 @@ export function Autocomplete(props: {
     })
   }
 
-  function hide() {
-    const text = props.input().plainText
-    if (store.visible === "/" && !text.endsWith(" ") && text.startsWith("/")) {
-      const cursor = props.input().logicalCursor
-      props.input().deleteRange(0, 0, cursor.row, cursor.col)
-      // Sync the prompt store immediately since onContentChange is async
-      props.setPrompt((draft) => {
-        draft.input = props.input().plainText
-      })
-    }
+  function close() {
     setStore("visible", false)
+  }
+
+  function cancel() {
+    close()
+  }
+
+  function hide() {
+    cancel()
   }
 
   onMount(() => {
@@ -780,6 +779,7 @@ export function Autocomplete(props: {
       get visible() {
         return store.visible
       },
+      close,
       onInput(value) {
         if (store.visible) {
           if (
@@ -818,47 +818,25 @@ export function Autocomplete(props: {
 
   const height = createMemo(() => {
     const count = options().length || 1
-    const rows = Math.min(10, count)
-    if (!store.visible) return rows
+    if (!store.visible) return Math.min(10, count)
+    dimensions()
     positionTick()
-    const space = position().y - 1
-    if (space < 1) return rows
-    return Math.min(rows, space)
-  })
-
-  const layoutReady = createMemo(() => {
-    if (!store.visible) return false
-    positionTick()
-    const anchor = props.anchor()
-    return anchor.width > 0 && anchor.height > 0
+    return Math.min(10, count, Math.max(1, props.anchor().y))
   })
 
   let scroll: ScrollBoxRenderable
   const scrollAcceleration = createMemo(() => getScrollAcceleration(tuiConfig))
 
-  // After popup becomes visible, re-apply scrollbox height directly (outside reactive context)
-  // so yoga marks itself dirty and calculateLayout fires with correct child positions.
-  // Solid's reconciler equality-check would skip same-value prop updates, so we bypass it.
-  createEffect(() => {
-    if (!store.visible || !layoutReady()) return
-    const timer = setTimeout(() => {
-      if (scroll) scroll.height = height()
-    }, 0)
-    onCleanup(() => clearTimeout(timer))
-  })
-
   return (
     <box
-      visible={store.visible !== false && layoutReady()}
+      visible={store.visible !== false}
       position="absolute"
-      top={position().y - height() - 1}
+      top={position().y - height()}
       left={position().x}
       width={position().width}
       zIndex={100}
-      border={AwakenedFrameBorder.border}
-      borderColor={tint(theme.border, theme.primary, 0.3)}
-      customBorderChars={AwakenedFrameBorder.customBorderChars}
-      backgroundColor={theme.backgroundMenu}
+      {...SplitBorder}
+      borderColor={theme.border}
     >
       <scrollbox
         ref={(r: ScrollBoxRenderable) => (scroll = r)}
@@ -870,50 +848,48 @@ export function Autocomplete(props: {
         <Index
           each={options()}
           fallback={
-            <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
-              <text fg={theme.textMuted}>◇ No matching items</text>
+            <box paddingLeft={1} paddingRight={1}>
+              <text fg={theme.textMuted}>No matching items</text>
             </box>
           }
         >
-          {(option, index) => {
-            const active = () => index === store.selected
-            return (
-              <box
-                paddingLeft={active() ? 1 : 2}
-                paddingRight={2}
-                paddingTop={0}
-                paddingBottom={0}
-                flexDirection="row"
-                gap={1}
-                backgroundColor={active() ? activeRowSurface(theme.primary, theme.backgroundElement) : undefined}
-                border={active() ? ["left"] : undefined}
-                borderColor={theme.primary}
-                customBorderChars={SplitBorder.customBorderChars}
-                onMouseMove={() => {
-                  if (store.input !== "mouse") setStore("input", "mouse")
-                }}
-                onMouseOver={() => {
-                  if (store.input !== "mouse") return
-                  if (index === store.selected) return
-                  moveTo(index)
-                }}
-                onMouseDown={() => {
-                  setStore("input", "mouse")
-                  moveTo(index)
-                }}
-                onMouseUp={() => select()}
-              >
-                <text flexShrink={0} wrapMode="none" fg={active() ? theme.primary : theme.text}>
-                  {optionLabel(option())}
+          {(option, index) => (
+            <box
+              paddingLeft={1}
+              paddingRight={1}
+              backgroundColor={index === store.selected ? theme.primary : undefined}
+              flexDirection="row"
+              gap={1}
+              onMouseMove={() => {
+                setStore("input", "mouse")
+              }}
+              onMouseOver={() => {
+                if (store.input !== "mouse") return
+                moveTo(index)
+              }}
+              onMouseDown={() => {
+                setStore("input", "mouse")
+                moveTo(index)
+              }}
+              onMouseUp={() => select()}
+            >
+              <text fg={index === store.selected ? selectedForeground(theme) : theme.text} flexShrink={0}>
+                {option().display}
+              </text>
+              <Show when={option().description}>
+                <text fg={index === store.selected ? selectedForeground(theme) : theme.textMuted} wrapMode="none">
+                  {"  "}
+                  {(() => {
+                    positionTick()
+                    return Locale.truncate(
+                      option().description!,
+                      Math.max(8, position().width - Bun.stringWidth(option().display) - 4),
+                    )
+                  })()}
                 </text>
-                <Show when={option().description}>
-                  <text flexShrink={0} wrapMode="none" fg={theme.textMuted}>
-                    {option().description}
-                  </text>
-                </Show>
-              </box>
-            )
-          }}
+              </Show>
+            </box>
+          )}
         </Index>
       </scrollbox>
     </box>

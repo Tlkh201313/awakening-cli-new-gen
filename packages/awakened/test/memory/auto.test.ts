@@ -73,6 +73,25 @@ describe("memory auto", () => {
     await rm(worktree, { recursive: true, force: true })
   })
 
+  test("auto-saves assistant summary without tools when durable", async () => {
+    const worktree = path.join(Global.Path.tmp, `memory-assist-${crypto.randomUUID()}`)
+    await mkdir(path.join(worktree, ".awakened", "memory"), { recursive: true })
+
+    const entry = await autoSaveFromTurn({
+      userText: "why did auth fail?",
+      assistantText:
+        "Root cause: token expiry used <= not < in packages/awakened/src/auth/middleware.ts. Fixed comparison.",
+      toolNames: [],
+      worktree,
+      cfg,
+    })
+
+    expect(entry?.tags).toContain("discovery")
+    expect(entry?.content).toContain("Root cause")
+
+    await rm(worktree, { recursive: true, force: true })
+  })
+
   test("auto-saves turn summary after significant tools", async () => {
     const worktree = path.join(Global.Path.tmp, `memory-turn-${crypto.randomUUID()}`)
     await mkdir(path.join(worktree, ".awakened", "memory"), { recursive: true })

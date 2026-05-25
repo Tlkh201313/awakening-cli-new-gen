@@ -34,6 +34,12 @@ import COMPOSIO_SKILLS_SKILL_BODY from "./prompt/composio-skills.md" with { type
 import ANTHROPIC_SKILLS_SKILL_BODY from "./prompt/anthropic-skills.md" with { type: "text" }
 import VERCEL_SKILLS_SKILL_BODY from "./prompt/vercel-skills.md" with { type: "text" }
 import SKILLS_CATALOG_SKILL_BODY from "./prompt/skills-catalog.md" with { type: "text" }
+import OBSIDIAN_SKILL_BODY from "./prompt/obsidian.md" with { type: "text" }
+import SELF_IMPROVEMENT_SKILL_BODY from "./prompt/self-improvement.md" with { type: "text" }
+import AWAKENED_MEM_SKILL_BODY from "./prompt/awakened-mem.md" with { type: "text" }
+import MEM_SEARCH_SKILL_BODY from "./prompt/mem-search.md" with { type: "text" }
+import AWAKENED_TASTE_SKILL_BODY from "./prompt/awakened-taste.md" with { type: "text" }
+import { buildCatalogSkillBody, LOADABLE_UPSTREAM_CATALOGS } from "@/capabilities/catalog-definitions"
 import { isRecord } from "@/util/record"
 
 const log = Log.create({ service: "skill" })
@@ -112,6 +118,26 @@ const SIMPLIFY_SKILL_NAME = "simplify"
 const SIMPLIFY_SKILL_DESCRIPTION =
   "Reduce complexity and remove dead code without changing behavior. Use for refactors focused on clarity."
 
+const OBSIDIAN_SKILL_NAME = "obsidian"
+const OBSIDIAN_SKILL_DESCRIPTION =
+  "Obsidian vault via mcp-obsidian MCP. Use for note search, meeting summaries, vault append/patch, or easy Local REST API setup."
+
+const SELF_IMPROVEMENT_SKILL_NAME = "self-improvement"
+const SELF_IMPROVEMENT_SKILL_DESCRIPTION =
+  "Session learnings → AGENTS.md, /learn, /init, and memory. Use after debugging breakthroughs or when codifying repo conventions."
+
+const AWAKENED_MEM_SKILL_NAME = "awakened-mem"
+const AWAKENED_MEM_SKILL_DESCRIPTION =
+  "Awakened Memory (Claude-mem style). Save decisions, bugfixes, and discoveries every turn via mem_save; mem_search before re-deciding."
+
+const MEM_SEARCH_SKILL_NAME = "mem-search"
+const MEM_SEARCH_SKILL_DESCRIPTION =
+  "Search awakened-memory across sessions. Use when user asks 'did we already fix this?' or before reversing prior work."
+
+const AWAKENED_TASTE_SKILL_NAME = "awakened-taste"
+const AWAKENED_TASTE_SKILL_DESCRIPTION =
+  "Premium anti-slop UI (Taste-Skill fork). Use for landings, dashboards, redesigns — layout, typography, motion; not generic AI templates."
+
 const CURSOR_SKILLS_SKILL_NAME = "cursor-skills"
 const CURSOR_SKILLS_SKILL_DESCRIPTION =
   "skills.sh and Cursor agent skill directory guide. Use for npx skills add, skills.sh browse, or Cursor-compatible SKILL.md installs."
@@ -132,6 +158,10 @@ const SKILLS_CATALOG_SKILL_NAME = "skills-catalog"
 const SKILLS_CATALOG_SKILL_DESCRIPTION =
   "Master index of famous GitHub skill catalogs (skills.sh, Anthropic, Vercel, Composio, VoltAgent, antigravity). Use when browsing skills without a specific repo."
 
+const UPSTREAM_CATALOG_SKILLS = LOADABLE_UPSTREAM_CATALOGS.map(
+  (catalog) => [catalog.id, catalog.skillDescription ?? catalog.description, buildCatalogSkillBody(catalog)] as const,
+)
+
 const BUILT_IN_SKILLS = [
   [CUSTOMIZE_AWAKENED_SKILL_NAME, CUSTOMIZE_AWAKENED_SKILL_DESCRIPTION, CUSTOMIZE_AWAKENED_SKILL_BODY],
   [AWAKENED_SUBAGENTS_SKILL_NAME, AWAKENED_SUBAGENTS_SKILL_DESCRIPTION, AWAKENED_SUBAGENTS_SKILL_BODY],
@@ -149,10 +179,16 @@ const BUILT_IN_SKILLS = [
   [CONTEXT7_SKILL_NAME, CONTEXT7_SKILL_DESCRIPTION, CONTEXT7_SKILL_BODY],
   [TESTING_SKILL_NAME, TESTING_SKILL_DESCRIPTION, TESTING_SKILL_BODY],
   [SIMPLIFY_SKILL_NAME, SIMPLIFY_SKILL_DESCRIPTION, SIMPLIFY_SKILL_BODY],
+  [OBSIDIAN_SKILL_NAME, OBSIDIAN_SKILL_DESCRIPTION, OBSIDIAN_SKILL_BODY],
+  [SELF_IMPROVEMENT_SKILL_NAME, SELF_IMPROVEMENT_SKILL_DESCRIPTION, SELF_IMPROVEMENT_SKILL_BODY],
+  [AWAKENED_MEM_SKILL_NAME, AWAKENED_MEM_SKILL_DESCRIPTION, AWAKENED_MEM_SKILL_BODY],
+  [MEM_SEARCH_SKILL_NAME, MEM_SEARCH_SKILL_DESCRIPTION, MEM_SEARCH_SKILL_BODY],
+  [AWAKENED_TASTE_SKILL_NAME, AWAKENED_TASTE_SKILL_DESCRIPTION, AWAKENED_TASTE_SKILL_BODY],
   [CURSOR_SKILLS_SKILL_NAME, CURSOR_SKILLS_SKILL_DESCRIPTION, CURSOR_SKILLS_SKILL_BODY],
   [COMPOSIO_SKILLS_SKILL_NAME, COMPOSIO_SKILLS_SKILL_DESCRIPTION, COMPOSIO_SKILLS_SKILL_BODY],
   [ANTHROPIC_SKILLS_SKILL_NAME, ANTHROPIC_SKILLS_SKILL_DESCRIPTION, ANTHROPIC_SKILLS_SKILL_BODY],
   [VERCEL_SKILLS_SKILL_NAME, VERCEL_SKILLS_SKILL_DESCRIPTION, VERCEL_SKILLS_SKILL_BODY],
+  ...UPSTREAM_CATALOG_SKILLS,
   [SKILLS_CATALOG_SKILL_NAME, SKILLS_CATALOG_SKILL_DESCRIPTION, SKILLS_CATALOG_SKILL_BODY],
 ] as const
 

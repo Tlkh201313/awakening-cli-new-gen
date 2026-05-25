@@ -55,6 +55,7 @@ import { Reference } from "@/reference/reference"
 import { BackgroundJob } from "@/background/job"
 import { SessionStatus } from "@/session/status"
 import { RuntimeFlags } from "@/effect/runtime-flags"
+import { BackgroundSubagents } from "@/agent/background-subagents"
 
 const log = Log.create({ service: "tool.registry" })
 
@@ -233,8 +234,9 @@ export const layer: Layer.Layer<
           }
         }
 
-        yield* config.get()
+        const cfg = yield* config.get()
         const questionEnabled = ["app", "cli", "desktop"].includes(flags.client) || flags.enableQuestionTool
+        const backgroundSubagents = BackgroundSubagents.enabled(flags, cfg)
 
         const tool = yield* Effect.all({
           invalid: Tool.init(invalid),
@@ -270,7 +272,7 @@ export const layer: Layer.Layer<
             tool.edit,
             tool.write,
             tool.task,
-            ...(flags.experimentalBackgroundSubagents ? [tool.task_status] : []),
+            ...(backgroundSubagents ? [tool.task_status] : []),
             tool.fetch,
             tool.todo,
             tool.search,

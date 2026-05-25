@@ -3,7 +3,7 @@ import { primaryBootstrap } from "../primaryBootstrap"
 import type { AutoCapabilityDefinition } from "../types"
 
 const SUBAGENTS_RE =
-  /\b(subagents?|orchestrat\w*|dispatch|multi[\s-]?step|cavecrew|awk3nd|agent[\s-]?harness|task tool|verify[\s-]?changes?|init(?:ialize)?[\s-]?(?:this\s+)?repo|bootstrap(?:\s+the)?\s+repo|awesome[\s-]?claude[\s-]?code[\s-]?subagents?|voltagent|@(?:orchestrator|builder|architect|reviewer|debugger|explore|verifier))\b/i
+  /\b(subagents?|orchestrat\w*|dispatch|multi[\s-]?step|parallel\s+(?:agents?|tasks?|work)|background\s+(?:agents?|tasks?)|spawn\s+(?:agents?|subagents?)|cavecrew|awk3nd|agent[\s-]?harness|task tool|verify[\s-]?changes?|init(?:ialize)?[\s-]?(?:this\s+)?repo|bootstrap(?:\s+the)?\s+repo|awesome[\s-]?claude[\s-]?code[\s-]?subagents?|voltagent|latency|slow(?:\s+tools?)?|speed\s+up|faster|@(?:orchestrator|builder|architect|reviewer|debugger|explore|verifier|scout|general))\b/i
 
 export const awakenedSubagentsCapability: AutoCapabilityDefinition = {
   id: AWAKENED_CAPABILITY_IDS.subagents,
@@ -52,6 +52,12 @@ export const awakenedSubagentsCapability: AutoCapabilityDefinition = {
       "## Multi-file",
       "",
       "builder / typescript-pro / frontend-developer: one turn, apply_patch or parallel edits.",
+      "",
+      "## Speed (non-blocking)",
+      "",
+      "When background subagents are enabled, launch **explore**, **scout**, **reviewer**, and **architect** with `background: true` so the parent keeps working. Poll with `task_status` or let results inject when done.",
+      "",
+      "Launch independent subtasks in **one message** with multiple parallel `task` calls.",
       "",
       "## Mention syntax",
       "",

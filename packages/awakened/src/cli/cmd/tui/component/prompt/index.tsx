@@ -64,6 +64,7 @@ import { type WorkspaceStatus } from "../workspace-label"
 import { AWAKENED_BASE_MODE, useBindings, useCommandShortcut, useLeaderActive, useAwakenedKeymap } from "../../keymap"
 import { useTuiConfig } from "../../context/tui-config"
 import { dispatchPromptSlash, parsePromptSlash } from "./slash-dispatch"
+import { stopVoiceIfRecording } from "../../util/voice/controller"
 
 export type PromptProps = {
   sessionID?: string
@@ -639,6 +640,7 @@ export function Prompt(props: PromptProps) {
       "prompt.stash.list",
       "session.interrupt",
       "workspace.set",
+      "voice.toggle",
     ]),
   }))
 
@@ -1055,6 +1057,8 @@ export function Prompt(props: PromptProps) {
   async function submitInner() {
     setWarpNotice(undefined)
 
+    if (await stopVoiceIfRecording()) return true
+
     // IME: double-defer may fire before onContentChange flushes the last
     // composed character (e.g. Korean hangul) to the store, so read
     // plainText directly and sync before any downstream reads.
@@ -1062,40 +1066,40 @@ export function Prompt(props: PromptProps) {
       setStore("prompt", "input", input.plainText)
       syncExtmarksWithPromptParts()
     }
-    if (props.disabled) return false
-    if (workspaceCreating()) return false
-    if (auto()?.visible) return false
-    if (!store.prompt.input) return false
-    const agent = local.agent.current()
-    if (!agent) return false
-    const trimmed = store.prompt.input.trim()
-    if (trimmed === "exit" || trimmed === "quit" || trimmed === ":q") {
-      void exit()
-      return true
-    }
 
     function finishPromptSubmit(mode = store.mode) {
       history.append({
         ...store.prompt,
         mode,
       })
-      input.extmarks.clear()
-      setStore("prompt", {
-        input: "",
-        parts: [],
-      })
-      setStore("extmarkToPartIndex", new Map())
       props.onSubmit?.()
-      input.clear()
+      
+      // Do not clear the prompt if the command opened a GUI dialog
+      if (dialog.stack.length === 0) {
+        input.extmarks.clear()
+        setStore("prompt", {
+          input: "",
+          parts: [],
+        })
+        setStore("extmarkToPartIndex", new Map())
+        input.clear()
+      }
     }
+
+    if (props.disabled) return false
+    if (workspaceCreating()) return false
+
+    const trimmed = store.prompt.input.trim()
 
     if (trimmed.startsWith("/")) {
       const parsed = parsePromptSlash(store.prompt.input)
       if (parsed && dispatchPromptSlash(keymap, parsed.name, parsed.args)) {
+        auto()?.close()
         finishPromptSubmit()
         return true
       }
       if (parsed && !sync.data.command.some((x) => x.name === parsed.name)) {
+        auto()?.close()
         toast.show({
           variant: "error",
           message: `Unknown command: /${parsed.name}`,
@@ -1104,6 +1108,15 @@ export function Prompt(props: PromptProps) {
         finishPromptSubmit()
         return true
       }
+    }
+
+    if (auto()?.visible) return false
+    if (!store.prompt.input) return false
+    const agent = local.agent.current()
+    if (!agent) return false
+    if (trimmed === "exit" || trimmed === "quit" || trimmed === ":q") {
+      void exit()
+      return true
     }
 
     const selectedModel = local.model.current()
