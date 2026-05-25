@@ -49,36 +49,53 @@
 
 ## Installation
 
-### From source (recommended for this fork)
+### One-line setup (recommended)
+
+Requires [Bun](https://bun.sh) 1.3+ (auto-installed if missing).
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.ps1 | iex
+```
+
+This clones the repo, installs dependencies, and registers `awakened` globally via `bun link`. Options:
+
+```bash
+# macOS / Linux — custom directory or standalone build
+curl -fsSL ... | bash -s -- --dir ./my-awakened
+curl -fsSL ... | bash -s -- --build
+
+# Windows — same flags
+.\setup.ps1 -Dir "C:\Tools\awakened" -Build
+```
+
+### From source (manual)
 
 ```bash
 git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git
 cd awakening-cli-new-gen
 bun install
-bun run --cwd packages/awakened build
-# run CLI
-bun run --cwd packages/awakened --conditions=browser src/index.ts
+bun link              # register 'awakened' globally
+awakened              # run the TUI
 ```
 
 ### From release binaries
 
-Download **v1.0.0** (or latest) from [GitHub Releases](https://github.com/Tlkh201313/awakening-cli-new-gen/releases).
+Download the latest from [GitHub Releases](https://github.com/Tlkh201313/awakening-cli-new-gen/releases).
 
 ```bash
-# Example: install script from this repo (after cloning)
 ./install --version 1.0.0
 ```
 
-### Install directory
-
-The install script respects, in order:
-
-1. `$AWAKENED_INSTALL_DIR`
-2. `$XDG_BIN_DIR`
-3. `$HOME/bin`
-4. `$HOME/.awakened/bin`
+The install script places the binary in `~/.awakened/bin` and adds it to `$PATH`.
 
 ```bash
+# Custom install directory
 AWAKENED_INSTALL_DIR=$HOME/.local/bin ./install --version 1.0.0
 ```
 

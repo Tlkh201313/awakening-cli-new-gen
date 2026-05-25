@@ -5,7 +5,11 @@
   "private": true,
   "type": "module",
   "packageManager": "bun@1.3.14",
+  "bin": {
+    "awakened": "./packages/awakened/bin/awakened-dev.ts"
+  },
   "scripts": {
+    "build": "bun run --cwd packages/awakened build",
     "dev": "bun run --conditions=browser packages/awakened/bin/awakened-dev.ts",
     "dev:desktop": "bun --cwd packages/desktop dev",
     "dev:web": "bun --cwd packages/app dev",
