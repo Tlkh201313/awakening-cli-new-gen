@@ -1,0 +1,98 @@
+# .awakenedignore
+# Extra ignore layer for the awakened agent's file search (glob/grep/tree).
+# Same syntax as .gitignore. Applied ON TOP of .gitignore via ripgrep --ignore-file.
+# Purpose: keep the agent focused on real source, away from generated/vendored noise.
+# Use `!pattern` to re-include something. Edit freely per project.
+
+# Dependencies & package manager noise
+node_modules/
+.bun/
+bun.lock
+bun.lockb
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+.pnp.*
+vendor/
+
+# Build output & compiled artifacts
+dist/
+ts-dist/
+build/
+out/
+.next/
+.turbo/
+.cache/
+target/
+*.tsbuildinfo
+*.bun-build
+
+# Minified / bundled / generated code (huge, unreadable, low signal)
+*.min.js
+*.min.css
+*.map
+**/index-*.js
+*.bundle.js
+
+# Lockfiles / generated manifests for the agent's purposes
+*.generated.*
+__generated__/
+*.snap
+__snapshots__/
+
+# Coverage & test artifacts
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs & temp
+logs/
+*.log
+tmp/
+.tmp/
+playground/
+
+# Binaries, archives, media (not source)
+*.zip
+*.tar
+*.tar.gz
+*.gz
+*.7z
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.gguf
+*.wasm
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.svg
+*.mp4
+*.mov
+*.woff
+*.woff2
+*.ttf
+*.otf
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Editor / OS junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.zed/
+.cursor/
+
+# Awakened internals the agent rarely needs to grep
+.awakened/references/
+.git/

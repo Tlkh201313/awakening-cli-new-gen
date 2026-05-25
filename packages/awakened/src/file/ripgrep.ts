@@ -198,8 +198,11 @@ function fail(queue: Queue.Queue<string, PlatformError | Error | Cause.Done>, er
   Queue.failCauseUnsafe(queue, Cause.fail(err))
 }
 
-function filesArgs(input: FilesInput) {
+const IGNORE_FILE = ".awakenedignore"
+
+function filesArgs(input: FilesInput, ignoreFiles: string[]) {
   const args = ["--no-config", "--files", "--glob=!.git/*"]
+  for (const file of ignoreFiles) args.push(`--ignore-file=${file}`)
   if (input.follow) args.push("--follow")
   if (input.hidden !== false) args.push("--hidden")
   if (input.hidden === false) args.push("--glob=!.*")
@@ -212,8 +215,9 @@ function filesArgs(input: FilesInput) {
   return args
 }
 
-function searchArgs(input: SearchInput) {
+function searchArgs(input: SearchInput, ignoreFiles: string[]) {
   const args = ["--no-config", "--json", "--hidden", "--glob=!.git/*", "--no-messages"]
+  for (const file of ignoreFiles) args.push(`--ignore-file=${file}`)
   if (input.follow) args.push("--follow")
   if (input.caseInsensitive) args.push("-i")
   if (input.glob) {
@@ -340,6 +344,12 @@ export const layer: Layer.Layer<Service, never, AppFileSystem.Service | ChildPro
         )
       })
 
+      const ignoreFiles = Effect.fnUntraced(function* (cwd: string) {
+        const file = path.join(cwd, IGNORE_FILE)
+        const exists = yield* fs.exists(file).pipe(Effect.catch(() => Effect.succeed(false)))
+        return exists ? [file] : []
+      })
+
       const command = Effect.fnUntraced(function* (cwd: string, args: string[]) {
         const binary = yield* filepath
         return ChildProcess.make(binary, args, {
@@ -356,7 +366,9 @@ export const layer: Layer.Layer<Service, never, AppFileSystem.Service | ChildPro
             yield* Effect.forkScoped(
               Effect.gen(function* () {
                 yield* check(input.cwd)
-                const handle = yield* spawner.spawn(yield* command(input.cwd, filesArgs(input)))
+                const handle = yield* spawner.spawn(
+                  yield* command(input.cwd, filesArgs(input, yield* ignoreFiles(input.cwd))),
+                )
                 const stderr = yield* Stream.mkString(Stream.decodeText(handle.stderr)).pipe(Effect.forkScoped)
                 const stdout = yield* Stream.decodeText(handle.stdout).pipe(
                   Stream.splitLines,
@@ -384,10 +396,11 @@ export const layer: Layer.Layer<Service, never, AppFileSystem.Service | ChildPro
 
       const search: Interface["search"] = Effect.fn("Ripgrep.search")(function* (input: SearchInput) {
         yield* check(input.cwd)
+        const ignore = yield* ignoreFiles(input.cwd)
 
         const program = Effect.scoped(
           Effect.gen(function* () {
-            const handle = yield* spawner.spawn(yield* command(input.cwd, searchArgs(input)))
+            const handle = yield* spawner.spawn(yield* command(input.cwd, searchArgs(input, ignore)))
 
             const [items, stderr, code] = yield* Effect.all(
               [

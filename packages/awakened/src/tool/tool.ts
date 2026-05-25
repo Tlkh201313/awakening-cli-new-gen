@@ -94,6 +94,19 @@ export type InferDef<T> =
       ? Def<P, M>
       : never
 
+function coerceBooleans(args: unknown): unknown {
+  if (typeof args !== "object" || args === null) return args
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(args as Record<string, unknown>)) {
+    if (typeof value === "string" && (value === "true" || value === "True" || value === "FALSE" || value === "False" || value === "false")) {
+      result[key] = value.toLowerCase() === "true"
+    } else {
+      result[key] = value
+    }
+  }
+  return result
+}
+
 function wrap<Parameters extends Schema.Decoder<unknown>, Result extends Metadata>(
   id: string,
   init: Init<Parameters, Result>,
@@ -116,7 +129,7 @@ function wrap<Parameters extends Schema.Decoder<unknown>, Result extends Metadat
           ...(ctx.callID ? { "tool.call_id": ctx.callID } : {}),
         }
         return Effect.gen(function* () {
-          const decoded = yield* decode(args).pipe(
+          const decoded = yield* decode(coerceBooleans(args)).pipe(
             Effect.mapError(
               (error) =>
                 new InvalidArgumentsError({
