@@ -428,7 +428,15 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           scrollAcceleration={scrollAcceleration()}
           ref={(r: ScrollBoxRenderable) => {
             scroll = r
-            setTimeout(revealSelected, 0)
+            r.getLayoutNode?.()?.markDirty?.()
+            setTimeout(() => {
+              r.getLayoutNode?.()?.markDirty?.()
+              revealSelected()
+            }, 0)
+            setTimeout(() => {
+              r.getLayoutNode?.()?.markDirty?.()
+              revealSelected()
+            }, 32)
           }}
           maxHeight={height()}
         >
@@ -556,6 +564,7 @@ function SelectRow(props: {
       flexDirection="row"
       position="relative"
       width="100%"
+      justifyContent="flex-start"
       onMouseMove={props.onMouseMove}
       onMouseUp={props.onMouseUp}
       onMouseOver={props.onMouseOver}
@@ -608,19 +617,15 @@ function Option(props: {
           {props.gutter?.()}
         </box>
       </Show>
-      <text flexShrink={0} wrapMode="none" overflow="hidden">
-        <span
-          style={{
-            fg: props.active ? theme.text : props.current ? theme.primary : theme.text,
-            bold: props.active,
-          }}
-        >
-          {Locale.truncate(props.title, 61)}
-        </span>
-        <Show when={props.description}>
-          <span style={{ fg: theme.textMuted }}> {props.description}</span>
-        </Show>
+      <text flexShrink={0} wrapMode="none" overflow="hidden" fg={props.active ? theme.text : props.current ? theme.primary : theme.text}>
+        {Locale.truncate(props.title, 61)}
       </text>
+      <Show when={props.description}>
+        <text flexShrink={0} wrapMode="none" fg={theme.textMuted}>
+          {"  "}
+          {props.description}
+        </text>
+      </Show>
       <Show when={props.footer}>
         <>
           <box flexGrow={1} />

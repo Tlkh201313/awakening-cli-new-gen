@@ -2,7 +2,7 @@ import type { BoxRenderable, TextareaRenderable, ScrollBoxRenderable } from "@op
 import { pathToFileURL } from "bun"
 import fuzzysort from "fuzzysort"
 import path from "path"
-import { createMemo, createResource, createEffect, onMount, onCleanup, Index, Show, createSignal } from "solid-js"
+import { createMemo, createResource, createEffect, onMount, onCleanup, For, Show, createSignal } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useEditorContext } from "@tui/context/editor"
 import { useProject } from "@tui/context/project"
@@ -24,6 +24,12 @@ import { displayCharAt, mentionTriggerIndex } from "@/cli/cmd/prompt-display"
 
 function optionLabel(option: AutocompleteOption) {
   return (option.value ?? option.display).trimEnd()
+}
+
+function normalizeOption(option: AutocompleteOption): AutocompleteOption {
+  const label = optionLabel(option)
+  if (option.display === label) return option
+  return { ...option, display: label }
 }
 
 function removeLineRange(input: string) {
@@ -597,7 +603,7 @@ export function Autocomplete(props: {
     const searchValue = search()
 
     if (!searchValue) {
-      return mixed
+      return mixed.map(normalizeOption)
     }
 
     if ((files.loading || referenceFiles.loading) && prev && prev.length > 0) {
@@ -622,7 +628,7 @@ export function Autocomplete(props: {
       },
     })
 
-    return result.map((arr) => arr.obj)
+    return result.map((arr) => normalizeOption(arr.obj))
   })
 
   createEffect(() => {
@@ -827,6 +833,21 @@ export function Autocomplete(props: {
     return anchor.width > 0 && anchor.height > 0
   })
 
+  const [layoutPass, setLayoutPass] = createSignal(0)
+
+  createEffect(() => {
+    if (!store.visible) return
+    options()
+    layoutReady()
+    const refresh = () => {
+      setLayoutPass((pass) => pass + 1)
+      scroll?.getLayoutNode?.()?.markDirty?.()
+    }
+    refresh()
+    const timers = [16, 32, 64, 100].map((ms) => setTimeout(refresh, ms))
+    onCleanup(() => timers.forEach(clearTimeout))
+  })
+
   let scroll: ScrollBoxRenderable
   const scrollAcceleration = createMemo(() => getScrollAcceleration(tuiConfig))
 
@@ -844,28 +865,35 @@ export function Autocomplete(props: {
       backgroundColor={theme.backgroundMenu}
     >
       <scrollbox
-        ref={(r: ScrollBoxRenderable) => (scroll = r)}
+        ref={(r: ScrollBoxRenderable) => {
+          scroll = r
+          r.getLayoutNode?.()?.markDirty?.()
+        }}
         backgroundColor={theme.backgroundMenu}
         height={height()}
         scrollbarOptions={{ visible: false }}
         scrollAcceleration={scrollAcceleration()}
       >
-        <Index
-          each={options()}
+        <Show
+          when={options().length > 0}
           fallback={
             <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
               <text fg={theme.textMuted}>◇ No matching items</text>
             </box>
           }
         >
+        <For each={options()}>
           {(option, index) => {
-            const active = () => index === store.selected
+            layoutPass()
+            const active = () => index() === store.selected
+            const label = () => optionLabel(option)
             return (
               <box
                 paddingLeft={2}
                 paddingRight={2}
                 paddingTop={0}
                 paddingBottom={0}
+                flexShrink={0}
                 backgroundColor={active() ? activeRowSurface(theme.primary, theme.backgroundElement) : undefined}
                 border={active() ? ["left"] : undefined}
                 borderColor={theme.primary}
@@ -875,32 +903,31 @@ export function Autocomplete(props: {
                 }}
                 onMouseOver={() => {
                   if (store.input !== "mouse") return
-                  if (index === store.selected) return
-                  moveTo(index)
+                  if (index() === store.selected) return
+                  moveTo(index())
                 }}
                 onMouseDown={() => {
                   setStore("input", "mouse")
-                  moveTo(index)
+                  moveTo(index())
                 }}
                 onMouseUp={() => select()}
               >
-                <text wrapMode="none">
-                  <span
-                    style={{
-                      fg: active() ? theme.primary : theme.text,
-                      bold: active(),
-                    }}
-                  >
-                    {optionLabel(option())}
-                  </span>
-                  <Show when={option().description}>
-                    <span style={{ fg: theme.textMuted }}> {option().description}</span>
+                <box flexDirection="row" flexShrink={0} justifyContent="flex-start">
+                  <text flexShrink={0} wrapMode="none" fg={active() ? theme.primary : theme.text}>
+                    {label()}
+                  </text>
+                  <Show when={option.description}>
+                    <text flexShrink={0} wrapMode="none" fg={theme.textMuted}>
+                      {"  "}
+                      {option.description}
+                    </text>
                   </Show>
-                </text>
+                </box>
               </box>
             )
           }}
-        </Index>
+        </For>
+        </Show>
       </scrollbox>
     </box>
   )
