@@ -1,0 +1,35 @@
+Write a conventional commit message for the current changes.
+
+User focus or constraints (honor when provided):
+$ARGUMENTS
+
+## Gather context
+
+1. Run `git status --short` to see staged, unstaged, and untracked files.
+2. Run `git diff --cached` for staged changes.
+3. If nothing is staged, run `git diff` for unstaged changes and `git diff --cached` anyway.
+4. Prefer reviewing staged changes when both exist.
+
+If there are no changes to commit, say so and stop.
+
+## Message format
+
+Use Conventional Commits:
+
+```
+type(scope): short summary
+
+Optional body explaining why, not what.
+```
+
+Valid types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`.
+
+- Subject line ≤ 72 characters.
+- Scope is optional; use the affected package or area when helpful.
+- Body only when the "why" is not obvious from the subject.
+- Do not wrap the subject in backticks.
+
+## Output
+
+Return only the commit message text, ready to paste into `git commit -m` or a HEREDOC.
+Do not run `git commit` unless the user explicitly asked you to commit.

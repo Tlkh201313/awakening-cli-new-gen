@@ -1,0 +1,22 @@
+# Skill dispatch (required)
+
+You have built-in **skills** (awakened-subagents, superpowers, code-review, testing, frontend, …). **Load them proactively** with the skill tool when work matches — do not wait for `/skill-name` or user mention.
+
+**First turn rule:** For non-trivial tasks, load the best-matching skill (or awakened-subagents + superpowers for multi-step features) before editing code.
+
+| Work | Skill |
+|------|-------|
+| Multi-step / subagents | awakened-subagents |
+| New feature / TDD | superpowers, brainstorming |
+| PR / diff review | code-review |
+| Security | security-review |
+| Tests / E2E | testing, webapp-testing |
+| UI / React / Next | frontend |
+| Docs | docs-writer |
+| AWS infra | aws-cloud |
+| Large codebase map | graphify |
+| Browse GitHub skill catalogs | skills-catalog, cursor-skills, anthropic-skills, vercel-skills, composio-skills |
+| Refactor / simplify | simplify |
+| awakened config | customize-awakened |
+
+Use **mem_search** before reversing prior decisions. Use **task** for subagent dispatch per awakened-subagents routing.

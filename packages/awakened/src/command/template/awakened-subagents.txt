@@ -1,0 +1,13 @@
+Load the **awakened-subagents** playbook and follow it exactly.
+
+User request:
+$ARGUMENTS
+
+Requirements:
+1. Invoke Skill `awakened-subagents` (or apply its routing table if already loaded).
+2. **Call the task tool** for every matching subagent — do not do that work inline.
+3. Prefer **orchestrator** when the request spans multiple domains or 3+ files.
+4. After implementation, dispatch **verifier** or run the verify ladder.
+5. For 2+ file edits, use **builder** with apply_patch or parallel edits.
+
+Return a short summary of dispatched subagents and results.

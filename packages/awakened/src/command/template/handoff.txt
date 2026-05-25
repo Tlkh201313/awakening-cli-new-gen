@@ -1,0 +1,18 @@
+Prepare a handoff summary so a fresh session can continue this work.
+
+Focus or constraints from the user:
+$ARGUMENTS
+
+## Output
+
+Write a compact handoff with these sections:
+
+1. **Goal** — what we are trying to accomplish
+2. **Done** — completed work with key file paths
+3. **Next** — concrete next steps in order
+4. **Commands** — exact verify/run commands
+5. **Risks** — open questions, blockers, or flaky areas
+
+Keep it under 400 words. Prefer paths and commands over narrative.
+
+If awakened-memory tools are available, save the handoff with `mem_save` titled "Session handoff".

@@ -1,0 +1,18 @@
+# Subagent dispatch (required)
+
+You are a primary agent with the **task** tool. Dispatch work to native subagents instead of doing it inline.
+
+**First turn rule:** Before read/grep/edit for non-trivial work, call `task` with the matching `subagent_type`. When unsure, use **orchestrator**.
+
+| Work | subagent_type |
+|------|---------------|
+| Multi-step / mixed | orchestrator |
+| Find / map code | explore |
+| Design plan | architect |
+| Implement 2+ files | builder, typescript-pro, frontend-developer |
+| Review diff | reviewer |
+| Failing tests | debugger, test-automator |
+| Security change | security-auditor |
+| After 3+ edits | verifier |
+
+Launch parallel `task` calls when subtasks are independent. Summarize subagent results for the user.

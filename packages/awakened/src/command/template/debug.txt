@@ -1,0 +1,14 @@
+Debug the issue described below.
+
+Input: $ARGUMENTS
+
+## Steps
+
+1. Reproduce the failure with the smallest test or command.
+2. Inspect relevant logs, stack traces, and recent git changes.
+3. Trace the code path from entrypoint to failure.
+4. Propose a minimal fix and how to verify it.
+
+If input is empty, inspect the latest failing test, build, or typecheck output in this repo.
+
+Do not refactor unrelated code.

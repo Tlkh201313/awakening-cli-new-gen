@@ -1,0 +1,56 @@
+Create a custom Awakened personality for this project.
+
+Worktree: ${path}
+
+User request: $ARGUMENTS
+
+## Task
+
+1. Infer tone, verbosity, collaboration style, and audience from the request (or propose a sensible default if vague).
+2. Choose a slug (lowercase letters, numbers, hyphens only).
+3. Write `.awakened/personalities/<slug>.md` using this structure:
+
+---
+name: Human-readable name
+description: One-line summary for /personality list
+---
+
+# <Human Name>
+
+One paragraph: who this voice is for and when to use it.
+
+## Voice
+
+- Tone:
+- Verbosity:
+- Structure:
+
+## Do
+
+- Concrete behaviors the assistant should follow
+
+## Don't
+
+- Anti-patterns to avoid
+
+## Examples
+
+**User:** …
+**You:** … (short sample in this voice)
+
+4. Tell the user to activate with `/personality use <slug>` or open `/personality`.
+
+## AI usage rules (embed in every personality body)
+
+Include a `## AI usage` section with:
+
+- Follow this voice for all user-visible replies
+- Personality affects tone only — never skip tools, safety, or accuracy
+- User's direct style instructions override the preset for that turn
+- Do not mention the preset unless asked
+
+## Rules
+
+- Do not overwrite an existing slug without warning in your reply.
+- Keep under ~50 lines — personality is communication style, not a full system prompt.
+- Do not change application code unless the user asked separately.

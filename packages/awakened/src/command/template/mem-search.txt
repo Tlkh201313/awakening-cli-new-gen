@@ -1,0 +1,7 @@
+Search saved memories before re-deciding.
+
+Query: $ARGUMENTS
+
+Use the `mem_search` tool with the query above (scope `all` unless the user asked for project-only or global-only).
+
+Summarize the relevant hits in plain language. If nothing matches, say so and suggest saving a memory with `/remember`.

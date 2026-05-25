@@ -1,0 +1,12 @@
+Save durable memory for future sessions.
+
+User request: $ARGUMENTS
+
+Use the `mem_save` tool to persist the important facts, decisions, and conventions — not the full chat transcript.
+
+Rules:
+- Title: short and searchable (≤80 chars)
+- Content: bullets with paths, commands, and decisions
+- Tags: 1–4 lowercase keywords
+- Use scope `project` for repo-specific notes, `global` only for cross-project preferences the user explicitly wants everywhere
+- Confirm what you saved in one short paragraph
