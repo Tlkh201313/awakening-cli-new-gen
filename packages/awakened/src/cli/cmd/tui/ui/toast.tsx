@@ -83,9 +83,10 @@ function init() {
           variant: "error",
           message: err.message,
         })
+      const msg = typeof err === "string" ? err : String(err)
       toast.show({
         variant: "error",
-        message: "An unknown error has occurred",
+        message: msg === "[object Object]" ? "An unknown error has occurred" : msg,
       })
     },
     get currentToast(): ToastOptions | null {

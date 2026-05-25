@@ -63,7 +63,7 @@ import { Flag } from "@awakened-ai/core/flag/flag"
 import { type WorkspaceStatus } from "../workspace-label"
 import { AWAKENED_BASE_MODE, useBindings, useCommandShortcut, useLeaderActive, useAwakenedKeymap } from "../../keymap"
 import { useTuiConfig } from "../../context/tui-config"
-import { dispatchPromptSlash, parsePromptSlash } from "./slash-dispatch"
+import { dispatchPromptSlash, parsePromptSlash, findClosestSlash } from "./slash-dispatch"
 import { stopVoiceIfRecording } from "../../util/voice/controller"
 
 export type PromptProps = {
@@ -1100,10 +1100,13 @@ export function Prompt(props: PromptProps) {
       }
       if (parsed && !sync.data.command.some((x) => x.name === parsed.name)) {
         auto()?.close()
+        const suggestion = findClosestSlash(keymap, parsed.name)
         toast.show({
           variant: "error",
-          message: `Unknown command: /${parsed.name}`,
-          duration: 3000,
+          message: suggestion
+            ? `Unknown command: /${parsed.name}. Did you mean /${suggestion}?`
+            : `Unknown command: /${parsed.name}`,
+          duration: 4000,
         })
         finishPromptSubmit()
         return true
@@ -1259,10 +1262,15 @@ export function Prompt(props: PromptProps) {
             })),
         })
       } else {
+        const suggestion = parsed ? findClosestSlash(keymap, parsed.name) : undefined
         toast.show({
           variant: "error",
-          message: parsed ? `Unknown command: /${parsed.name}` : "Invalid slash command",
-          duration: 3000,
+          message: parsed
+            ? suggestion
+              ? `Unknown command: /${parsed.name}. Did you mean /${suggestion}?`
+              : `Unknown command: /${parsed.name}`
+            : "Invalid slash command",
+          duration: 4000,
         })
       }
     } else {

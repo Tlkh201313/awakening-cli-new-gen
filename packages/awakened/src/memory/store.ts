@@ -1,6 +1,7 @@
 export * as MemoryStore from "./store"
 
 import path from "path"
+import { appendFile, stat, mkdir } from "fs/promises"
 import { Global } from "@awakened-ai/core/global"
 import { Filesystem } from "@/util/filesystem"
 
@@ -54,20 +55,69 @@ function parseLine(line: string): Entry | undefined {
   }
 }
 
-async function readFile(file: string) {
-  if (!(await Filesystem.exists(file))) return []
-  const text = await Filesystem.readText(file)
-  return text
-    .split("\n")
-    .map(parseLine)
-    .filter((entry): entry is Entry => entry !== undefined)
+const cache = new Map<string, { entries: Entry[]; mtime: number }>()
+
+async function readFileCached(file: string): Promise<Entry[]> {
+  try {
+    const s = await stat(file)
+    const cached = cache.get(file)
+    if (cached && cached.mtime === s.mtimeMs) return cached.entries
+    const text = await Bun.file(file).text()
+    const entries = text
+      .split("\n")
+      .map(parseLine)
+      .filter((entry): entry is Entry => entry !== undefined)
+    cache.set(file, { entries, mtime: s.mtimeMs })
+    return entries
+  } catch {
+    return []
+  }
+}
+
+function invalidateCache(file: string) {
+  cache.delete(file)
 }
 
 async function readAll(worktree: string, scope: Scope) {
   const entries: Entry[] = []
-  if (scope === "global" || scope === "all") entries.push(...(await readFile(globalFile())))
-  if (scope === "project" || scope === "all") entries.push(...(await readFile(projectFile(worktree))))
+  if (scope === "global" || scope === "all") entries.push(...(await readFileCached(globalFile())))
+  if (scope === "project" || scope === "all") entries.push(...(await readFileCached(projectFile(worktree))))
   return entries.toSorted((a, b) => b.updated - a.updated)
+}
+
+function levenshtein(a: string, b: string): number {
+  if (a === "") return b.length
+  if (b === "") return a.length
+  const matrix = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  )
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost)
+    }
+  }
+  return matrix[a.length][b.length]
+}
+
+function fuzzyIncludes(text: string, term: string): boolean {
+  if (text.includes(term)) return true
+  if (term.length < 3) return false
+  const words = text.split(/\s+/)
+  return words.some((word) => {
+    if (Math.abs(word.length - term.length) > 2) return false
+    return levenshtein(word, term) <= 2
+  })
+}
+
+const ONE_DAY = 86_400_000
+
+function recencyBonus(updated: number): number {
+  const age = Date.now() - updated
+  if (age < ONE_DAY) return 3
+  if (age < 7 * ONE_DAY) return 2
+  if (age < 30 * ONE_DAY) return 1
+  return 0
 }
 
 function score(entry: Entry, query: string) {
@@ -78,23 +128,29 @@ function score(entry: Entry, query: string) {
     .filter(Boolean)
   if (!terms.length) return 0
 
-  const haystack = [entry.title, entry.content, entry.tags.join(" "), entry.project ?? ""].join("\n").toLowerCase()
+  const titleLower = entry.title.toLowerCase()
+  const tagsJoined = entry.tags.join(" ")
+  const haystack = [entry.title, entry.content, tagsJoined, entry.project ?? ""].join("\n").toLowerCase()
   let value = 0
+  let matchedTerms = 0
   for (const term of terms) {
-    if (entry.title.toLowerCase().includes(term)) value += 4
-    if (entry.tags.some((tag) => tag.includes(term))) value += 3
-    if (haystack.includes(term)) value += 1
+    let termMatched = false
+    if (titleLower.includes(term) || fuzzyIncludes(titleLower, term)) { value += 4; termMatched = true }
+    if (entry.tags.some((tag) => tag.includes(term) || fuzzyIncludes(tag, term))) { value += 3; termMatched = true }
+    if (haystack.includes(term) || fuzzyIncludes(haystack, term)) { value += 1; termMatched = true }
+    if (termMatched) matchedTerms++
   }
+  if (terms.length > 1 && matchedTerms > 1) value += matchedTerms * 2
+  value += recencyBonus(entry.updated)
   return value
 }
 
 async function append(file: string, entry: Entry) {
   const line = `${JSON.stringify(entry)}\n`
-  if (await Filesystem.exists(file)) {
-    await Filesystem.write(file, (await Filesystem.readText(file)) + line)
-    return
-  }
-  await Filesystem.write(file, line)
+  const dir = path.dirname(file)
+  await mkdir(dir, { recursive: true })
+  await appendFile(file, line, "utf-8")
+  invalidateCache(file)
 }
 
 function fingerprint(title: string, content: string) {

@@ -174,6 +174,14 @@ export function Autocomplete(props: {
     setSearch(next ? next : "")
   })
 
+  const [debouncedSearch, setDebouncedSearch] = createSignal("")
+  let searchTimer: ReturnType<typeof setTimeout> | undefined
+  createEffect(() => {
+    const val = search()
+    if (searchTimer) clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => setDebouncedSearch(val), 150)
+  })
+
   // When the filter changes due to how TUI works, the mousemove might still be triggered
   // via a synthetic event as the layout moves underneath the cursor. This is a workaround to make sure the input mode remains keyboard so
   // that the mouseover event doesn't trigger when filtering.
@@ -397,7 +405,7 @@ export function Autocomplete(props: {
   }
 
   const [files] = createResource(
-    () => search(),
+    () => debouncedSearch(),
     async (query) => {
       if (!store.visible || store.visible === "/") return []
       if (referenceSearch()) return []
