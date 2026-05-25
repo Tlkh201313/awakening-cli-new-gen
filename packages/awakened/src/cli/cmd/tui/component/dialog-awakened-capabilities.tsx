@@ -53,6 +53,7 @@ const CATEGORY_BY_ID: Record<AwakenedCapabilityId, Exclude<(typeof CATEGORY_ORDE
   "awakened-devtools": "Engineering",
   "awakened-aws": "Engineering",
   "awakened-browser": "Engineering",
+  "awakened-scraper": "Engineering",
   "awakened-research": "Domain",
   "awakened-marketing": "Domain",
   "awakened-growth": "Domain",

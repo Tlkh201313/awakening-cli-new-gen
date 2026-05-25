@@ -33,6 +33,7 @@ export const AWAKENED_CAPABILITY_IDS = {
   business: "awakened-business",
   selfImprovement: "awakened-self-improvement",
   obsidian: "awakened-obsidian",
+  scraper: "awakened-scraper",
 } as const
 
 export type AwakenedCapabilityId = (typeof AWAKENED_CAPABILITY_IDS)[keyof typeof AWAKENED_CAPABILITY_IDS]
@@ -72,4 +73,5 @@ export const ALL_AWAKENED_CAPABILITY_IDS: AwakenedCapabilityId[] = [
   AWAKENED_CAPABILITY_IDS.business,
   AWAKENED_CAPABILITY_IDS.selfImprovement,
   AWAKENED_CAPABILITY_IDS.obsidian,
+  AWAKENED_CAPABILITY_IDS.scraper,
 ]

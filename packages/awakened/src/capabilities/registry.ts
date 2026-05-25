@@ -18,6 +18,7 @@ import { awakenedSecurityCapability } from "./bundled/awakenedSecurity"
 import { awakenedSimplifyCapability } from "./bundled/awakenedSimplify"
 import { awakenedSuperpowersCapability } from "./bundled/awakenedSuperpowers"
 import { awakenedTestingCapability } from "./bundled/awakenedTesting"
+import { awakenedScraperCapability } from "./bundled/awakenedScraper"
 import { CATALOG_CAPABILITIES } from "./bundled/awakenedCatalogs"
 import type { AutoCapabilityDefinition } from "./types"
 
@@ -43,6 +44,7 @@ export const BUNDLED_AUTO_CAPABILITIES: AutoCapabilityDefinition[] = [
   awakenedMemoryCapability,
   awakenedSelfImprovementCapability,
   awakenedSimplifyCapability,
+  awakenedScraperCapability,
 ]
 
 export function getAwakenedCapabilityById(id: string): AutoCapabilityDefinition | undefined {

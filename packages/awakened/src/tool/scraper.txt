@@ -1,0 +1,21 @@
+Web scraper optimized for LLM consumption. Fetches web pages and extracts clean, structured content.
+
+Use this tool when you need to:
+- Read the content of a web page (documentation, articles, GitHub repos)
+- Extract structured data from a page (headings, links, metadata)
+- Deep crawl a site to gather content from multiple pages
+- Scrape specific content using CSS selectors
+
+Features:
+- Clean Markdown output (headings, lists, code blocks preserved)
+- Deep crawling with BFS (follow internal links)
+- CSS selector targeting (e.g. "article", "#readme", ".content")
+- Multiple extraction modes: markdown, text, links, structured (JSON)
+
+Prefer this over webfetch when you need:
+- Clean Markdown instead of raw HTML
+- Multi-page crawling (deep mode)
+- CSS selector filtering
+- Structured data extraction (headings, links as JSON)
+
+For simple single-page fetches, webfetch is lighter. For full-site crawling with clean output, use scraper.

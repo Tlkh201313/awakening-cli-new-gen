@@ -17,6 +17,7 @@ You have built-in **skills** (awakened-subagents, superpowers, code-review, test
 | Docs | docs-writer |
 | AWS infra | aws-cloud |
 | Large codebase map / token reduction | graphify |
+| Web scraping / deep crawl | scraper |
 | Library docs / API questions | context7 |
 | Obsidian vault / notes | obsidian |
 | Memory / prior sessions | awakened-mem, mem-search |

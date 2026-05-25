@@ -23,6 +23,7 @@ import { Plugin } from "../plugin"
 import { Provider } from "@/provider/provider"
 import { ProviderID, type ModelID } from "../provider/schema"
 import { WebSearchTool, type WebSearchProviderPreference } from "./websearch"
+import { AwakenedScraperTool } from "./scraper"
 import { RepoCloneTool } from "./repo_clone"
 import { RepoOverviewTool } from "./repo_overview"
 import { RepositoryCache } from "@/reference/repository-cache"
@@ -137,6 +138,7 @@ export const layer: Layer.Layer<
     const lsptool = yield* LspTool
     const plan = yield* PlanExitTool
     const webfetch = yield* WebFetchTool
+    const scraper = yield* AwakenedScraperTool
     const websearch = yield* WebSearchTool
     const repoClone = yield* RepoCloneTool
     const repoOverview = yield* RepoOverviewTool
@@ -249,6 +251,7 @@ export const layer: Layer.Layer<
           task: Tool.init(task),
           task_status: Tool.init(taskStatus),
           fetch: Tool.init(webfetch),
+          scraper: Tool.init(scraper),
           todo: Tool.init(todo),
           search: Tool.init(websearch),
           repo_clone: Tool.init(repoClone),
@@ -274,6 +277,7 @@ export const layer: Layer.Layer<
             tool.task,
             ...(backgroundSubagents ? [tool.task_status] : []),
             tool.fetch,
+            tool.scraper,
             tool.todo,
             tool.search,
             ...(flags.experimentalScout ? [tool.repo_clone, tool.repo_overview] : []),

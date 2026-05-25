@@ -1,5 +1,5 @@
 import path from "path"
-import { Effect, Layer, Context } from "effect"
+import { Effect, Layer, Context, Option } from "effect"
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/unstable/http"
 import { Config } from "@/config/config"
 import { InstanceState } from "@/effect/instance-state"
@@ -69,8 +69,8 @@ export const layer: Layer.Layer<
     const state = yield* InstanceState.make(
       Effect.fn("Instruction.state")(() =>
         Effect.succeed({
-          // Track which instruction files have already been attached for a given assistant message.
           claims: new Map<MessageID, Set<string>>(),
+          contentCache: new Map<string, { content: string; mtime: number }>(),
         }),
       ),
     )
@@ -88,7 +88,14 @@ export const layer: Layer.Layer<
     })
 
     const read = Effect.fnUntraced(function* (filepath: string) {
-      return yield* fs.readFileString(filepath).pipe(Effect.catch(() => Effect.succeed("")))
+      const s = yield* InstanceState.get(state)
+      const cached = s.contentCache.get(filepath)
+      const stat = yield* fs.stat(filepath).pipe(Effect.catch(() => Effect.succeed(null)))
+      const mtime = stat ? Option.getOrElse(stat.mtime, () => new Date(0)).getTime() : 0
+      if (cached && cached.mtime >= mtime) return cached.content
+      const content = yield* fs.readFileString(filepath).pipe(Effect.catch(() => Effect.succeed("")))
+      s.contentCache.set(filepath, { content, mtime })
+      return content
     })
 
     const fetch = Effect.fnUntraced(function* (url: string) {
