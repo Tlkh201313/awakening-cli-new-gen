@@ -428,15 +428,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           scrollAcceleration={scrollAcceleration()}
           ref={(r: ScrollBoxRenderable) => {
             scroll = r
-            r.getLayoutNode?.()?.markDirty?.()
-            setTimeout(() => {
-              r.getLayoutNode?.()?.markDirty?.()
-              revealSelected()
-            }, 0)
-            setTimeout(() => {
-              r.getLayoutNode?.()?.markDirty?.()
-              revealSelected()
-            }, 32)
+            setTimeout(revealSelected, 0)
           }}
           maxHeight={height()}
         >
@@ -564,7 +556,6 @@ function SelectRow(props: {
       flexDirection="row"
       position="relative"
       width="100%"
-      justifyContent="flex-start"
       onMouseMove={props.onMouseMove}
       onMouseUp={props.onMouseUp}
       onMouseOver={props.onMouseOver}
