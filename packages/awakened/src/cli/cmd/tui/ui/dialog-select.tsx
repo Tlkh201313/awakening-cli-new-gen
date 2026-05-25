@@ -362,6 +362,15 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 
   onMount(() => setReady(true))
 
+  createEffect(
+    on([ready, () => flat().length], () => {
+      if (!ready()) return
+      if (flat().length === 0) return
+      setTimeout(() => moveTo(store.selected, true), 0)
+      setTimeout(() => moveTo(store.selected, true), 60)
+    }),
+  )
+
   return (
     <box gap={1} paddingBottom={1}>
       <box paddingLeft={3} paddingRight={3}>
@@ -543,39 +552,37 @@ function SelectRow(props: {
   const borderColor = () => fadeColor(theme.primary, 0.75 + 0.25 * pulse())
 
   return (
-    <Show when={alpha() > 0.02}>
-      <box
-        id={JSON.stringify(props.option.value)}
-        flexDirection="row"
-        position="relative"
-        opacity={alpha()}
-        onMouseMove={props.onMouseMove}
-        onMouseUp={props.onMouseUp}
-        onMouseOver={props.onMouseOver}
-        onMouseDown={props.onMouseDown}
-        backgroundColor={backgroundColor()}
-        border={border()}
-        borderColor={borderColor()}
-        customBorderChars={SplitBorder.customBorderChars}
-        paddingLeft={props.current() || props.option.gutter ? 1 : 3}
-        paddingRight={3}
-        gap={1}
-      >
-        <Show when={!props.current() && props.option.margin}>
-          <box position="absolute" left={1} flexShrink={0}>
-            {props.option.margin}
-          </box>
-        </Show>
-        <Option
-          title={props.option.title}
-          footer={props.flatten ? (props.option.category ?? props.option.footer) : props.option.footer}
-          description={props.option.description !== props.category ? props.option.description : undefined}
-          active={props.active()}
-          current={props.current()}
-          gutter={props.option.gutter}
-        />
-      </box>
-    </Show>
+    <box
+      id={JSON.stringify(props.option.value)}
+      flexDirection="row"
+      position="relative"
+      opacity={alpha()}
+      onMouseMove={props.onMouseMove}
+      onMouseUp={props.onMouseUp}
+      onMouseOver={props.onMouseOver}
+      onMouseDown={props.onMouseDown}
+      backgroundColor={backgroundColor()}
+      border={border()}
+      borderColor={borderColor()}
+      customBorderChars={SplitBorder.customBorderChars}
+      paddingLeft={props.current() || props.option.gutter ? 1 : 3}
+      paddingRight={3}
+      gap={1}
+    >
+      <Show when={!props.current() && props.option.margin}>
+        <box position="absolute" left={1} flexShrink={0}>
+          {props.option.margin}
+        </box>
+      </Show>
+      <Option
+        title={props.option.title}
+        footer={props.flatten ? (props.option.category ?? props.option.footer) : props.option.footer}
+        description={props.option.description !== props.category ? props.option.description : undefined}
+        active={props.active()}
+        current={props.current()}
+        gutter={props.option.gutter}
+      />
+    </box>
   )
 }
 

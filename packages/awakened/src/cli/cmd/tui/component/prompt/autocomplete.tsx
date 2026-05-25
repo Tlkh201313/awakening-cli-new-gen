@@ -110,6 +110,13 @@ export function Autocomplete(props: {
   })
 
   createEffect(() => {
+    if (!store.visible) return
+    setPositionTick((t) => t + 1)
+    const tick = setTimeout(() => setPositionTick((t) => t + 1), 0)
+    onCleanup(() => clearTimeout(tick))
+  })
+
+  createEffect(() => {
     if (store.visible) {
       let lastPos = { x: 0, y: 0, width: 0 }
       const interval = setInterval(() => {
@@ -807,9 +814,12 @@ export function Autocomplete(props: {
 
   const height = createMemo(() => {
     const count = options().length || 1
-    if (!store.visible) return Math.min(10, count)
+    const rows = Math.min(10, count)
+    if (!store.visible) return rows
     positionTick()
-    return Math.min(10, count, Math.max(1, props.anchor().y))
+    const space = position().y - 1
+    if (space < 1) return rows
+    return Math.min(rows, space)
   })
 
   let scroll: ScrollBoxRenderable
@@ -819,7 +829,7 @@ export function Autocomplete(props: {
     <box
       visible={store.visible !== false}
       position="absolute"
-      top={position().y - height()}
+      top={position().y - height() - 1}
       left={position().x}
       width={position().width}
       zIndex={100}

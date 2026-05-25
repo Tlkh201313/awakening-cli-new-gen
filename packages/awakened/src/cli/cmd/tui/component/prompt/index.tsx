@@ -1574,8 +1574,9 @@ export function Prompt(props: PromptProps) {
 
   return (
     <>
-      <box ref={(r: BoxRenderable) => (anchor = r)} visible={props.visible !== false} flexDirection="column" marginTop={1}>
+      <box visible={props.visible !== false} flexDirection="column" marginTop={1}>
         <box
+          ref={(r: BoxRenderable) => (anchor = r)}
           width="100%"
           border={promptBorder().border}
           borderColor={promptBorderColor()}
