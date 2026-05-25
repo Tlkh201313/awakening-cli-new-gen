@@ -3,7 +3,7 @@ import { primaryBootstrap } from "../primaryBootstrap"
 import type { AutoCapabilityDefinition } from "../types"
 
 const SUBAGENTS_RE =
-  /\b(subagents?|orchestrat\w*|dispatch|multi[\s-]?step|parallel\s+(?:agents?|tasks?|work)|background\s+(?:agents?|tasks?)|spawn\s+(?:agents?|subagents?)|cavecrew|awk3nd|agent[\s-]?harness|task tool|verify[\s-]?changes?|init(?:ialize)?[\s-]?(?:this\s+)?repo|bootstrap(?:\s+the)?\s+repo|awesome[\s-]?claude[\s-]?code[\s-]?subagents?|voltagent|latency|slow(?:\s+tools?)?|speed\s+up|faster|@(?:orchestrator|builder|architect|reviewer|debugger|explore|verifier|scout|general))\b/i
+  /\b(subagents?|orchestrat\w*|dispatch|multi[\s-]?step|parallel\s+(?:agents?|tasks?|work)|background\s+(?:agents?|tasks?)|spawn\s+(?:agents?|subagents?)|cavecrew|awk3nd|agent[\s-]?harness|task tool|verify[\s-]?changes?|init(?:ialize)?[\s-]?(?:this\s+)?repo|bootstrap(?:\s+the)?\s+repo|awesome[\s-]?claude[\s-]?code[\s-]?subagents?|voltagent|@(?:orchestrator|builder|architect|reviewer|debugger|explore|verifier|scout|general))\b/i
 
 export const awakenedSubagentsCapability: AutoCapabilityDefinition = {
   id: AWAKENED_CAPABILITY_IDS.subagents,

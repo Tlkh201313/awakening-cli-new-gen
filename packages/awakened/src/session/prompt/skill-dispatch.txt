@@ -12,10 +12,16 @@ You have built-in **skills** (awakened-subagents, superpowers, code-review, test
 | Security | security-review |
 | Tests / E2E | testing, webapp-testing |
 | UI / React / Next | frontend |
+| Landing page / HTML / branding | design |
+| Premium UI / animations | awakened-taste |
 | Docs | docs-writer |
 | AWS infra | aws-cloud |
-| Large codebase map | graphify |
-| Browse GitHub skill catalogs | skills-catalog, cursor-skills, anthropic-skills, vercel-skills, composio-skills |
+| Large codebase map / token reduction | graphify |
+| Library docs / API questions | context7 |
+| Obsidian vault / notes | obsidian |
+| Memory / prior sessions | awakened-mem, mem-search |
+| Codify conventions / /learn | self-improvement |
+| Browse skill catalogs | productivity, skills-catalog, cursor-skills, anthropic-skills, vercel-skills, composio-skills |
 | Refactor / simplify | simplify |
 | awakened config | customize-awakened |
 

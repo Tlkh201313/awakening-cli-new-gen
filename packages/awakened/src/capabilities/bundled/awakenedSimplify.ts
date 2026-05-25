@@ -3,7 +3,7 @@ import { primaryBootstrap } from "../primaryBootstrap"
 import type { AutoCapabilityDefinition } from "../types"
 
 const SIMPLIFY_RE =
-  /\b(simplify|reduce complexity|refactor (?:this|for clarity)|dead code|remove duplication|clean up (?:this )?code|yagni|over[- ]?engineered|too many abstractions|slim down)\b/i
+  /\b(simplify|reduce complexity|refactor (?:this|for clarity)|dead code|remove duplication|clean[\s-]?up (?:this )?code|yagni|over[- ]?engineered|too many abstractions|slim down|too complex|bloated|unnecessary (?:complexity|abstractions?|layers))\b/i
 
 export const awakenedSimplifyCapability: AutoCapabilityDefinition = {
   id: AWAKENED_CAPABILITY_IDS.simplify,

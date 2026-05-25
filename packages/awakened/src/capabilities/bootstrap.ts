@@ -95,6 +95,12 @@ export function resolveAwakenedBootstrapAttachment(options: {
       ...packs,
       "",
       "Matching packs are injected automatically each session. Load the **skill** tool for full playbooks when a pack matches.",
+      "",
+      "## Example",
+      "",
+      'User: "fix the failing auth tests"',
+      'You: recognize testing + security domain → call `skill({ name: "testing" })` → follow playbook → dispatch `task({ subagent_type: "test-automator" })`.',
+      "Do this automatically — do not ask the user which skill to load.",
     ].join("\n"),
   }
 }

@@ -3,7 +3,7 @@ import { primaryBootstrap } from "../primaryBootstrap"
 import type { AutoCapabilityDefinition } from "../types"
 
 const MEMORY_RE =
-  /\b(claude[- ]?mem|awakened[- ]?mem|engram|persistent memory|remember (?:this|across sessions)|session memory|memory search|did we already|cross[- ]?session|knowledge base|mem[- ]?search|awakened[- ]?memory|auto[- ]?save|get_observations)\b/i
+  /\b(claude[- ]?mem|awakened[- ]?mem|engram|persistent memory|remember (?:this|across sessions)|session memory|memory search|did we already|cross[- ]?session|knowledge base|mem[- ]?search|awakened[- ]?memory|auto[- ]?save|get_observations|prior\s+(?:work|session|conversation)|previous\s+(?:session|conversation)|last\s+(?:time|session)|what\s+did\s+we|history\s+of\s+(?:this|our)|we\s+(?:already|previously))\b/i
 
 export const awakenedMemoryCapability: AutoCapabilityDefinition = {
   id: AWAKENED_CAPABILITY_IDS.memory,
