@@ -1,6 +1,6 @@
-import type { Config, OpencodeClient, Path, Project, ProviderAuthResponse, Todo } from "@opencode-ai/sdk/v2/client"
-import { showToast } from "@opencode-ai/ui/toast"
-import { getFilename } from "@opencode-ai/core/util/path"
+import type { Config, AwakenedClient, Path, Project, ProviderAuthResponse, Todo } from "@awakened-ai/sdk/v2/client"
+import { showToast } from "@awakened-ai/ui/toast"
+import { getFilename } from "@awakened-ai/core/util/path"
 import { batch, createContext, getOwner, onCleanup, onMount, type ParentProps, untrack, useContext } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useLanguage } from "@/context/language"
@@ -29,7 +29,7 @@ import { createRefreshQueue } from "./global-sync/queue"
 import { directoryKey } from "./global-sync/utils"
 import { PathKey } from "@/utils/path-key"
 import { createDirSyncContext } from "./directory-sync"
-import { NormalizedProviderListResponse } from "@opencode-ai/ui/context"
+import { NormalizedProviderListResponse } from "@awakened-ai/ui/context"
 
 type GlobalStore = {
   ready: boolean
@@ -45,19 +45,19 @@ type GlobalStore = {
   reload: undefined | "pending" | "complete"
 }
 
-export const loadMcpQuery = (directory: string, sdk: OpencodeClient) =>
+export const loadMcpQuery = (directory: string, sdk: AwakenedClient) =>
   queryOptions({
     queryKey: [directory, "mcp"] as const,
     queryFn: () => sdk.mcp.status().then((r) => r.data ?? {}),
   })
 
-export const loadLspQuery = (directory: string, sdk: OpencodeClient) =>
+export const loadLspQuery = (directory: string, sdk: AwakenedClient) =>
   queryOptions({
     queryKey: [directory, "lsp"] as const,
     queryFn: () => sdk.lsp.status().then((r) => r.data ?? []),
   })
 
-function makeQueryOptionsApi(globalSDK: () => OpencodeClient, sdkFor: (dir: PathKey) => OpencodeClient) {
+function makeQueryOptionsApi(globalSDK: () => AwakenedClient, sdkFor: (dir: PathKey) => AwakenedClient) {
   return {
     globalConfig: () => loadGlobalConfigQuery(globalSDK()),
     projects: () => loadProjectsQuery(globalSDK()),
@@ -78,7 +78,7 @@ function createGlobalSync() {
   const owner = getOwner()
   if (!owner) throw new Error("GlobalSync must be created within owner")
 
-  const sdkCache = new Map<string, OpencodeClient>()
+  const sdkCache = new Map<string, AwakenedClient>()
   const booting = new Map<string, Promise<void>>()
   const sessionLoads = new Map<string, Promise<void>>()
   const sessionMeta = new Map<string, { limit: number }>()

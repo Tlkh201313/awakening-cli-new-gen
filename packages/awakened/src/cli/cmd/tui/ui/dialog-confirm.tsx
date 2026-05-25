@@ -1,101 +1,202 @@
-import { useTheme } from "../context/theme"
-import { useDialog, type DialogContext } from "./dialog"
-import { DialogButton, DialogHeader } from "./dialog-chrome"
-import { createStore } from "solid-js/store"
-import { For } from "solid-js"
-import { Locale } from "@/util/locale"
-import { useBindings } from "../keymap"
-import { FadeIn } from "../util/motion"
-
-export type DialogConfirmProps = {
-  title: string
-  message: string
-  onConfirm?: () => void
-  onCancel?: () => void
-  label?: string
-}
-
-export type DialogConfirmResult = boolean | undefined
-
-export function DialogConfirm(props: DialogConfirmProps) {
-  const dialog = useDialog()
-  const { theme } = useTheme()
-  const [store, setStore] = createStore({
-    active: "confirm" as "confirm" | "cancel",
-  })
-
-  useBindings(() => ({
-    bindings: [
-      {
-        key: "return",
-        desc: "Confirm dialog selection",
-        group: "Dialog",
-        cmd: () => {
-          if (store.active === "confirm") props.onConfirm?.()
-          if (store.active === "cancel") props.onCancel?.()
-          dialog.clear()
-        },
-      },
-      {
-        key: "left",
-        desc: "Previous dialog option",
-        group: "Dialog",
-        cmd: () => {
-          setStore("active", store.active === "confirm" ? "cancel" : "confirm")
-        },
-      },
-      {
-        key: "right",
-        desc: "Next dialog option",
-        group: "Dialog",
-        cmd: () => {
-          setStore("active", store.active === "confirm" ? "cancel" : "confirm")
-        },
-      },
-    ],
-  }))
-
-  return (
-    <box paddingLeft={1} paddingRight={1} gap={1} paddingBottom={1}>
-      <DialogHeader title={props.title} />
-      <FadeIn delay={60} duration={200}>
-        <box paddingBottom={1}>
-          <text fg={theme.textMuted}>{props.message}</text>
-        </box>
-      </FadeIn>
-      <box flexDirection="row" justifyContent="flex-end" gap={1}>
-        <For each={["cancel", "confirm"] as const}>
-          {(key, index) => (
-            <DialogButton
-              label={Locale.titlecase(key === "cancel" ? (props.label ?? key) : key)}
-              active={key === store.active}
-              delay={110 + index() * 50}
-              onPress={() => {
-                if (key === "confirm") props.onConfirm?.()
-                if (key === "cancel") props.onCancel?.()
-                dialog.clear()
-              }}
-            />
-          )}
-        </For>
-      </box>
-    </box>
-  )
-}
-
-DialogConfirm.show = (dialog: DialogContext, title: string, message: string, label?: string) => {
-  return new Promise<DialogConfirmResult>((resolve) => {
-    dialog.replace(
-      () => (
-        <DialogConfirm
-          title={title}
-          message={message}
-          onConfirm={() => resolve(true)}
-          onCancel={() => resolve(false)}
-          label={label}
-        />
-      ),
-      () => resolve(undefined),
-    )
-  })
-}
+import { useTheme } from "../context/theme"
+
+import { useDialog, type DialogContext } from "./dialog"
+
+import { DialogButton, DialogHeader } from "./dialog-chrome"
+
+import { createStore } from "solid-js/store"
+
+import { For } from "solid-js"
+
+import { Locale } from "@/util/locale"
+
+import { useBindings } from "../keymap"
+
+import { FadeIn } from "../util/motion"
+
+
+
+export type DialogConfirmProps = {
+
+  title: string
+
+  message: string
+
+  onConfirm?: () => void
+
+  onCancel?: () => void
+
+  label?: string
+
+}
+
+
+
+export type DialogConfirmResult = boolean | undefined
+
+
+
+export function DialogConfirm(props: DialogConfirmProps) {
+
+  const dialog = useDialog()
+
+  const { theme } = useTheme()
+
+  const [store, setStore] = createStore({
+
+    active: "confirm" as "confirm" | "cancel",
+
+  })
+
+
+
+  useBindings(() => ({
+
+    bindings: [
+
+      {
+
+        key: "return",
+
+        desc: "Confirm dialog selection",
+
+        group: "Dialog",
+
+        cmd: () => {
+
+          if (store.active === "confirm") props.onConfirm?.()
+
+          if (store.active === "cancel") props.onCancel?.()
+
+          dialog.clear()
+
+        },
+
+      },
+
+      {
+
+        key: "left",
+
+        desc: "Previous dialog option",
+
+        group: "Dialog",
+
+        cmd: () => {
+
+          setStore("active", store.active === "confirm" ? "cancel" : "confirm")
+
+        },
+
+      },
+
+      {
+
+        key: "right",
+
+        desc: "Next dialog option",
+
+        group: "Dialog",
+
+        cmd: () => {
+
+          setStore("active", store.active === "confirm" ? "cancel" : "confirm")
+
+        },
+
+      },
+
+    ],
+
+  }))
+
+
+
+  return (
+
+    <box paddingLeft={1} paddingRight={1} gap={1} paddingBottom={1}>
+
+      <DialogHeader title={props.title} />
+
+      <FadeIn delay={60} duration={200}>
+
+        <box paddingBottom={1}>
+
+          <text fg={theme.textMuted}>{props.message}</text>
+
+        </box>
+
+      </FadeIn>
+
+      <box flexDirection="row" justifyContent="flex-end" gap={1}>
+
+        <For each={["cancel", "confirm"] as const}>
+
+          {(key, index) => (
+
+            <DialogButton
+
+              label={Locale.titlecase(key === "cancel" ? (props.label ?? key) : key)}
+
+              active={key === store.active}
+
+              delay={110 + index() * 50}
+
+              onPress={() => {
+
+                if (key === "confirm") props.onConfirm?.()
+
+                if (key === "cancel") props.onCancel?.()
+
+                dialog.clear()
+
+              }}
+
+            />
+
+          )}
+
+        </For>
+
+      </box>
+
+    </box>
+
+  )
+
+}
+
+
+
+DialogConfirm.show = (dialog: DialogContext, title: string, message: string, label?: string) => {
+
+  return new Promise<DialogConfirmResult>((resolve) => {
+
+    dialog.replace(
+
+      () => (
+
+        <DialogConfirm
+
+          title={title}
+
+          message={message}
+
+          onConfirm={() => resolve(true)}
+
+          onCancel={() => resolve(false)}
+
+          label={label}
+
+        />
+
+      ),
+
+      () => resolve(undefined),
+
+    )
+
+  })
+
+}
+

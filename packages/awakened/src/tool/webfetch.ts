@@ -10,6 +10,15 @@ const MAX_RESPONSE_SIZE = 5 * 1024 * 1024 // 5MB
 const DEFAULT_TIMEOUT = 30 * 1000 // 30 seconds
 const MAX_TIMEOUT = 120 * 1000 // 2 minutes
 
+const turndownService = new TurndownService({
+  headingStyle: "atx",
+  hr: "---",
+  bulletListMarker: "-",
+  codeBlockStyle: "fenced",
+  emDelimiter: "*",
+})
+turndownService.remove(["script", "style", "meta", "link"])
+
 export const Parameters = Schema.Struct({
   url: Schema.String.annotate({ description: "The URL to fetch content from" }),
   format: Schema.Literals(["text", "markdown", "html"])
@@ -158,6 +167,7 @@ export const WebFetchTool = Tool.define(
 function extractTextFromHTML(html: string) {
   let text = ""
   let skipDepth = 0
+  const blockTags = new Set(["p", "div", "br", "li", "h1", "h2", "h3", "h4", "h5", "h6", "tr", "section", "article"])
 
   const parser = new Parser({
     onopentag(name) {
@@ -168,8 +178,12 @@ function extractTextFromHTML(html: string) {
     ontext(input) {
       if (skipDepth === 0) text += input
     },
-    onclosetag() {
-      if (skipDepth > 0) skipDepth--
+    onclosetag(name) {
+      if (skipDepth > 0) {
+        skipDepth--
+        return
+      }
+      if (blockTags.has(name)) text += "\n"
     },
   })
 
@@ -180,13 +194,5 @@ function extractTextFromHTML(html: string) {
 }
 
 function convertHTMLToMarkdown(html: string): string {
-  const turndownService = new TurndownService({
-    headingStyle: "atx",
-    hr: "---",
-    bulletListMarker: "-",
-    codeBlockStyle: "fenced",
-    emDelimiter: "*",
-  })
-  turndownService.remove(["script", "style", "meta", "link"])
   return turndownService.turndown(html)
 }

@@ -18,15 +18,19 @@ ts-dist
 /result
 refs
 Session.vim
-/opencode.json
+/awakened.json
 a.out
 target
 .scripts
 .direnv/
 
 # Local dev files
-opencode-dev
+awakened-dev
 UPCOMING_CHANGELOG.md
 logs/
+*.log
+debug-*.log
+bun-install.log
+.awakened/
 *.bun-build
 tsconfig.tsbuildinfo

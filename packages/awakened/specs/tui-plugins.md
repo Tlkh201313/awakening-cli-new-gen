@@ -18,7 +18,7 @@ Example:
 
 ```json
 {
-  "$schema": "https://awakened.ai/tui.json",
+  "$schema": "https://github.com/Tlkh201313/awakening-cli-new-gen/tui.json",
   "theme": "smoke-theme",
   "leader_timeout": 2000,
   "keybinds": {

@@ -10,6 +10,7 @@ import { DeepInfraPlugin } from "./deepinfra"
 import { DynamicProviderPlugin } from "./dynamic"
 import { GatewayPlugin } from "./gateway"
 import { GithubCopilotPlugin } from "./github-copilot"
+import { GitlawbPlugin } from "./gitlawb"
 import { GitLabPlugin } from "./gitlab"
 import { GooglePlugin } from "./google"
 import { GoogleVertexAnthropicPlugin, GoogleVertexPlugin } from "./google-vertex"
@@ -20,7 +21,7 @@ import { MistralPlugin } from "./mistral"
 import { NvidiaPlugin } from "./nvidia"
 import { OpenAIPlugin } from "./openai"
 import { OpenAICompatiblePlugin } from "./openai-compatible"
-import { OpencodePlugin } from "./opencode"
+import { AwakenedPlugin } from "./awakened"
 import { OpenRouterPlugin } from "./openrouter"
 import { PerplexityPlugin } from "./perplexity"
 import { SapAICorePlugin } from "./sap-ai-core"
@@ -52,7 +53,7 @@ export const ProviderPlugins = [
   LLMGatewayPlugin,
   MistralPlugin,
   NvidiaPlugin,
-  OpencodePlugin,
+  AwakenedPlugin,
   OpenAICompatiblePlugin,
   OpenAIPlugin,
   OpenRouterPlugin,
@@ -63,5 +64,6 @@ export const ProviderPlugins = [
   VenicePlugin,
   XAIPlugin,
   ZenmuxPlugin,
+  GitlawbPlugin,
   DynamicProviderPlugin,
 ]

@@ -115,6 +115,10 @@ exports[`tool parameters JSON Schema (wire shape) grep 1`] = `
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
+    "caseInsensitive": {
+      "description": "Case insensitive search (default false)",
+      "type": "boolean",
+    },
     "include": {
       "description": "File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")",
       "type": "string",
@@ -366,11 +370,22 @@ exports[`tool parameters JSON Schema (wire shape) todo 1`] = `
             "type": "string",
           },
           "priority": {
-            "description": "Priority level of the task: high, medium, low",
+            "description": "Priority level of the task",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+            ],
             "type": "string",
           },
           "status": {
-            "description": "Current status of the task: pending, in_progress, completed, cancelled",
+            "description": "Current status of the task",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "cancelled",
+            ],
             "type": "string",
           },
         },
@@ -453,7 +468,7 @@ exports[`tool parameters JSON Schema (wire shape) websearch 1`] = `
       "type": "string",
     },
     "type": {
-      "description": "Search type - 'auto': balanced search (default), 'fast': quick results, 'deep': comprehensive search",
+      "description": "Search type - 'fast': quick results (default), 'auto': balanced, 'deep': comprehensive search",
       "enum": [
         "auto",
         "fast",

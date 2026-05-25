@@ -6,6 +6,7 @@ import { awakenedCodeReviewCapability } from "./bundled/awakenedCodeReview"
 import { awakenedContext7Capability } from "./bundled/awakenedContext7"
 import { awakenedDevToolsCapability } from "./bundled/awakenedDevTools"
 import { awakenedDocsCapability } from "./bundled/awakenedDocs"
+import { awakenedDesignCapability } from "./bundled/awakenedDesign"
 import { awakenedFrontendCapability } from "./bundled/awakenedFrontend"
 import { awakenedGraphifyCapability } from "./bundled/awakenedGraphify"
 import { awakenedMarketingCapability } from "./bundled/awakenedMarketing"
@@ -35,6 +36,7 @@ export const BUNDLED_AUTO_CAPABILITIES: AutoCapabilityDefinition[] = [
   awakenedCodeReviewCapability,
   awakenedAwsCapability,
   awakenedDocsCapability,
+  awakenedDesignCapability,
   awakenedFrontendCapability,
   awakenedContext7Capability,
   awakenedMemoryCapability,

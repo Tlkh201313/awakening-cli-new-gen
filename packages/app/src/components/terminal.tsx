@@ -1,8 +1,8 @@
-import { withAlpha } from "@opencode-ai/ui/theme/color"
-import { useTheme } from "@opencode-ai/ui/theme/context"
-import { resolveThemeVariant } from "@opencode-ai/ui/theme/resolve"
-import type { HexColor } from "@opencode-ai/ui/theme/types"
-import { showToast } from "@opencode-ai/ui/toast"
+import { withAlpha } from "@awakened-ai/ui/theme/color"
+import { useTheme } from "@awakened-ai/ui/theme/context"
+import { resolveThemeVariant } from "@awakened-ai/ui/theme/resolve"
+import type { HexColor } from "@awakened-ai/ui/theme/types"
+import { showToast } from "@awakened-ai/ui/toast"
 import type { FitAddon, Ghostty, Terminal as Term } from "ghostty-web"
 import { type ComponentProps, createEffect, createMemo, onCleanup, onMount, splitProps } from "solid-js"
 import { SerializeAddon } from "@/addons/serialize"
@@ -165,7 +165,7 @@ export const Terminal = (props: TerminalProps) => {
   const client = sdk.client
   const url = sdk.url
   const auth = server.current?.http
-  const username = auth?.username ?? "opencode"
+  const username = auth?.username ?? "awakened"
   const password = auth?.password ?? ""
   const sameOrigin = new URL(url, location.href).origin === location.origin
   let container!: HTMLDivElement
@@ -485,7 +485,7 @@ export const Terminal = (props: TerminalProps) => {
             { ptyID: id, directory },
             {
               throwOnError: false,
-              headers: { "x-opencode-ticket": "1" },
+              headers: { "x-awakened-ticket": "1" },
             },
           )
           .catch((err: unknown) => {

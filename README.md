@@ -1,17 +1,19 @@
 <p align="center">
-  <a href="https://opencode.ai">
+  <a href="https://github.com/Tlkh201313/awakening-cli-new-gen">
     <picture>
       <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
       <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="Awakening CLI logo">
     </picture>
   </a>
 </p>
-<p align="center">The open source AI coding agent.</p>
+
+<p align="center"><strong>Awakening CLI</strong> — AI coding agent (OpenCode fork)</p>
+
 <p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
-  <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
-  <a href="https://github.com/anomalyco/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/publish.yml?style=flat-square&branch=dev" /></a>
+  <a href="https://github.com/Tlkh201313/awakening-cli-new-gen/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Tlkh201313/awakening-cli-new-gen?style=flat-square" /></a>
+  <a href="https://github.com/Tlkh201313/awakening-cli-new-gen/actions/workflows/test.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/Tlkh201313/awakening-cli-new-gen/test.yml?style=flat-square&branch=dev" /></a>
+  <a href="https://github.com/anomalyco/opencode"><img alt="Upstream" src="https://img.shields.io/badge/upstream-OpenCode-blue?style=flat-square" /></a>
 </p>
 
 <p align="center">
@@ -39,91 +41,88 @@
   <a href="README.vi.md">Tiếng Việt</a>
 </p>
 
-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+[![Awakening CLI Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://github.com/Tlkh201313/awakening-cli-new-gen)
+
+> **Awakening CLI** is an independent fork of [OpenCode](https://github.com/anomalyco/opencode). It ships the **Awakened** agent runtime with capability packs, design auto-routing, memory, and a terminal + web UI. This repository is maintained at [Tlkh201313/awakening-cli-new-gen](https://github.com/Tlkh201313/awakening-cli-new-gen).
 
 ---
 
-### Installation
+## Installation
+
+### From source (recommended for this fork)
 
 ```bash
-# YOLO
-curl -fsSL https://opencode.ai/install | bash
-
-# Package managers
-npm i -g opencode-ai@latest        # or bun/pnpm/yarn
-scoop install opencode             # Windows
-choco install opencode             # Windows
-brew install anomalyco/tap/opencode # macOS and Linux (recommended, always up to date)
-brew install opencode              # macOS and Linux (official brew formula, updated less)
-sudo pacman -S opencode            # Arch Linux (Stable)
-paru -S opencode-bin               # Arch Linux (Latest from AUR)
-mise use -g opencode               # Any OS
-nix run nixpkgs#opencode           # or github:anomalyco/opencode for latest dev branch
+git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git
+cd awakening-cli-new-gen
+bun install
+bun run --cwd packages/awakened build
+# run CLI
+bun run --cwd packages/awakened --conditions=browser src/index.ts
 ```
 
-> [!TIP]
-> Remove versions older than 0.1.x before installing.
+### From release binaries
 
-### Desktop App (BETA)
+Download **v1.0.0** (or latest) from [GitHub Releases](https://github.com/Tlkh201313/awakening-cli-new-gen/releases).
 
-OpenCode is also available as a desktop application. Download directly from the [releases page](https://github.com/anomalyco/opencode/releases) or [opencode.ai/download](https://opencode.ai/download).
+```bash
+# Example: install script from this repo (after cloning)
+./install --version 1.0.0
+```
 
-| Platform              | Download                           |
+### Install directory
+
+The install script respects, in order:
+
+1. `$AWAKENED_INSTALL_DIR`
+2. `$XDG_BIN_DIR`
+3. `$HOME/bin`
+4. `$HOME/.awakened/bin`
+
+```bash
+AWAKENED_INSTALL_DIR=$HOME/.local/bin ./install --version 1.0.0
+```
+
+## Quick start
+
+```bash
+awakened          # terminal UI
+awakened serve      # local server + web app
+awakened --version  # should print 1.0.0
+```
+
+Configuration lives in `.awakened/` (project) or `~/.awakened/` (global). See [AGENTS.md](./AGENTS.md) for contributor conventions.
+
+## Agents
+
+Switch agents with `Tab` in the TUI:
+
+- **build** — full-access development agent (default)
+- **plan** — read-only analysis and exploration
+
+Use `@general` for complex multi-step searches. Capability packs (e.g. **awakened-design**) activate automatically and appear as `using <pack-id>` in the UI.
+
+## Desktop app (beta)
+
+Desktop builds are published on [Releases](https://github.com/Tlkh201313/awakening-cli-new-gen/releases) when available:
+
+| Platform              | Artifact                           |
 | --------------------- | ---------------------------------- |
-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
-| Windows               | `opencode-desktop-windows-x64.exe` |
+| macOS (Apple Silicon) | `awakened-desktop-mac-arm64.dmg`   |
+| macOS (Intel)         | `awakened-desktop-mac-x64.dmg`     |
+| Windows               | `awakened-desktop-windows-x64.exe` |
 | Linux                 | `.deb`, `.rpm`, or `.AppImage`     |
 
-```bash
-# macOS (Homebrew)
-brew install --cask opencode-desktop
-# Windows (Scoop)
-scoop bucket add extras; scoop install extras/opencode-desktop
-```
+## Documentation
 
-#### Installation Directory
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — dev setup and PR guidelines
+- [SECURITY.md](./SECURITY.md) — threat model and reporting
+- [AGENTS.md](./AGENTS.md) — coding standards for this repo
+- Upstream reference: [OpenCode docs](https://opencode.ai/docs)
 
-The install script respects the following priority order for the installation path:
+## Contributing
 
-1. `$OPENCODE_INSTALL_DIR` - Custom installation directory
-2. `$XDG_BIN_DIR` - XDG Base Directory Specification compliant path
-3. `$HOME/bin` - Standard user binary directory (if it exists or can be created)
-4. `$HOME/.opencode/bin` - Default fallback
+Contributions welcome on this fork. Read [CONTRIBUTING.md](./CONTRIBUTING.md) first. For upstream OpenCode changes, consider contributing to [anomalyco/opencode](https://github.com/anomalyco/opencode) as well.
 
-```bash
-# Examples
-OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash
-XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://opencode.ai/install | bash
-```
+## License
 
-### Agents
-
-OpenCode includes two built-in agents you can switch between with the `Tab` key.
-
-- **build** - Default, full-access agent for development work
-- **plan** - Read-only agent for analysis and code exploration
-  - Denies file edits by default
-  - Asks permission before running bash commands
-  - Ideal for exploring unfamiliar codebases or planning changes
-
-Also included is a **general** subagent for complex searches and multistep tasks.
-This is used internally and can be invoked using `@general` in messages.
-
-Learn more about [agents](https://opencode.ai/docs/agents).
-
-### Documentation
-
-For more info on how to configure OpenCode, [**head over to our docs**](https://opencode.ai/docs).
-
-### Contributing
-
-If you're interested in contributing to OpenCode, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
-
-### Building on OpenCode
-
-If you are working on a project that's related to OpenCode and is using "opencode" as part of its name, for example "opencode-dashboard" or "opencode-mobile", please add a note to your README to clarify that it is not built by the OpenCode team and is not affiliated with us in any way.
-
----
-
-**Join our community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+MIT — see [LICENSE](./LICENSE). Based on OpenCode; see upstream for original copyright.

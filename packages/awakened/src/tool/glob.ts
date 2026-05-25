@@ -1,5 +1,5 @@
 import path from "path"
-import { Effect, Option, Schema } from "effect"
+import { Effect, Schema } from "effect"
 import * as Stream from "effect/Stream"
 import { InstanceState } from "@/effect/instance-state"
 import { AppFileSystem } from "@awakened-ai/core/filesystem"
@@ -53,38 +53,33 @@ export const GlobTool = Tool.define(
 
           const limit = 100
           let truncated = false
-          const files = yield* rg.files({ cwd: search, glob: [params.pattern], signal: ctx.abort }).pipe(
-            Stream.mapEffect((file) =>
-              Effect.gen(function* () {
-                const full = path.resolve(search, file)
-                const info = yield* fs.stat(full).pipe(Effect.catch(() => Effect.succeed(undefined)))
-                const mtime =
-                  info?.mtime.pipe(
-                    Option.map((date) => date.getTime()),
-                    Option.getOrElse(() => 0),
-                  ) ?? 0
-                return { path: full, mtime }
-              }),
-            ),
-            Stream.take(limit + 1),
-            Stream.runCollect,
-            Effect.map((chunk) => [...chunk]),
-          )
+          const files = yield* rg
+            .files({
+              cwd: search,
+              glob: [params.pattern],
+              sort: "modified",
+              signal: ctx.abort,
+            })
+            .pipe(
+              Stream.map((file) => path.resolve(search, file)),
+              Stream.take(limit + 1),
+              Stream.runCollect,
+              Effect.map((chunk) => [...chunk]),
+            )
 
           if (files.length > limit) {
             truncated = true
             files.length = limit
           }
-          files.sort((a, b) => b.mtime - a.mtime)
 
           const output = []
           if (files.length === 0) output.push("No files found")
           if (files.length > 0) {
-            output.push(...files.map((file) => file.path))
+            output.push(...files)
             if (truncated) {
               output.push("")
               output.push(
-                `(Results are truncated: showing first ${limit} results. Consider using a more specific path or pattern.)`,
+                `(Results truncated: showing ${limit} most recently modified files. Use a more specific path or pattern.)`,
               )
             }
           }

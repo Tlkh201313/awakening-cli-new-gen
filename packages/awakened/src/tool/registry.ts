@@ -22,7 +22,7 @@ import z from "zod"
 import { Plugin } from "../plugin"
 import { Provider } from "@/provider/provider"
 import { ProviderID, type ModelID } from "../provider/schema"
-import { WebSearchTool } from "./websearch"
+import { WebSearchTool, type WebSearchProviderPreference } from "./websearch"
 import { RepoCloneTool } from "./repo_clone"
 import { RepoOverviewTool } from "./repo_overview"
 import { RepositoryCache } from "@/reference/repository-cache"
@@ -58,8 +58,18 @@ import { RuntimeFlags } from "@/effect/runtime-flags"
 
 const log = Log.create({ service: "tool.registry" })
 
-export function webSearchEnabled(providerID: ProviderID, flags = { exa: false, parallel: false }) {
-  return providerID === ProviderID.awakened || flags.exa || flags.parallel
+export function webSearchEnabled(
+  providerID: ProviderID,
+  flags = { exa: false, parallel: false },
+  webSearchProvider: WebSearchProviderPreference = "auto",
+) {
+  return (
+    providerID === ProviderID.awakened ||
+    flags.exa ||
+    flags.parallel ||
+    webSearchProvider === "exa" ||
+    webSearchProvider === "parallel"
+  )
 }
 
 type TaskDef = Tool.InferDef<typeof TaskTool>
@@ -326,9 +336,11 @@ export const layer: Layer.Layer<
     })
 
     const tools: Interface["tools"] = Effect.fn("ToolRegistry.tools")(function* (input) {
+      const cfg = yield* config.get()
+      const webSearchProvider = (cfg.awakenedCapabilities?.webSearchProvider ?? "auto") as WebSearchProviderPreference
       const filtered = (yield* all()).filter((tool) => {
         if (tool.id === WebSearchTool.id) {
-          return webSearchEnabled(input.providerID, { exa: flags.enableExa, parallel: flags.enableParallel })
+          return webSearchEnabled(input.providerID, { exa: flags.enableExa, parallel: flags.enableParallel }, webSearchProvider)
         }
 
         const usePatch =

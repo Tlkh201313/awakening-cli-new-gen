@@ -1,16 +1,16 @@
 import { For, Match, Show, Switch, createEffect, createMemo, onCleanup, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createMediaQuery } from "@solid-primitives/media"
-import { Tabs } from "@opencode-ai/ui/tabs"
-import { IconButton } from "@opencode-ai/ui/icon-button"
-import { TooltipKeybind } from "@opencode-ai/ui/tooltip"
-import { ResizeHandle } from "@opencode-ai/ui/resize-handle"
-import { Mark } from "@opencode-ai/ui/logo"
+import { Tabs } from "@awakened-ai/ui/tabs"
+import { IconButton } from "@awakened-ai/ui/icon-button"
+import { TooltipKeybind } from "@awakened-ai/ui/tooltip"
+import { ResizeHandle } from "@awakened-ai/ui/resize-handle"
+import { Mark } from "@awakened-ai/ui/logo"
 import { DragDropProvider, DragDropSensors, DragOverlay, SortableProvider, closestCenter } from "@thisbeyond/solid-dnd"
 import type { DragEvent } from "@thisbeyond/solid-dnd"
-import type { SnapshotFileDiff, VcsFileDiff } from "@opencode-ai/sdk/v2"
+import type { SnapshotFileDiff, VcsFileDiff } from "@awakened-ai/sdk/v2"
 import { ConstrainDragYAxis, getDraggableId } from "@/utils/solid-dnd"
-import { useDialog } from "@opencode-ai/ui/context/dialog"
+import { useDialog } from "@awakened-ai/ui/context/dialog"
 
 import FileTree from "@/components/file-tree"
 import { SessionContextUsage } from "@/components/session-context-usage"
@@ -61,7 +61,7 @@ export function SessionSidePanel(props: {
   const shown = createMemo(
     () =>
       platform.platform !== "desktop" ||
-      import.meta.env.VITE_OPENCODE_CHANNEL !== "beta" ||
+      import.meta.env.VITE_AWAKENED_CHANNEL !== "beta" ||
       settings.general.showFileTree(),
   )
 
@@ -207,7 +207,7 @@ export function SessionSidePanel(props: {
   })
 
   return (
-    <Show when={isDesktop() && !(import.meta.env.VITE_OPENCODE_CHANNEL !== "prod" && !params.id)}>
+    <Show when={isDesktop() && !(import.meta.env.VITE_AWAKENED_CHANNEL !== "prod" && !params.id)}>
       <aside
         id="review-panel"
         aria-label={language.t("session.panel.reviewAndFiles")}

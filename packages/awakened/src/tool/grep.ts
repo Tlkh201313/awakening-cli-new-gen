@@ -10,6 +10,8 @@ import * as Tool from "./tool"
 import { Reference } from "@/reference/reference"
 
 const MAX_LINE_LENGTH = 2000
+const DISPLAY_LIMIT = 100
+const SEARCH_LIMIT = 150
 
 export const Parameters = Schema.Struct({
   pattern: Schema.String.annotate({ description: "The regex pattern to search for in file contents" }),
@@ -18,6 +20,9 @@ export const Parameters = Schema.Struct({
   }),
   include: Schema.optional(Schema.String).annotate({
     description: 'File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")',
+  }),
+  caseInsensitive: Schema.optional(Schema.Boolean).annotate({
+    description: "Case insensitive search (default false)",
   }),
 })
 
@@ -31,7 +36,7 @@ export const GrepTool = Tool.define(
     return {
       description: DESCRIPTION,
       parameters: Parameters,
-      execute: (params: { pattern: string; path?: string; include?: string }, ctx: Tool.Context) =>
+      execute: (params: Schema.Schema.Type<typeof Parameters>, ctx: Tool.Context) =>
         Effect.gen(function* () {
           const empty = {
             title: params.pattern,
@@ -50,6 +55,7 @@ export const GrepTool = Tool.define(
               pattern: params.pattern,
               path: params.path,
               include: params.include,
+              caseInsensitive: params.caseInsensitive,
             },
           })
 
@@ -65,15 +71,16 @@ export const GrepTool = Tool.define(
           })
 
           const search = AppFileSystem.resolve(requested)
-          const info = yield* fs.stat(search).pipe(Effect.catch(() => Effect.succeed(undefined)))
-          const cwd = info?.type === "Directory" ? search : path.dirname(search)
-          const file = info?.type === "Directory" ? undefined : [path.relative(cwd, search)]
+          const cwd = requestedInfo?.type === "Directory" ? search : path.dirname(search)
+          const file = requestedInfo?.type === "Directory" ? undefined : [path.relative(cwd, search)]
 
           const result = yield* rg.search({
             cwd,
             pattern: params.pattern,
             glob: params.include ? [params.include] : undefined,
             file,
+            limit: SEARCH_LIMIT,
+            caseInsensitive: params.caseInsensitive,
             signal: ctx.abort,
           })
           if (result.items.length === 0) return empty
@@ -90,7 +97,7 @@ export const GrepTool = Tool.define(
               [...new Set(rows.map((row) => row.path))],
               Effect.fnUntraced(function* (file) {
                 const info = yield* fs.stat(file).pipe(Effect.catch(() => Effect.succeed(undefined)))
-                if (!info || info.type === "Directory") return undefined
+                if (!info || info.type === "Directory") return [file, 0] as const
                 return [
                   file,
                   info.mtime.pipe(
@@ -100,23 +107,20 @@ export const GrepTool = Tool.define(
                 ] as const
               }),
               { concurrency: 16 },
-            )).filter((entry): entry is readonly [string, number] => Boolean(entry)),
+            )),
           )
-          const matches = rows.flatMap((row) => {
-            const mtime = times.get(row.path)
-            if (mtime === undefined) return []
-            return [{ ...row, mtime }]
-          })
+          const matches = rows.map((row) => ({
+            ...row,
+            mtime: times.get(row.path) ?? 0,
+          }))
 
           matches.sort((a, b) => b.mtime - a.mtime)
 
-          const limit = 100
-          const truncated = matches.length > limit
-          const final = truncated ? matches.slice(0, limit) : matches
-          if (final.length === 0) return empty
+          const truncated = matches.length > DISPLAY_LIMIT
+          const final = truncated ? matches.slice(0, DISPLAY_LIMIT) : matches
 
           const total = matches.length
-          const output = [`Found ${total} matches${truncated ? ` (showing first ${limit})` : ""}`]
+          const output = [`Found ${total} matches${truncated ? ` (showing ${DISPLAY_LIMIT} most recently modified)` : ""}`]
 
           let current = ""
           for (const match of final) {
@@ -133,7 +137,7 @@ export const GrepTool = Tool.define(
           if (truncated) {
             output.push("")
             output.push(
-              `(Results truncated: showing ${limit} of ${total} matches (${total - limit} hidden). Consider using a more specific path or pattern.)`,
+              `(Results truncated: showing ${DISPLAY_LIMIT} of ${total} matches (${total - DISPLAY_LIMIT} hidden). Use a narrower path, include filter, or a more specific pattern.)`,
             )
           }
 

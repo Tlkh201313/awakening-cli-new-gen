@@ -18,6 +18,29 @@ const MAX_BYTES = 50 * 1024
 const MAX_BYTES_LABEL = `${MAX_BYTES / 1024} KB`
 const SAMPLE_BYTES = 4096
 const SUPPORTED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"])
+const LSP_WARM_EXTENSIONS = new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".py",
+  ".go",
+  ".rs",
+  ".java",
+  ".kt",
+  ".cs",
+  ".cpp",
+  ".c",
+  ".h",
+  ".hpp",
+  ".swift",
+  ".rb",
+  ".php",
+  ".vue",
+  ".svelte",
+])
 
 class ReadStop extends Schema.TaggedErrorClass<ReadStop>()("ReadStop", {}) {}
 
@@ -82,11 +105,12 @@ export const ReadTool = Tool.define(
           if (target?.type === "Directory") return item.name + "/"
           return item.name
         }),
-        { concurrency: "unbounded" },
+        { concurrency: 16 },
       ).pipe(Effect.map((items: string[]) => items.sort((a, b) => a.localeCompare(b))))
     })
 
     const warm = Effect.fn("ReadTool.warm")(function* (filepath: string) {
+      if (!LSP_WARM_EXTENSIONS.has(path.extname(filepath).toLowerCase())) return
       yield* lsp.touchFile(filepath).pipe(Effect.ignore, Effect.forkIn(scope))
     })
 

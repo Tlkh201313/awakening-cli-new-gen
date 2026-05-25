@@ -1,10 +1,10 @@
 import { describe, expect } from "bun:test"
 import { Effect } from "effect"
-import { Catalog } from "@opencode-ai/core/catalog"
-import { ModelV2 } from "@opencode-ai/core/model"
-import { PluginV2 } from "@opencode-ai/core/plugin"
-import { GithubCopilotPlugin } from "@opencode-ai/core/plugin/provider/github-copilot"
-import { ProviderV2 } from "@opencode-ai/core/provider"
+import { Catalog } from "@awakened-ai/core/catalog"
+import { ModelV2 } from "@awakened-ai/core/model"
+import { PluginV2 } from "@awakened-ai/core/plugin"
+import { GithubCopilotPlugin } from "@awakened-ai/core/plugin/provider/github-copilot"
+import { ProviderV2 } from "@awakened-ai/core/provider"
 import { fakeSelectorSdk, it, model } from "./provider-helper"
 
 describe("GithubCopilotPlugin", () => {

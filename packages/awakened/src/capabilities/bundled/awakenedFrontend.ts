@@ -1,17 +1,17 @@
 import { AWAKENED_CAPABILITY_IDS } from "../ids"
 import { primaryBootstrap } from "../primaryBootstrap"
+import { matchesFrameworkFrontend } from "../triggers/frontend"
+import { matchesStaticHtmlUi } from "../triggers/design"
 import type { AutoCapabilityDefinition } from "../types"
-
-const FRONTEND_RE =
-  /\b(react\b|next\.?js|vue\b|svelte|tailwind|css module|component library|design system|core web vitals|lighthouse|accessibility|a11y|wcag|responsive layout|solidjs)\b/i
 
 export const awakenedFrontendCapability: AutoCapabilityDefinition = {
   id: AWAKENED_CAPABILITY_IDS.frontend,
   displayName: "Awakened Frontend",
-  description: "React, Next.js, Tailwind, and UI playbooks",
+  description: "React, Next.js, Tailwind, and component implementation",
   priority: 66,
   shouldActivate(ctx) {
-    return FRONTEND_RE.test(ctx.userText) || primaryBootstrap(ctx)
+    if (matchesStaticHtmlUi(ctx.userText)) return false
+    return matchesFrameworkFrontend(ctx.userText) || primaryBootstrap(ctx)
   },
   getContent() {
     return `# Awakened Frontend
@@ -35,7 +35,8 @@ Invoke Skill \`frontend\` or antigravity **@react-best-practices**, **@nextjs-be
 
 | Pack | Focus |
 |------|-------|
-| **Awakened Frontend** | React/Next/Tailwind implementation |
+| **Awakened Design** | Static HTML, landings, Awakened brand, @frontend-design |
+| **Awakened Frontend** | React/Next/Tailwind in this repo |
 | **Awakened Testing** | Playwright/E2E verification |
 | **Awakened Browser** | Live site debugging in real browser |
 `

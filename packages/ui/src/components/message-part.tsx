@@ -29,7 +29,7 @@ import {
   Todo,
   QuestionAnswer,
   QuestionInfo,
-} from "@opencode-ai/sdk/v2"
+} from "@awakened-ai/sdk/v2"
 import { useData } from "../context"
 import { useFileComponent } from "../context/file"
 import { useDialog } from "../context/dialog"
@@ -45,8 +45,9 @@ import { Checkbox } from "./checkbox"
 import { DiffChanges } from "./diff-changes"
 import { Markdown } from "./markdown"
 import { ImagePreview } from "./image-preview"
-import { getDirectory as _getDirectory, getFilename } from "@opencode-ai/core/util/path"
-import { checksum } from "@opencode-ai/core/util/encode"
+import { getDirectory as _getDirectory, getFilename } from "@awakened-ai/core/util/path"
+import { checksum } from "@awakened-ai/core/util/encode"
+import { listAwakenedCapabilityBadges } from "@awakened-ai/core/capability-display"
 import { Tooltip } from "./tooltip"
 import { IconButton } from "./icon-button"
 import { Spinner } from "./spinner"
@@ -1051,6 +1052,8 @@ export function UserMessageDisplay(props: { message: UserMessage; parts: PartTyp
 
   const text = createMemo(() => textPart()?.text || "")
 
+  const capabilityBadges = createMemo(() => listAwakenedCapabilityBadges(props.parts ?? []))
+
   const files = createMemo(() => (props.parts?.filter((p) => p.type === "file") as FilePart[]) ?? [])
 
   const attachments = createMemo(() => files().filter(attached))
@@ -1142,6 +1145,17 @@ export function UserMessageDisplay(props: { message: UserMessage; parts: PartTyp
                 </div>
               )
             }}
+          </For>
+        </div>
+      </Show>
+      <Show when={capabilityBadges().length > 0}>
+        <div data-slot="user-message-capabilities">
+          <For each={capabilityBadges()}>
+            {(badge) => (
+              <span data-slot="user-message-capability" class="text-12-regular text-text-weak">
+                <span class="text-text-base">✦</span> using {badge.id}
+              </span>
+            )}
           </For>
         </div>
       </Show>

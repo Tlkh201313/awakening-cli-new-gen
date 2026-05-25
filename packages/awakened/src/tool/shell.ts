@@ -480,6 +480,7 @@ export const ShellTool = Tool.define(
         Effect.gen(function* () {
           yield* Effect.addFinalizer(closeSink)
           const handle = yield* spawner.spawn(cmd(input.shell, input.command, input.cwd, input.env))
+          let lastMetaAt = 0
 
           yield* Effect.forkScoped(
             Stream.runForEach(Stream.decodeText(handle.all), (chunk) => {
@@ -495,38 +496,44 @@ export const ShellTool = Tool.define(
 
               last = preview(last + chunk)
 
+              const publish = () =>
+                ctx.metadata({
+                  metadata: {
+                    output: last,
+                    description: input.description,
+                  },
+                })
+
               if (file) {
                 sink?.write(chunk)
-              } else {
-                full += chunk
-                if (Buffer.byteLength(full, "utf-8") > limits.maxBytes) {
-                  return trunc.write(full).pipe(
-                    Effect.andThen((next) =>
-                      Effect.sync(() => {
-                        file = next
-                        cut = true
-                        sink = createWriteStream(next, { flags: "a" })
-                        full = ""
-                      }),
-                    ),
-                    Effect.andThen(
-                      ctx.metadata({
-                        metadata: {
-                          output: last,
-                          description: input.description,
-                        },
-                      }),
-                    ),
-                  )
-                }
+                const now = Date.now()
+                if (now - lastMetaAt < 200) return Effect.void
+                lastMetaAt = now
+                return publish()
               }
 
-              return ctx.metadata({
-                metadata: {
-                  output: last,
-                  description: input.description,
-                },
-              })
+              full += chunk
+              if (Buffer.byteLength(full, "utf-8") > limits.maxBytes) {
+                return trunc.write(full).pipe(
+                  Effect.andThen((next) =>
+                    Effect.sync(() => {
+                      file = next
+                      cut = true
+                      sink = createWriteStream(next, { flags: "a" })
+                      full = ""
+                    }),
+                  ),
+                  Effect.andThen(() => {
+                    lastMetaAt = Date.now()
+                    return publish()
+                  }),
+                )
+              }
+
+              const now = Date.now()
+              if (now - lastMetaAt < 200) return Effect.void
+              lastMetaAt = now
+              return publish()
             }),
           )
 

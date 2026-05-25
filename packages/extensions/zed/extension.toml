@@ -1,36 +1,36 @@
-id = "opencode"
-name = "OpenCode"
+id = "awakened"
+name = "Awakened"
 description = "The open source coding agent."
-version = "1.15.10"
+version = "1.0.0"
 schema_version = 1
 authors = ["Anomaly"]
-repository = "https://github.com/anomalyco/opencode"
+repository = "https://github.com/Tlkh201313/awakening-cli-new-gen"
 
-[agent_servers.opencode]
-name = "OpenCode"
-icon = "./icons/opencode.svg"
+[agent_servers.awakened]
+name = "Awakened"
+icon = "./icons/awakened.svg"
 
-[agent_servers.opencode.targets.darwin-aarch64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.15.10/opencode-darwin-arm64.zip"
-cmd = "./opencode"
+[agent_servers.awakened.targets.darwin-aarch64]
+archive = "https://github.com/anomalyco/awakened/releases/download/v1.0.0/awakened-darwin-arm64.zip"
+cmd = "./awakened"
 args = ["acp"]
 
-[agent_servers.opencode.targets.darwin-x86_64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.15.10/opencode-darwin-x64.zip"
-cmd = "./opencode"
+[agent_servers.awakened.targets.darwin-x86_64]
+archive = "https://github.com/anomalyco/awakened/releases/download/v1.0.0/awakened-darwin-x64.zip"
+cmd = "./awakened"
 args = ["acp"]
 
-[agent_servers.opencode.targets.linux-aarch64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.15.10/opencode-linux-arm64.tar.gz"
-cmd = "./opencode"
+[agent_servers.awakened.targets.linux-aarch64]
+archive = "https://github.com/anomalyco/awakened/releases/download/v1.0.0/awakened-linux-arm64.tar.gz"
+cmd = "./awakened"
 args = ["acp"]
 
-[agent_servers.opencode.targets.linux-x86_64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.15.10/opencode-linux-x64.tar.gz"
-cmd = "./opencode"
+[agent_servers.awakened.targets.linux-x86_64]
+archive = "https://github.com/anomalyco/awakened/releases/download/v1.0.0/awakened-linux-x64.tar.gz"
+cmd = "./awakened"
 args = ["acp"]
 
-[agent_servers.opencode.targets.windows-x86_64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.15.10/opencode-windows-x64.zip"
-cmd = "./opencode.exe"
+[agent_servers.awakened.targets.windows-x86_64]
+archive = "https://github.com/anomalyco/awakened/releases/download/v1.0.0/awakened-windows-x64.zip"
+cmd = "./awakened.exe"
 args = ["acp"]

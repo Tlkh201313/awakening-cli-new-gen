@@ -1,6 +1,6 @@
-# OpenCode Desktop
+# Awakened Desktop
 
-The OpenCode Desktop app, built with Electron.
+The Awakened Desktop app, built with Electron.
 
 ## Development
 

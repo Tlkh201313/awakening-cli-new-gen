@@ -329,6 +329,10 @@ export const Info = Schema.Struct({
         description:
           "When true (default), reuse HTTP keep-alive connections to AI providers for lower latency.",
       }),
+      webSearchProvider: Schema.optional(Schema.Literals(["auto", "exa", "parallel"])).annotate({
+        description:
+          "Web search backend. auto = session-stable Exa/Parallel mix (default). exa = Exa only. parallel = Parallel only.",
+      }),
     }),
   ),
   experimental: Schema.optional(

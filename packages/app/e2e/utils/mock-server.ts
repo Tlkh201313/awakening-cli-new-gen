@@ -20,7 +20,7 @@ export interface MockServerConfig {
   pageMessages: (sessionId: string, limit: number, before?: string) => { items: unknown[]; cursor?: string }
 }
 
-export async function mockOpenCodeServer(page: Page, config: MockServerConfig) {
+export async function mockAwakenedServer(page: Page, config: MockServerConfig) {
   const staticRoutes: Record<string, unknown> = {
     "/provider": config.provider,
     "/path": {
@@ -28,7 +28,7 @@ export async function mockOpenCodeServer(page: Page, config: MockServerConfig) {
       config: config.directory,
       worktree: config.directory,
       directory: config.directory,
-      home: "C:/OpenCode",
+      home: "C:/Awakened",
     },
     "/project": [config.project],
     "/project/current": config.project,

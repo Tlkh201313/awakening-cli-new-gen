@@ -115,6 +115,7 @@ export interface FilesInput {
   hidden?: boolean
   follow?: boolean
   maxDepth?: number
+  sort?: "path" | "modified"
   signal?: AbortSignal
 }
 
@@ -123,6 +124,7 @@ export interface SearchInput {
   pattern: string
   glob?: string[]
   limit?: number
+  caseInsensitive?: boolean
   follow?: boolean
   file?: string[]
   signal?: AbortSignal
@@ -202,6 +204,7 @@ function filesArgs(input: FilesInput) {
   if (input.hidden !== false) args.push("--hidden")
   if (input.hidden === false) args.push("--glob=!.*")
   if (input.maxDepth !== undefined) args.push(`--max-depth=${input.maxDepth}`)
+  if (input.sort === "modified") args.push("--sort=modified")
   if (input.glob) {
     for (const glob of input.glob) args.push(`--glob=${glob}`)
   }
@@ -212,6 +215,7 @@ function filesArgs(input: FilesInput) {
 function searchArgs(input: SearchInput) {
   const args = ["--no-config", "--json", "--hidden", "--glob=!.git/*", "--no-messages"]
   if (input.follow) args.push("--follow")
+  if (input.caseInsensitive) args.push("-i")
   if (input.glob) {
     for (const glob of input.glob) args.push(`--glob=${glob}`)
   }

@@ -2,6 +2,7 @@ import type { TuiPlugin, TuiPluginApi } from "@awakened-ai/plugin/tui"
 import type { InternalTuiPlugin } from "../../plugin/internal"
 import { ALL_AWAKENED_CAPABILITY_IDS } from "@/capabilities/ids"
 import { normalizeAwakenedTokenMode, tokenModeLabel } from "@/capabilities/tokenMode"
+import { webSearchProviderPreferenceLabel } from "@/tool/websearch"
 import { TextAttributes } from "@opentui/core"
 import { createMemo } from "solid-js"
 import { tint } from "@tui/context/theme"
@@ -27,6 +28,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
       autoCapabilities?: boolean
       tokenMode?: string
       warmConnection?: boolean
+      webSearchProvider?: "auto" | "exa" | "parallel"
     }
   })
   const messages = createMemo(() => props.api.state.session.messages(props.session_id))
@@ -55,6 +57,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
       tokenMode,
       tokenModeLabel: tokenModeLabel(tokenMode),
       warmConnection: config().awakenedCapabilities?.warmConnection !== false,
+      webSearch: webSearchProviderPreferenceLabel(config().awakenedCapabilities?.webSearchProvider ?? "auto"),
     }
   })
 
@@ -76,6 +79,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
           />
           <text fg={theme().primary}>{progressBar(packs().enabled, packs().total, 16)}</text>
           <SidebarMeta label="Tokens" value={packs().tokenModeLabel} labelColor={theme().textMuted} valueColor={tokenModeColor(packs().tokenMode, theme())} />
+          <SidebarMeta label="Search" value={packs().webSearch} labelColor={theme().textMuted} valueColor={theme().accent} />
           <box flexDirection="column" gap={0} paddingTop={1}>
             <MiniToggle label="Skills" on={packs().autoCapabilities} theme={theme()} />
             <MiniToggle label="Subagents" on={packs().autoSubagents} theme={theme()} />

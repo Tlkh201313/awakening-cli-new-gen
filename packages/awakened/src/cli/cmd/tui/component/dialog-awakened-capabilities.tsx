@@ -35,6 +35,11 @@ import {
   StatStrip,
   tokenModeColor,
 } from "../feature-plugins/sidebar/shared"
+import {
+  nextWebSearchProviderPreference,
+  webSearchProviderPreferenceLabel,
+  type WebSearchProviderPreference,
+} from "@/tool/websearch"
 
 const DIALOG_MODE = "awakened-capabilities"
 
@@ -61,7 +66,7 @@ const CATEGORY_BY_ID: Record<AwakenedCapabilityId, (typeof CATEGORY_ORDER)[numbe
   "awakened-anthropic": "Catalogs",
   "awakened-vercel": "Catalogs",
   "awakened-github-awesome": "Catalogs",
-  "awakened-design": "Catalogs",
+  "awakened-design": "Engineering",
   "awakened-devops": "Catalogs",
   "awakened-ai-ml": "Catalogs",
   "awakened-mcp-skills": "Catalogs",
@@ -115,6 +120,7 @@ export function DialogAwakenedCapabilities() {
         autoCapabilities?: boolean
         tokenMode?: AwakenedTokenMode
         warmConnection?: boolean
+        webSearchProvider?: WebSearchProviderPreference
       }
     }
     return {
@@ -123,6 +129,7 @@ export function DialogAwakenedCapabilities() {
       autoCapabilities: config.awakenedCapabilities?.autoCapabilities !== false,
       tokenMode: normalizeAwakenedTokenMode(config.awakenedCapabilities?.tokenMode),
       warmConnection: config.awakenedCapabilities?.warmConnection !== false,
+      webSearchProvider: (config.awakenedCapabilities?.webSearchProvider ?? "auto") as WebSearchProviderPreference,
     }
   })
 
@@ -135,6 +142,9 @@ export function DialogAwakenedCapabilities() {
   const [autoCapabilities, setAutoCapabilities] = createSignal(initialConfig().autoCapabilities)
   const [tokenMode, setTokenMode] = createSignal<AwakenedTokenMode>(initialConfig().tokenMode)
   const [warmConnection, setWarmConnection] = createSignal(initialConfig().warmConnection)
+  const [webSearchProvider, setWebSearchProvider] = createSignal<WebSearchProviderPreference>(
+    initialConfig().webSearchProvider,
+  )
 
   const rows = createMemo<CapabilityRow[]>(() =>
     BUNDLED_AUTO_CAPABILITIES.map((cap) => ({
@@ -182,6 +192,7 @@ export function DialogAwakenedCapabilities() {
     if (autoCapabilities() !== initialConfig().autoCapabilities) return true
     if (tokenMode() !== initialConfig().tokenMode) return true
     if (warmConnection() !== initialConfig().warmConnection) return true
+    if (webSearchProvider() !== initialConfig().webSearchProvider) return true
     return false
   })
 
@@ -252,6 +263,7 @@ export function DialogAwakenedCapabilities() {
               autoCapabilities: autoCapabilities(),
               tokenMode: tokenMode(),
               warmConnection: warmConnection(),
+              webSearchProvider: webSearchProvider(),
             },
           } as Config,
         },
@@ -315,6 +327,12 @@ export function DialogAwakenedCapabilities() {
       { key: "s", desc: "Toggle auto subagents", group: "Awakened", cmd: () => setAutoSubagents((value) => !value) },
       { key: "c", desc: "Toggle auto skills", group: "Awakened", cmd: () => setAutoCapabilities((value) => !value) },
       { key: "w", desc: "Toggle keep-alive", group: "Awakened", cmd: () => setWarmConnection((value) => !value) },
+      {
+        key: "r",
+        desc: "Cycle web search provider",
+        group: "Awakened",
+        cmd: () => setWebSearchProvider(nextWebSearchProviderPreference(webSearchProvider())),
+      },
       { key: "return", desc: "Save", group: "Awakened", cmd: () => void save() },
       { key: "escape", desc: "Cancel", group: "Awakened", cmd: () => dialog.clear() },
     ],
@@ -325,7 +343,7 @@ export function DialogAwakenedCapabilities() {
   return (
     <box gap={1} paddingBottom={1}>
       <box paddingLeft={3} paddingRight={3} gap={1}>
-        <DialogHeader title="✦ Awakened" hint="Configure packs, cost, and speed" />
+        <DialogHeader title="✦ Awakened" hint="Packs · tools · cost · speed" />
 
         <FadeIn delay={40} duration={180}>
           <box opacity={panelAlpha()}>
@@ -338,7 +356,7 @@ export function DialogAwakenedCapabilities() {
         <FadeIn delay={70} duration={180}>
           <box opacity={panelAlpha()}>
             <BorderedPanel border={theme.borderSubtle} background={theme.backgroundPanel}>
-              <SectionTitle title="Cost & speed" color={theme.accent} detail="m · s · c · w" />
+              <SectionTitle title="Cost & speed" color={theme.accent} detail="m · s · c · w · r" />
               <box flexDirection="row" gap={1} flexWrap="wrap">
                 <For each={AWAKENED_TOKEN_MODES}>
                   {(mode) => {
@@ -388,6 +406,42 @@ export function DialogAwakenedCapabilities() {
                   onPress={() => setWarmConnection((value) => !value)}
                 />
               </box>
+            </BorderedPanel>
+          </box>
+        </FadeIn>
+
+        <FadeIn delay={80} duration={180}>
+          <box opacity={panelAlpha()}>
+            <BorderedPanel border={theme.borderSubtle} background={theme.backgroundPanel}>
+              <SectionTitle title="Research tools" color={theme.accent} detail="r to cycle" />
+              <box flexDirection="row" gap={1} flexWrap="wrap">
+                <For each={["auto", "exa", "parallel"] as const}>
+                  {(provider) => {
+                    const active = () => webSearchProvider() === provider
+                    return (
+                      <box
+                        paddingLeft={1}
+                        paddingRight={1}
+                        backgroundColor={active() ? tint(theme.accent, theme.backgroundElement, 0.65) : undefined}
+                        border={active() ? SquarePromptBorder.border : undefined}
+                        borderColor={active() ? theme.accent : undefined}
+                        customBorderChars={SquarePromptBorder.customBorderChars}
+                        onMouseUp={() => setWebSearchProvider(provider)}
+                      >
+                        <text
+                          fg={active() ? theme.accent : theme.textMuted}
+                          attributes={active() ? TextAttributes.BOLD : TextAttributes.DIM}
+                        >
+                          {webSearchProviderPreferenceLabel(provider)}
+                        </text>
+                      </box>
+                    )
+                  }}
+                </For>
+              </box>
+              <text fg={theme.textMuted} attributes={TextAttributes.DIM} wrapMode="word">
+                Web search defaults to fast mode with automatic provider fallback. Auto picks a stable Exa/Parallel mix per session.
+              </text>
             </BorderedPanel>
           </box>
         </FadeIn>
@@ -511,7 +565,7 @@ export function DialogAwakenedCapabilities() {
             <span style={{ fg: theme.text, bold: true }}>a</span>/<span style={{ fg: theme.text, bold: true }}>n</span> all/none
           </text>
           <text fg={theme.textMuted} attributes={TextAttributes.DIM}>
-            Settings: m mode · s subagents · c skills · w keep-alive
+            Settings: m mode · s subagents · c skills · w keep-alive · r search
           </text>
         </box>
         <box flexDirection="row" gap={1}>

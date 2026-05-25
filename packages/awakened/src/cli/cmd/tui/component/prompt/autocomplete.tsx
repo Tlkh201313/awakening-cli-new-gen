@@ -836,6 +836,17 @@ export function Autocomplete(props: {
   let scroll: ScrollBoxRenderable
   const scrollAcceleration = createMemo(() => getScrollAcceleration(tuiConfig))
 
+  // After popup becomes visible, re-apply scrollbox height directly (outside reactive context)
+  // so yoga marks itself dirty and calculateLayout fires with correct child positions.
+  // Solid's reconciler equality-check would skip same-value prop updates, so we bypass it.
+  createEffect(() => {
+    if (!store.visible || !layoutReady()) return
+    const timer = setTimeout(() => {
+      if (scroll) scroll.height = height()
+    }, 0)
+    onCleanup(() => clearTimeout(timer))
+  })
+
   return (
     <box
       visible={store.visible !== false && layoutReady()}
@@ -868,7 +879,7 @@ export function Autocomplete(props: {
             const active = () => index === store.selected
             return (
               <box
-                paddingLeft={2}
+                paddingLeft={active() ? 1 : 2}
                 paddingRight={2}
                 paddingTop={0}
                 paddingBottom={0}

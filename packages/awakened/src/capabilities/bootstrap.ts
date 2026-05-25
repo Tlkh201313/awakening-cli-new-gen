@@ -75,6 +75,7 @@ export function resolveAwakenedBootstrapAttachment(options: {
       "| security-review | audits, OWASP, threat modeling |",
       "| testing / webapp-testing | unit, integration, Playwright E2E |",
       "| frontend | React, Next.js, Tailwind UI |",
+      "| design | Awakened brand, static HTML, UI/UX, a11y |",
       "| docs-writer | README, API docs |",
       "| aws-cloud | Lambda, IAM, CDK on AWS |",
       "| graphify | large repo mapping, token reduction |",

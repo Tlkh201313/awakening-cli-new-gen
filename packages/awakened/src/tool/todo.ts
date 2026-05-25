@@ -3,15 +3,14 @@ import * as Tool from "./tool"
 import DESCRIPTION_WRITE from "./todowrite.txt"
 import { Todo } from "../session/todo"
 
-// Todo.Info is still a zod schema (session/todo.ts). Inline the field shape
-// here rather than referencing its `.shape` — the LLM-visible JSON Schema is
-// identical, and it removes the last zod dependency from this tool.
 const TodoItem = Schema.Struct({
   content: Schema.String.annotate({ description: "Brief description of the task" }),
-  status: Schema.String.annotate({
-    description: "Current status of the task: pending, in_progress, completed, cancelled",
+  status: Schema.Literals(["pending", "in_progress", "completed", "cancelled"]).annotate({
+    description: "Current status of the task",
   }),
-  priority: Schema.String.annotate({ description: "Priority level of the task: high, medium, low" }),
+  priority: Schema.Literals(["high", "medium", "low"]).annotate({
+    description: "Priority level of the task",
+  }),
 })
 
 export const Parameters = Schema.Struct({
@@ -44,8 +43,11 @@ export const TodoWriteTool = Tool.define<typeof Parameters, Metadata, Todo.Servi
             todos: params.todos,
           })
 
+          const open = params.todos.filter((item) => item.status !== "completed" && item.status !== "cancelled").length
+          const active = params.todos.filter((item) => item.status === "in_progress").length
+
           return {
-            title: `${params.todos.filter((x) => x.status !== "completed").length} todos`,
+            title: `${open} open · ${active} in progress`,
             output: JSON.stringify(params.todos, null, 2),
             metadata: {
               todos: params.todos,

@@ -48,6 +48,7 @@ import type { EditTool } from "@/tool/edit"
 import type { ApplyPatchTool } from "@/tool/apply_patch"
 import type { WebFetchTool } from "@/tool/webfetch"
 import { webSearchProviderLabel, type WebSearchTool } from "@/tool/websearch"
+import { listAwakenedCapabilityBadges } from "@awakened-ai/core/capability-display"
 import type { TaskTool } from "@/tool/task"
 import type { QuestionTool } from "@/tool/question"
 import type { SkillTool } from "@/tool/skill"
@@ -1317,6 +1318,7 @@ function UserMessage(props: {
     return texts.join("\n\n")
   })
   const files = createMemo(() => props.parts.flatMap((x) => (x.type === "file" ? [x] : [])))
+  const capabilityBadges = createMemo(() => listAwakenedCapabilityBadges(props.parts))
   const { theme } = useTheme()
   const [hover, setHover] = createSignal(false)
   const queued = createMemo(() => props.pending && props.message.id > props.pending)
@@ -1327,7 +1329,7 @@ function UserMessage(props: {
 
   return (
     <>
-      <Show when={text()}>
+      <Show when={text() || capabilityBadges().length}>
         <box
           id={props.message.id}
           border={["left"]}
@@ -1355,7 +1357,21 @@ function UserMessage(props: {
                 {props.message.agent}
               </text>
             </box>
-            <text fg={theme.text}>{text()}</text>
+            <Show when={capabilityBadges().length}>
+              <box flexDirection="row" flexWrap="wrap" gap={1} paddingBottom={text() ? 1 : 0}>
+                <For each={capabilityBadges()}>
+                  {(badge) => (
+                    <text>
+                      <span style={{ fg: theme.primary, bold: true }}>✦</span>
+                      <span style={{ fg: theme.textMuted }}> using {badge.id}</span>
+                    </text>
+                  )}
+                </For>
+              </box>
+            </Show>
+            <Show when={text()}>
+              <text fg={theme.text}>{text()}</text>
+            </Show>
             <Show when={files().length}>
               <box flexDirection="row" paddingBottom={metadataVisible() ? 1 : 0} paddingTop={1} gap={1} flexWrap="wrap">
                 <For each={files()}>

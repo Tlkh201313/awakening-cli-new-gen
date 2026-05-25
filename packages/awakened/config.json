@@ -97,7 +97,7 @@
     "disabled": [],
     "autoSubagents": true,
     "autoCapabilities": true,
-    "tokenMode": "normal",
+    "tokenMode": "caveman",
     "warmConnection": true
   },
   "awakenedPersonality": {

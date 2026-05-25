@@ -1,5 +1,5 @@
-import type { Project, UserMessage } from "@opencode-ai/sdk/v2"
-import { useDialog } from "@opencode-ai/ui/context/dialog"
+import type { Project, UserMessage } from "@awakened-ai/sdk/v2"
+import { useDialog } from "@awakened-ai/ui/context/dialog"
 import { createQuery, skipToken, useMutation, useQueryClient } from "@tanstack/solid-query"
 import {
   batch,
@@ -22,14 +22,14 @@ import { debounce } from "@solid-primitives/scheduled"
 import { useLocal } from "@/context/local"
 import { selectionFromLines, useFile, type FileSelection, type SelectedLineRange } from "@/context/file"
 import { createStore } from "solid-js/store"
-import { ResizeHandle } from "@opencode-ai/ui/resize-handle"
-import { Select } from "@opencode-ai/ui/select"
-import { Tabs } from "@opencode-ai/ui/tabs"
-import { createAutoScroll } from "@opencode-ai/ui/hooks"
-import { previewSelectedLines } from "@opencode-ai/ui/pierre/selection-bridge"
-import { Button } from "@opencode-ai/ui/button"
-import { showToast } from "@opencode-ai/ui/toast"
-import { checksum } from "@opencode-ai/core/util/encode"
+import { ResizeHandle } from "@awakened-ai/ui/resize-handle"
+import { Select } from "@awakened-ai/ui/select"
+import { Tabs } from "@awakened-ai/ui/tabs"
+import { createAutoScroll } from "@awakened-ai/ui/hooks"
+import { previewSelectedLines } from "@awakened-ai/ui/pierre/selection-bridge"
+import { Button } from "@awakened-ai/ui/button"
+import { showToast } from "@awakened-ai/ui/toast"
+import { checksum } from "@awakened-ai/core/util/encode"
 import { useLocation, useSearchParams } from "@solidjs/router"
 import { NewSessionDesignView, NewSessionView, SessionHeader } from "@/components/session"
 import { useComments } from "@/context/comments"
@@ -75,7 +75,7 @@ const emptyFollowups: FollowupItem[] = []
 
 type ChangeMode = "git" | "branch" | "turn"
 type VcsMode = "git" | "branch"
-const USE_NEW_SESSION_DESIGN = import.meta.env.VITE_OPENCODE_CHANNEL !== "prod"
+const USE_NEW_SESSION_DESIGN = import.meta.env.VITE_AWAKENED_CHANNEL !== "prod"
 
 type SessionHistoryWindowInput = {
   sessionID: () => string | undefined
@@ -265,7 +265,7 @@ export default function Page() {
   const isDesktop = createMediaQuery("(min-width: 768px)")
   const size = createSizing()
   const isV2NewSessionPage = () =>
-    shouldUseV2NewSessionPage({ channel: import.meta.env.VITE_OPENCODE_CHANNEL, sessionID: params.id })
+    shouldUseV2NewSessionPage({ channel: import.meta.env.VITE_AWAKENED_CHANNEL, sessionID: params.id })
   const desktopReviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened() && !isV2NewSessionPage())
   const desktopFileTreeOpen = createMemo(() => isDesktop() && layout.fileTree.opened() && !isV2NewSessionPage())
   const desktopSidePanelOpen = createMemo(() => desktopReviewOpen() || desktopFileTreeOpen())

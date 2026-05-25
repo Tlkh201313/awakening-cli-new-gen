@@ -72,18 +72,6 @@ export const SKILL_CATALOGS: CatalogDefinition[] = [
     examples: ["security", "testing", "docs", "data"],
   },
   {
-    id: "awakened-design",
-    displayName: "Design & UX Skills",
-    description: "UI/UX, frontend-design, Tailwind, accessibility",
-    priority: 62,
-    regex:
-      /\b(frontend-design|ui-ux|ui designer|tailwind patterns|design system skill|accessibility skill|form cro|brand design)\b/i,
-    upstream: "https://github.com/sickn33/antigravity-awesome-skills (design bundle)",
-    install: "npx antigravity-awesome-skills — then Use @frontend-design, @tailwind-patterns, @form-cro",
-    focus: "Visual design, UX flows, Tailwind v4, WCAG, CRO forms — one @-skill per task",
-    examples: ["@frontend-design", "@tailwind-patterns", "@ui-ux-pro-max"],
-  },
-  {
     id: "awakened-devops",
     displayName: "DevOps & SRE Skills",
     description: "K8s, Terraform, CI/CD, observability playbooks",

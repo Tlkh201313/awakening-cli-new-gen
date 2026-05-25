@@ -193,12 +193,13 @@ export const EditTool = Tool.define(
           yield* lsp.touchFile(filePath, "document")
           const diagnostics = yield* lsp.diagnostics()
           const normalizedFilePath = AppFileSystem.normalizePath(filePath)
-          const block = LSP.Diagnostic.report(filePath, diagnostics[normalizedFilePath] ?? [])
+          const fileDiagnostics = diagnostics[normalizedFilePath] ?? []
+          const block = LSP.Diagnostic.report(filePath, fileDiagnostics)
           if (block) output += `\n\nLSP errors detected in this file, please fix:\n${block}`
 
           return {
             metadata: {
-              diagnostics,
+              diagnostics: { [normalizedFilePath]: fileDiagnostics },
               diff,
               filediff,
             },
@@ -213,7 +214,7 @@ export const EditTool = Tool.define(
 export type Replacer = (content: string, find: string) => Generator<string, void, unknown>
 
 // Similarity thresholds for block anchor fallback matching
-const SINGLE_CANDIDATE_SIMILARITY_THRESHOLD = 0.0
+const SINGLE_CANDIDATE_SIMILARITY_THRESHOLD = 0.5
 const MULTIPLE_CANDIDATES_SIMILARITY_THRESHOLD = 0.3
 
 /**
@@ -676,6 +677,18 @@ export function replace(content: string, oldString: string, newString: string, r
     throw new Error("No changes to apply: oldString and newString are identical.")
   }
 
+  if (content.includes(oldString)) {
+    if (replaceAll) return content.replaceAll(oldString, newString)
+    const first = content.indexOf(oldString)
+    const last = content.lastIndexOf(oldString)
+    if (first !== last) {
+      throw new Error(
+        `Found multiple matches for oldString at lines ${matchLineNumbers(content, oldString).join(", ")}. Provide more surrounding context to make the match unique.`,
+      )
+    }
+    return content.substring(0, first) + newString + content.substring(first + oldString.length)
+  }
+
   let notFound = true
 
   for (const replacer of [
@@ -708,4 +721,16 @@ export function replace(content: string, oldString: string, newString: string, r
     )
   }
   throw new Error("Found multiple matches for oldString. Provide more surrounding context to make the match unique.")
+}
+
+function matchLineNumbers(content: string, search: string) {
+  const lines: number[] = []
+  let start = 0
+  while (lines.length < 3) {
+    const index = content.indexOf(search, start)
+    if (index === -1) break
+    lines.push(content.slice(0, index).split("\n").length)
+    start = index + search.length
+  }
+  return lines
 }

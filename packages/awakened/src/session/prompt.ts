@@ -49,6 +49,7 @@ import { SessionRunState } from "./run-state"
 import { RuntimeFlags } from "@/effect/runtime-flags"
 import { resolveAutoCapabilityAttachments } from "@/capabilities/autoCapabilities"
 import { resolveAwakenedBootstrapAttachment } from "@/capabilities/bootstrap"
+import { awakenedCapabilityMetadata } from "@awakened-ai/core/capability-display"
 import { ALL_AWAKENED_CAPABILITY_IDS, type AwakenedCapabilityId } from "@/capabilities/ids"
 import {
   autoSaveFromTurn,
@@ -1123,6 +1124,7 @@ export const layer = Layer.effect(
               sessionID: input.sessionID,
               type: "text",
               synthetic: true,
+              metadata: awakenedCapabilityMetadata("awakened-auto", bootstrapAttachment.skillName),
               text: `Reading skill ${bootstrapAttachment.skillName}\n\n${bootstrapAttachment.content}`,
             }),
           ]
@@ -1134,6 +1136,7 @@ export const layer = Layer.effect(
               sessionID: input.sessionID,
               type: "text",
               synthetic: true,
+              metadata: awakenedCapabilityMetadata("awakened-memory", "Awakened Memory"),
               text: `Reading skill Awakened Memory\n\n${formatRecallInjection(recalled)}`,
             }),
           ]
@@ -1144,6 +1147,7 @@ export const layer = Layer.effect(
           sessionID: input.sessionID,
           type: "text",
           synthetic: true,
+          metadata: awakenedCapabilityMetadata(attachment.capabilityId, attachment.skillName),
           text: `Reading skill ${attachment.skillName}\n\n${attachment.content}`,
         }),
       )

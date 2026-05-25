@@ -241,6 +241,40 @@ describe("getAutoCapabilityAttachments", () => {
       expect(attachments.some((attachment) => attachment.skillName === "Awakened Frontend")).toBe(true)
     }))
 
+  it.effect("surfaces Awakened Design for static html website requests", () =>
+    Effect.sync(() => {
+      resetSentAutoCapabilities()
+      const attachments = resolveAutoCapabilityAttachments({
+        userText: "make html website in Downloads folder with only 1 html file",
+        toolNames: [],
+        disabled: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Design")).toBe(true)
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Frontend")).toBe(false)
+    }))
+
+  it.effect("surfaces Awakened Design for awakened branding requests", () =>
+    Effect.sync(() => {
+      resetSentAutoCapabilities()
+      const attachments = resolveAutoCapabilityAttachments({
+        userText: "build the page using awakened design and v2 tokens",
+        toolNames: [],
+        disabled: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Design")).toBe(true)
+    }))
+
+  it.effect("surfaces Awakened Design for ui polish keywords", () =>
+    Effect.sync(() => {
+      resetSentAutoCapabilities()
+      const attachments = resolveAutoCapabilityAttachments({
+        userText: "polish the ui and improve accessibility with wcag checks",
+        toolNames: [],
+        disabled: [],
+      })
+      expect(attachments.some((attachment) => attachment.skillName === "Awakened Design")).toBe(true)
+    }))
+
   it.effect("surfaces Awakened Simplify for refactor keywords", () =>
     Effect.gen(function* () {
       resetSentAutoCapabilities()
