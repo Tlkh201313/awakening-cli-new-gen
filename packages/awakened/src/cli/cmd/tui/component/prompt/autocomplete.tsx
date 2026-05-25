@@ -820,13 +820,6 @@ export function Autocomplete(props: {
     return Math.min(rows, space)
   })
 
-  const slashCommandColumnWidth = createMemo(() => {
-    if (store.visible !== "/") return
-    const items = options()
-    if (items.length === 0) return
-    return Math.max(...items.map((item) => Bun.stringWidth(optionLabel(item)))) + 1
-  })
-
   let scroll: ScrollBoxRenderable
   const scrollAcceleration = createMemo(() => getScrollAcceleration(tuiConfig))
 
@@ -872,7 +865,8 @@ export function Autocomplete(props: {
                 borderColor={theme.primary}
                 customBorderChars={SplitBorder.customBorderChars}
                 flexDirection="row"
-                gap={1}
+                gap={2}
+                alignItems="flex-start"
                 onMouseMove={() => {
                   if (store.input !== "mouse") setStore("input", "mouse")
                 }}
@@ -889,14 +883,13 @@ export function Autocomplete(props: {
               >
                 <text
                   flexShrink={0}
-                  width={slashCommandColumnWidth()}
                   fg={active() ? theme.primary : theme.text}
                   attributes={active() ? TextAttributes.BOLD : undefined}
                 >
                   {optionLabel(option())}
                 </text>
                 <Show when={option().description}>
-                  <text fg={theme.textMuted} wrapMode="none" flexShrink={0}>
+                  <text fg={theme.textMuted} wrapMode="none" flexShrink={1}>
                     {option().description}
                   </text>
                 </Show>
