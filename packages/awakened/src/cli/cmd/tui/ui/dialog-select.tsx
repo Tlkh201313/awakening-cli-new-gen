@@ -22,9 +22,9 @@ import { getScrollAcceleration } from "../util/scroll"
 import { useTuiConfig } from "../context/tui-config"
 import { formatKeyBindings, useBindings, useKeymapSelector } from "../keymap"
 import { useKV } from "../context/kv"
-import { fadeColor, activeRowSurface } from "../util/color"
+import { activeRowSurface } from "../util/color"
 import { FadeIn } from "../util/motion"
-import { createDelayedFadeIn, createPulse } from "../util/signal"
+import { createDelayedFadeIn } from "../util/signal"
 
 export interface DialogSelectProps<T> {
   title: string
@@ -204,30 +204,42 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     moveTo(next)
   }
 
-  function moveTo(next: number, center = false) {
-    setStore("selected", next)
-    const option = selected()
-    if (option) props.onMove?.(option)
+  function scrollToSelected(center = false) {
     if (!scroll) return
+    const option = selected()
+    if (!option) return
     const target = scroll.getChildren().find((child: { id?: string }) => {
-      return child.id === JSON.stringify(selected()?.value)
+      return child.id === JSON.stringify(option.value)
     })
     if (!target) return
     const y = target.y - scroll.y
     if (center) {
       const centerOffset = Math.floor(scroll.height / 2)
       scroll.scrollBy(y - centerOffset)
-    } else {
-      if (y >= scroll.height) {
-        scroll.scrollBy(y - scroll.height + 1)
-      }
-      if (y < 0) {
-        scroll.scrollBy(y)
-        if (isDeepEqual(flat()[0].value, selected()?.value)) {
-          scroll.scrollTo(0)
-        }
+      return
+    }
+    if (y >= scroll.height) {
+      scroll.scrollBy(y - scroll.height + 1)
+    }
+    if (y < 0) {
+      scroll.scrollBy(y)
+      if (isDeepEqual(flat()[0].value, option.value)) {
+        scroll.scrollTo(0)
       }
     }
+  }
+
+  function moveTo(next: number, center = false) {
+    if (next === store.selected) return
+    setStore("selected", next)
+    const option = selected()
+    if (option) props.onMove?.(option)
+    scrollToSelected(center)
+  }
+
+  function revealSelected() {
+    if (flat().length === 0) return
+    scrollToSelected()
   }
 
   function submit() {
@@ -362,14 +374,10 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 
   onMount(() => setReady(true))
 
-  function revealSelected() {
-    if (flat().length === 0) return
-    moveTo(store.selected)
-  }
-
   createEffect(
-    on([ready, () => flat().length, () => store.selected], () => {
+    on([ready, () => flat().length], () => {
       if (!ready()) return
+      if (flat().length === 0) return
       setTimeout(revealSelected, 0)
       setTimeout(revealSelected, 60)
     }),
@@ -459,7 +467,9 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                         option={option}
                         category={category}
                         flatten={!!flatten()}
-                        onMouseMove={() => setStore("input", "mouse")}
+                        onMouseMove={() => {
+                          if (store.input !== "mouse") setStore("input", "mouse")
+                        }}
                         onMouseUp={() => {
                           option.onSelect?.(dialog)
                           props.onSelect?.(option)
@@ -467,7 +477,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                         onMouseOver={() => {
                           if (store.input !== "mouse") return
                           const row = index()
-                          if (row === -1) return
+                          if (row === -1 || row === store.selected) return
                           moveTo(row)
                         }}
                         onMouseDown={() => {
@@ -540,14 +550,12 @@ function SelectRow(props: {
   onMouseDown: () => void
 }) {
   const { theme } = useTheme()
-  const kv = useKV()
-  const pulse = createPulse(props.active, () => kv.get("animations_enabled", true), 1300)
   const backgroundColor = () => {
     if (!props.active()) return RGBA.fromInts(0, 0, 0, 0)
-    return activeRowSurface(theme.primary, theme.backgroundElement, 0.12 + 0.06 * pulse())
+    return activeRowSurface(theme.primary, theme.backgroundElement, 0.15)
   }
   const border = (): boolean | ("left")[] => (props.active() ? ["left"] : false)
-  const borderColor = () => fadeColor(theme.primary, 0.75 + 0.25 * pulse())
+  const borderColor = () => theme.primary
 
   return (
     <box
