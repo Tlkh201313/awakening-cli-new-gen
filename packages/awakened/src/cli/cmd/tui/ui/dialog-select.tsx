@@ -181,6 +181,12 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 
   const selected = createMemo(() => flat()[store.selected])
 
+  const titleColumnWidth = createMemo(() => {
+    const items = flat()
+    if (items.length === 0) return
+    return Math.max(...items.map((item) => Bun.stringWidth(item.title))) + 1
+  })
+
   createEffect(
     on([() => store.filter, () => props.current], ([filter, current]) => {
       setTimeout(() => {
@@ -462,6 +468,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                     return (
                       <SelectRow
                         contentAlpha={contentAlpha}
+                        titleColumnWidth={titleColumnWidth()}
                         active={active}
                         current={current}
                         option={option}
@@ -539,6 +546,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 
 function SelectRow(props: {
   contentAlpha: Accessor<number>
+  titleColumnWidth?: number
   active: Accessor<boolean>
   current: Accessor<boolean>
   option: DialogSelectOption<any>
@@ -562,6 +570,7 @@ function SelectRow(props: {
       id={JSON.stringify(props.option.value)}
       flexDirection="row"
       position="relative"
+      width="100%"
       opacity={props.contentAlpha()}
       onMouseMove={props.onMouseMove}
       onMouseUp={props.onMouseUp}
@@ -582,6 +591,7 @@ function SelectRow(props: {
       </Show>
       <Option
         title={props.option.title}
+        titleColumnWidth={props.titleColumnWidth}
         footer={props.flatten ? (props.option.category ?? props.option.footer) : props.option.footer}
         description={props.option.description !== props.category ? props.option.description : undefined}
         active={props.active()}
@@ -594,6 +604,7 @@ function SelectRow(props: {
 
 function Option(props: {
   title: string
+  titleColumnWidth?: number
   description?: string
   active?: boolean
   current?: boolean
@@ -615,22 +626,27 @@ function Option(props: {
           {props.gutter?.()}
         </box>
       </Show>
-      <text
-        flexGrow={1}
-        fg={props.active ? theme.text : props.current ? theme.primary : theme.text}
-        attributes={props.active ? TextAttributes.BOLD : undefined}
-        overflow="hidden"
-        wrapMode="none"
-      >
-        {Locale.truncate(props.title, 61)}
+      <box flexDirection="row" flexGrow={1} gap={1} minWidth={0}>
+        <text
+          flexShrink={0}
+          width={props.titleColumnWidth}
+          fg={props.active ? theme.text : props.current ? theme.primary : theme.text}
+          attributes={props.active ? TextAttributes.BOLD : undefined}
+          overflow="hidden"
+          wrapMode="none"
+        >
+          {Locale.truncate(props.title, 61)}
+        </text>
         <Show when={props.description}>
-          <span style={{ fg: theme.textMuted }}> {props.description}</span>
+          <text flexShrink={0} fg={theme.textMuted} wrapMode="none">
+            {props.description}
+          </text>
         </Show>
-      </text>
+      </box>
       <Show when={props.footer}>
-        <box flexShrink={0}>
-          <text fg={props.active ? theme.primary : theme.textMuted}>{props.footer}</text>
-        </box>
+        <text flexShrink={0} fg={props.active ? theme.primary : theme.textMuted}>
+          {props.footer}
+        </text>
       </Show>
     </>
   )

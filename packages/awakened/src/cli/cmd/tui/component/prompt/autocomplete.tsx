@@ -3,7 +3,6 @@ import { TextAttributes } from "@opentui/core"
 import { pathToFileURL } from "bun"
 import fuzzysort from "fuzzysort"
 import path from "path"
-import { firstBy } from "remeda"
 import { createMemo, createResource, createEffect, onMount, onCleanup, Index, Show, createSignal } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useEditorContext } from "@tui/context/editor"
@@ -23,6 +22,10 @@ import { useBindings, useCommandSlashes, useAwakenedModeStack } from "../../keym
 import { Reference } from "@/reference/reference"
 import { ConfigReference } from "@/config/reference"
 import { displayCharAt, mentionTriggerIndex } from "@/cli/cmd/prompt-display"
+
+function optionLabel(option: AutocompleteOption) {
+  return (option.value ?? option.display).trimEnd()
+}
 
 function removeLineRange(input: string) {
   const hashIndex = input.lastIndexOf("#")
@@ -573,12 +576,7 @@ export function Autocomplete(props: {
 
     results.sort((a, b) => a.display.localeCompare(b.display))
 
-    const max = firstBy(results, [(x) => x.display.length, "desc"])?.display.length
-    if (!max) return results
-    return results.map((item) => ({
-      ...item,
-      display: item.display.padEnd(max + 2),
-    }))
+    return results
   })
 
   const options = createMemo((prev: AutocompleteOption[] | undefined) => {
@@ -822,6 +820,13 @@ export function Autocomplete(props: {
     return Math.min(rows, space)
   })
 
+  const slashCommandColumnWidth = createMemo(() => {
+    if (store.visible !== "/") return
+    const items = options()
+    if (items.length === 0) return
+    return Math.max(...items.map((item) => Bun.stringWidth(optionLabel(item)))) + 1
+  })
+
   let scroll: ScrollBoxRenderable
   const scrollAcceleration = createMemo(() => getScrollAcceleration(tuiConfig))
 
@@ -861,6 +866,7 @@ export function Autocomplete(props: {
                 paddingRight={2}
                 paddingTop={0}
                 paddingBottom={0}
+                width="100%"
                 backgroundColor={active() ? activeRowSurface(theme.primary, theme.backgroundElement) : undefined}
                 border={active() ? ["left"] : undefined}
                 borderColor={theme.primary}
@@ -868,10 +874,11 @@ export function Autocomplete(props: {
                 flexDirection="row"
                 gap={1}
                 onMouseMove={() => {
-                  setStore("input", "mouse")
+                  if (store.input !== "mouse") setStore("input", "mouse")
                 }}
                 onMouseOver={() => {
                   if (store.input !== "mouse") return
+                  if (index === store.selected) return
                   moveTo(index)
                 }}
                 onMouseDown={() => {
@@ -880,11 +887,16 @@ export function Autocomplete(props: {
                 }}
                 onMouseUp={() => select()}
               >
-                <text fg={active() ? theme.primary : theme.text} flexShrink={0} attributes={active() ? TextAttributes.BOLD : undefined}>
-                  {option().display}
+                <text
+                  flexShrink={0}
+                  width={slashCommandColumnWidth()}
+                  fg={active() ? theme.primary : theme.text}
+                  attributes={active() ? TextAttributes.BOLD : undefined}
+                >
+                  {optionLabel(option())}
                 </text>
                 <Show when={option().description}>
-                  <text fg={theme.textMuted} wrapMode="none">
+                  <text fg={theme.textMuted} wrapMode="none" flexShrink={0}>
                     {option().description}
                   </text>
                 </Show>
