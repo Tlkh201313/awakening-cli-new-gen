@@ -3,7 +3,7 @@ import { primaryBootstrap } from "../primaryBootstrap"
 import type { AutoCapabilityDefinition } from "../types"
 
 const GRAPHIFY_RE =
-  /\b(graphify|knowledge graph|GraphRAG|graphify-out|graph\.json query|\/graphify|reduce tokens|token budget|massive codebase|map codebase|understand architecture|explore repo|corpus graph|obsidian graph|read entire codebase|too many files to read)\b/i
+  /\b(graphify|knowledge graph|GraphRAG|graphify-out|graph\.json query|\/graphify|reduce tokens|token budget|massive codebase|map codebase|understand architecture|explore repo|corpus graph|obsidian graph|read entire codebase|too many files to read|explore.*large|map.*codebase|understand.*structure)\b/i
 
 export const awakenedGraphifyCapability: AutoCapabilityDefinition = {
   id: AWAKENED_CAPABILITY_IDS.graphify,
@@ -18,41 +18,60 @@ export const awakenedGraphifyCapability: AutoCapabilityDefinition = {
 
 Upstream: https://github.com/safishamsi/graphify — knowledge graphs with large-corpus token reduction (README benchmark: **71.5x** on mixed corpora vs naive full-file reads).
 
-## Awakened improvements for massive token reduction
+## Auto-use rule (ALWAYS follow)
 
-### Install
+Before reading 5+ files to understand code structure, architecture, or relationships:
+1. Check if \`graphify-out/graph.json\` exists in the project root.
+2. If it exists: use \`graphify query "…" --budget 1500\` instead of reading files.
+3. If it does NOT exist: run \`graphify extract .\` once (AST extraction, no LLM cost), then query.
+4. Only fall back to reading individual files if graphify doesn't answer the question.
+
+## Commands
 
 \`\`\`bash
-pip install graphifyy && graphify install
+# Build graph (AST-only, no API key needed)
+graphify update .
+
+# Full semantic extraction (needs ANTHROPIC_API_KEY or MOONSHOT_API_KEY)
+graphify extract .
+
+# Query instead of reading files
+graphify query "How does auth work?" --budget 1500
+graphify query "Where is session created?" --budget 1000 --dfs
+
+# Explain a node
+graphify explain "Session.Service"
+
+# Find path between two concepts
+graphify path "Config" "Session"
+
+# Watch for changes
+graphify watch .
 \`\`\`
 
-(PyPI package name is **graphifyy**.)
+## When to use graphify vs reading files
 
-### Before batch-reading many files
+| Situation | Use graphify | Read files |
+|-----------|-------------|------------|
+| "How does X work?" (architecture) | Yes | No |
+| "Where is Y defined?" (locate) | Yes | No |
+| "Fix this specific bug in file.ts" | No | Yes |
+| "Read this file and edit it" | No | Yes |
+| "Explore the whole codebase" | Yes | No |
+| "Understand the module structure" | Yes | No |
 
-1. Check \`graphify-out/graph.json\` in cwd/project.
-2. If it exists: use \`graphify query "…" --budget 1500\` (or \`--dfs\` for paths) instead of Read/BatchRead on source files.
-3. Trust **EXTRACTED** vs **INFERRED** edges; prefer query results over re-reading raw files.
+## Token savings
 
-### If no graph yet (broad codebase/corpus context)
+- \`graphify query\` returns structural results in ~500-1500 tokens
+- Reading 10 source files costs ~50,000+ tokens
+- Savings: **~30-70x** depending on codebase size
 
-1. Run \`/graphify .\` or \`graphify <path>\` **once** per project/session — do not re-ingest every turn.
-2. Then query; use \`--update\` for incremental changes only.
+## Notes
 
-### Wiki mode (large graphs)
-
-\`graphify --wiki\` then read \`graphify-out/wiki/index.md\` **one article at a time**. Never dump full \`graph.json\` or GRAPH_REPORT into context.
-
-### Other commands
-
-- \`graphify path A B\` — route between nodes
-- \`graphify explain NODE\` — node context
-- \`graphify add <url>\` — web corpus ingestion
-- \`graphify --watch\` or \`graphify hook install\` — keep graph fresh during long sessions
-
-## Distinction
-
-Awakened Skills Vault / Productivity are skill catalogs; Graphify is a **structural corpus index** for querying instead of reading thousands of files.
+- \`graphify update .\` — AST-only, free, fast. Use after code changes.
+- \`graphify extract .\` — LLM-enriched semantic edges. Costs tokens but richer graph.
+- Never dump full \`graph.json\` into context — it's too large.
+- Use \`--budget N\` to cap output tokens.
 `
   },
 }

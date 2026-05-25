@@ -96,3 +96,25 @@ Thumbs.db
 # Awakened internals the agent rarely needs to grep
 .awakened/references/
 .git/
+
+# Graphify output (generated knowledge graph)
+graphify-out/
+
+# Storybook
+storybook-static/
+.storybook-cache/
+
+# Test fixtures / temp test dirs
+*.test.ts.snap
+__fixtures__/
+
+# Console / enterprise (not relevant to main CLI)
+packages/console/
+packages/enterprise/
+packages/web/
+packages/storybook/
+
+# Nix / CI artifacts
+*.nix
+result
+result-*

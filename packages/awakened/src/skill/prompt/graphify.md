@@ -1,31 +1,58 @@
-# Graphify Quick Guide
+# Graphify — Knowledge Graph for Token Savings
 
 Upstream: https://github.com/safishamsi/graphify
 
-## Install
+## Auto-use rule (ALWAYS follow)
 
-```bash
-pip install graphifyy && graphify install
-```
-
-(PyPI package name is **graphifyy**.)
-
-## When to use
-
-Large codebase or corpus exploration when reading every file would blow the token budget.
-
-## Workflow
-
-1. Check for `graphify-out/graph.json` in the project.
-2. If missing, run `/graphify .` or `graphify <path>` once per project/session.
-3. Query with `graphify query "…" --budget 1500` instead of batch-reading source files.
-4. Use `graphify --wiki` for large graphs; read wiki articles one at a time.
+Before reading 5+ files to understand code structure, architecture, or relationships:
+1. Check if `graphify-out/graph.json` exists in the project root.
+2. If it exists: use `graphify query "…" --budget 1500` instead of reading files.
+3. If it does NOT exist: run `graphify extract .` once (AST extraction, no LLM cost), then query.
+4. Only fall back to reading individual files if graphify doesn't answer the question.
 
 ## Commands
 
-- `graphify path A B` — route between nodes
-- `graphify explain NODE` — node context
-- `graphify add <url>` — web corpus ingestion
-- `graphify --update` — incremental refresh
+```bash
+# Build graph (AST-only, no API key needed)
+graphify update .
 
-Never dump full `graph.json` into context.
+# Full semantic extraction (needs ANTHROPIC_API_KEY or MOONSHOT_API_KEY)
+graphify extract .
+
+# Query instead of reading files
+graphify query "How does auth work?" --budget 1500
+graphify query "Where is session created?" --budget 1000 --dfs
+
+# Explain a node
+graphify explain "Session.Service"
+
+# Find path between two concepts
+graphify path "Config" "Session"
+
+# Watch for changes
+graphify watch .
+```
+
+## When to use graphify vs reading files
+
+| Situation | Use graphify | Read files |
+|-----------|-------------|------------|
+| "How does X work?" (architecture) | Yes | No |
+| "Where is Y defined?" (locate) | Yes | No |
+| "Fix this specific bug in file.ts" | No | Yes |
+| "Read this file and edit it" | No | Yes |
+| "Explore the whole codebase" | Yes | No |
+| "Understand the module structure" | Yes | No |
+
+## Token savings
+
+- `graphify query` returns structural results in ~500-1500 tokens
+- Reading 10 source files costs ~50,000+ tokens
+- Savings: **~30-70x** depending on codebase size
+
+## Notes
+
+- `graphify update .` — AST-only, free, fast. Use after code changes.
+- `graphify extract .` — LLM-enriched semantic edges. Costs tokens but richer graph.
+- Never dump full `graph.json` into context — it's too large.
+- Use `--budget N` to cap output tokens.
