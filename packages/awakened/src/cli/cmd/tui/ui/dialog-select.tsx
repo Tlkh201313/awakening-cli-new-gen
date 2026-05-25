@@ -23,7 +23,6 @@ import { useTuiConfig } from "../context/tui-config"
 import { formatKeyBindings, useBindings, useKeymapSelector } from "../keymap"
 import { useKV } from "../context/kv"
 import { activeRowSurface } from "../util/color"
-import { FadeIn } from "../util/motion"
 import { createDelayedFadeIn } from "../util/signal"
 
 export interface DialogSelectProps<T> {
@@ -369,7 +368,6 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const kv = useKV()
   const animations = () => kv.get("animations_enabled", true)
   const [ready, setReady] = createSignal(false)
-  const contentAlpha = createDelayedFadeIn(ready, animations, 90, 200)
   const footerAlpha = createDelayedFadeIn(ready, animations, 150, 180)
 
   onMount(() => setReady(true))
@@ -388,8 +386,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       <box paddingLeft={3} paddingRight={3}>
         <DialogHeader title={props.title} />
         <Show when={props.renderFilter !== false}>
-          <FadeIn delay={45} duration={180}>
-            <box paddingTop={1}>
+          <box paddingTop={1}>
             <input
               onInput={(e) => {
                 batch(() => {
@@ -412,14 +409,13 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
               placeholder={props.placeholder ?? "Search"}
               placeholderColor={theme.textMuted}
             />
-            </box>
-          </FadeIn>
+          </box>
         </Show>
       </box>
       <Show
         when={grouped().length > 0}
         fallback={
-          <box paddingLeft={4} paddingRight={4} paddingTop={1} opacity={contentAlpha()}>
+          <box paddingLeft={4} paddingRight={4} paddingTop={1}>
             <text fg={theme.textMuted}>No results found</text>
           </box>
         }
@@ -428,7 +424,6 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           paddingLeft={1}
           paddingRight={1}
           marginTop={1}
-          opacity={contentAlpha()}
           scrollbarOptions={{ visible: false }}
           scrollAcceleration={scrollAcceleration()}
           ref={(r: ScrollBoxRenderable) => {
@@ -461,7 +456,6 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                     const index = () => flat().findIndex((x) => isDeepEqual(x.value, option.value))
                     return (
                       <SelectRow
-                        contentAlpha={contentAlpha}
                         active={active}
                         current={current}
                         option={option}
@@ -538,7 +532,6 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 }
 
 function SelectRow(props: {
-  contentAlpha: Accessor<number>
   active: Accessor<boolean>
   current: Accessor<boolean>
   option: DialogSelectOption<any>
@@ -563,7 +556,6 @@ function SelectRow(props: {
       flexDirection="row"
       position="relative"
       width="100%"
-      opacity={props.contentAlpha()}
       onMouseMove={props.onMouseMove}
       onMouseUp={props.onMouseUp}
       onMouseOver={props.onMouseOver}
@@ -616,25 +608,26 @@ function Option(props: {
           {props.gutter?.()}
         </box>
       </Show>
-      <text
-        flexShrink={0}
-        fg={props.active ? theme.text : props.current ? theme.primary : theme.text}
-        attributes={props.active ? TextAttributes.BOLD : undefined}
-        overflow="hidden"
-        wrapMode="none"
-      >
-        {Locale.truncate(props.title, 61)}
+      <text flexShrink={0} wrapMode="none" overflow="hidden">
+        <span
+          style={{
+            fg: props.active ? theme.text : props.current ? theme.primary : theme.text,
+            bold: props.active,
+          }}
+        >
+          {Locale.truncate(props.title, 61)}
+        </span>
+        <Show when={props.description}>
+          <span style={{ fg: theme.textMuted }}> {props.description}</span>
+        </Show>
       </text>
-      <Show when={props.description}>
-        <text flexShrink={0} fg={theme.textMuted} wrapMode="none">
-          {props.description}
-        </text>
-      </Show>
       <Show when={props.footer}>
-        <box flexGrow={1} />
-        <text flexShrink={0} fg={props.active ? theme.primary : theme.textMuted}>
-          {props.footer}
-        </text>
+        <>
+          <box flexGrow={1} />
+          <text flexShrink={0} fg={props.active ? theme.primary : theme.textMuted}>
+            {props.footer}
+          </text>
+        </>
       </Show>
     </>
   )

@@ -1,5 +1,4 @@
 import type { BoxRenderable, TextareaRenderable, ScrollBoxRenderable } from "@opentui/core"
-import { TextAttributes } from "@opentui/core"
 import { pathToFileURL } from "bun"
 import fuzzysort from "fuzzysort"
 import path from "path"
@@ -114,9 +113,10 @@ export function Autocomplete(props: {
 
   createEffect(() => {
     if (!store.visible) return
-    setPositionTick((t) => t + 1)
-    const tick = setTimeout(() => setPositionTick((t) => t + 1), 0)
-    onCleanup(() => clearTimeout(tick))
+    const bump = () => setPositionTick((t) => t + 1)
+    bump()
+    const timers = [0, 1, 16, 32, 50, 100].map((ms) => setTimeout(bump, ms))
+    onCleanup(() => timers.forEach(clearTimeout))
   })
 
   createEffect(() => {
@@ -820,12 +820,19 @@ export function Autocomplete(props: {
     return Math.min(rows, space)
   })
 
+  const layoutReady = createMemo(() => {
+    if (!store.visible) return false
+    positionTick()
+    const anchor = props.anchor()
+    return anchor.width > 0 && anchor.height > 0
+  })
+
   let scroll: ScrollBoxRenderable
   const scrollAcceleration = createMemo(() => getScrollAcceleration(tuiConfig))
 
   return (
     <box
-      visible={store.visible !== false}
+      visible={store.visible !== false && layoutReady()}
       position="absolute"
       top={position().y - height() - 1}
       left={position().x}
@@ -859,14 +866,10 @@ export function Autocomplete(props: {
                 paddingRight={2}
                 paddingTop={0}
                 paddingBottom={0}
-                width="100%"
                 backgroundColor={active() ? activeRowSurface(theme.primary, theme.backgroundElement) : undefined}
                 border={active() ? ["left"] : undefined}
                 borderColor={theme.primary}
                 customBorderChars={SplitBorder.customBorderChars}
-                flexDirection="row"
-                gap={2}
-                alignItems="flex-start"
                 onMouseMove={() => {
                   if (store.input !== "mouse") setStore("input", "mouse")
                 }}
@@ -881,18 +884,19 @@ export function Autocomplete(props: {
                 }}
                 onMouseUp={() => select()}
               >
-                <text
-                  flexShrink={0}
-                  fg={active() ? theme.primary : theme.text}
-                  attributes={active() ? TextAttributes.BOLD : undefined}
-                >
-                  {optionLabel(option())}
+                <text wrapMode="none">
+                  <span
+                    style={{
+                      fg: active() ? theme.primary : theme.text,
+                      bold: active(),
+                    }}
+                  >
+                    {optionLabel(option())}
+                  </span>
+                  <Show when={option().description}>
+                    <span style={{ fg: theme.textMuted }}> {option().description}</span>
+                  </Show>
                 </text>
-                <Show when={option().description}>
-                  <text fg={theme.textMuted} wrapMode="none" flexShrink={1}>
-                    {option().description}
-                  </text>
-                </Show>
               </box>
             )
           }}
