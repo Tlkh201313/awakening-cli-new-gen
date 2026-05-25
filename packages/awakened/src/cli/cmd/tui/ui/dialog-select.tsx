@@ -185,11 +185,11 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     on([() => store.filter, () => props.current], ([filter, current]) => {
       setTimeout(() => {
         if (filter.length > 0) {
-          moveTo(0, true)
+          moveTo(0)
         } else if (current) {
           const currentIndex = flat().findIndex((opt) => isDeepEqual(opt.value, current))
           if (currentIndex >= 0) {
-            moveTo(currentIndex, true)
+            moveTo(currentIndex)
           }
         }
       }, 0)
@@ -201,7 +201,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     let next = store.selected + direction
     if (next < 0) next = flat().length - 1
     if (next >= flat().length) next = 0
-    moveTo(next, true)
+    moveTo(next)
   }
 
   function moveTo(next: number, center = false) {
@@ -362,12 +362,16 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 
   onMount(() => setReady(true))
 
+  function revealSelected() {
+    if (flat().length === 0) return
+    moveTo(store.selected)
+  }
+
   createEffect(
-    on([ready, () => flat().length], () => {
+    on([ready, () => flat().length, () => store.selected], () => {
       if (!ready()) return
-      if (flat().length === 0) return
-      setTimeout(() => moveTo(store.selected, true), 0)
-      setTimeout(() => moveTo(store.selected, true), 60)
+      setTimeout(revealSelected, 0)
+      setTimeout(revealSelected, 60)
     }),
   )
 
@@ -419,7 +423,10 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           opacity={contentAlpha()}
           scrollbarOptions={{ visible: false }}
           scrollAcceleration={scrollAcceleration()}
-          ref={(r: ScrollBoxRenderable) => (scroll = r)}
+          ref={(r: ScrollBoxRenderable) => {
+            scroll = r
+            setTimeout(revealSelected, 0)
+          }}
           maxHeight={height()}
         >
           <For each={grouped()}>
@@ -446,9 +453,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                     const index = () => flat().findIndex((x) => isDeepEqual(x.value, option.value))
                     return (
                       <SelectRow
-                        index={index()}
-                        ready={ready}
-                        animations={animations}
+                        contentAlpha={contentAlpha}
                         active={active}
                         current={current}
                         option={option}
@@ -523,9 +528,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 }
 
 function SelectRow(props: {
-  index: number
-  ready: Accessor<boolean>
-  animations: Accessor<boolean>
+  contentAlpha: Accessor<number>
   active: Accessor<boolean>
   current: Accessor<boolean>
   option: DialogSelectOption<any>
@@ -537,13 +540,8 @@ function SelectRow(props: {
   onMouseDown: () => void
 }) {
   const { theme } = useTheme()
-  const alpha = createDelayedFadeIn(
-    props.ready,
-    props.animations,
-    100 + Math.min(props.index * 14, 220),
-    150,
-  )
-  const pulse = createPulse(props.active, props.animations, 1300)
+  const kv = useKV()
+  const pulse = createPulse(props.active, () => kv.get("animations_enabled", true), 1300)
   const backgroundColor = () => {
     if (!props.active()) return RGBA.fromInts(0, 0, 0, 0)
     return activeRowSurface(theme.primary, theme.backgroundElement, 0.12 + 0.06 * pulse())
@@ -556,7 +554,7 @@ function SelectRow(props: {
       id={JSON.stringify(props.option.value)}
       flexDirection="row"
       position="relative"
-      opacity={alpha()}
+      opacity={props.contentAlpha()}
       onMouseMove={props.onMouseMove}
       onMouseUp={props.onMouseUp}
       onMouseOver={props.onMouseOver}
@@ -615,7 +613,6 @@ function Option(props: {
         attributes={props.active ? TextAttributes.BOLD : undefined}
         overflow="hidden"
         wrapMode="none"
-        paddingLeft={3}
       >
         {Locale.truncate(props.title, 61)}
         <Show when={props.description}>

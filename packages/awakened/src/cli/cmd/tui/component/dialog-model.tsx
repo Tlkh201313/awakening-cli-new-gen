@@ -13,6 +13,7 @@ export function DialogModel(props: { providerID?: string }) {
   const local = useLocal()
   const sync = useSync()
   const dialog = useDialog()
+  dialog.setSize("large")
   const [query, setQuery] = createSignal("")
 
   const connected = useConnected()
