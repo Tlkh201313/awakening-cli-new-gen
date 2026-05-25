@@ -5,11 +5,13 @@ import { useDirectory } from "../../context/directory"
 import { useConnected } from "../../component/use-connected"
 import { createStore } from "solid-js/store"
 import { useRoute } from "../../context/route"
+import { useLocal } from "../../context/local"
 
 export function Footer() {
   const { theme } = useTheme()
   const sync = useSync()
   const route = useRoute()
+  const local = useLocal()
   const mcp = createMemo(() => Object.values(sync.data.mcp).filter((x) => x.status === "connected").length)
   const mcpError = createMemo(() => Object.values(sync.data.mcp).some((x) => x.status === "failed"))
   const lsp = createMemo(() => Object.keys(sync.data.lsp))
@@ -19,6 +21,13 @@ export function Footer() {
   })
   const directory = useDirectory()
   const connected = useConnected()
+  const currentModel = createMemo(() => local.model.current())
+  const modelLabel = createMemo(() => {
+    const m = currentModel()
+    if (!m) return null
+    const name = m.modelID.split("/").pop() ?? m.modelID
+    return name.length > 25 ? name.slice(0, 22) + "..." : name
+  })
 
   const [store, setStore] = createStore({
     welcome: false,
@@ -60,6 +69,9 @@ export function Footer() {
             </text>
           </Match>
           <Match when={connected()}>
+            <Show when={modelLabel()}>
+              <text fg={theme.accent}>{modelLabel()}</text>
+            </Show>
             <Show when={permissions().length > 0}>
               <text fg={theme.warning}>
                 <span style={{ fg: theme.warning }}>△</span> {permissions().length} Permission
