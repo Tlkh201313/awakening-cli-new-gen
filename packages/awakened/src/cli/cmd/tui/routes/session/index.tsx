@@ -66,6 +66,7 @@ import { openExternalLink } from "../../util/open-external-link"
 import { DialogTimeline } from "./dialog-timeline"
 import { DialogForkFromTimeline } from "./dialog-fork-from-timeline"
 import { DialogSessionRename } from "../../component/dialog-session-rename"
+import { optimizePrompt } from "@/util/prompt-optimize"
 import { Sidebar } from "./sidebar"
 import { SIDEBAR_WIDTH } from "../../feature-plugins/sidebar/shared"
 import { SubagentFooter } from "./subagent-footer.tsx"
@@ -567,6 +568,43 @@ export function Session() {
           modelID: selectedModel.modelID,
           providerID: selectedModel.providerID,
         })
+        dialog.clear()
+      },
+    },
+    {
+      title: "Optimize prompt (reduce tokens)",
+      value: "session.better-prompt",
+      category: "Session",
+      slash: {
+        name: "better-prompt",
+        aliases: ["optimize-prompt", "shorten"],
+      },
+      run: () => {
+        const current = prompt?.current
+        if (!current?.input?.trim()) {
+          toast.show({
+            variant: "warning",
+            message: "Type a prompt first, then run /better-prompt to optimize it",
+            duration: 3000,
+          })
+          dialog.clear()
+          return
+        }
+        const { optimized, savings } = optimizePrompt(current.input)
+        if (savings <= 0) {
+          toast.show({
+            variant: "info",
+            message: "Prompt is already concise!",
+            duration: 2000,
+          })
+        } else {
+          prompt?.set({ input: optimized, parts: current.parts ?? [] })
+          toast.show({
+            variant: "success",
+            message: `Reduced by ${savings} chars (${Math.round((savings / current.input.length) * 100)}%)`,
+            duration: 3000,
+          })
+        }
         dialog.clear()
       },
     },

@@ -32,6 +32,7 @@ export function DialogHelp() {
             <text fg={theme.textMuted}>/models ......... Switch AI model</text>
             <text fg={theme.textMuted}>/agents ......... Switch agent (build/plan)</text>
             <text fg={theme.textMuted}>/compact ........ Summarize long sessions</text>
+            <text fg={theme.textMuted}>/better-prompt .. Optimize prompt for fewer tokens</text>
             <text fg={theme.textMuted}>/connect ........ Connect a provider</text>
             <text fg={theme.textMuted}>/status ......... View system status</text>
             <text fg={theme.textMuted}>/awakened ....... View capabilities</text>

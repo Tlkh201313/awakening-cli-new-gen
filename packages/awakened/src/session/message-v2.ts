@@ -281,7 +281,12 @@ export type ToolStateCompleted = Types.DeepMutable<Schema.Schema.Type<typeof Too
 function truncateToolOutput(text: string, maxChars?: number) {
   if (!maxChars || text.length <= maxChars) return text
   const omitted = text.length - maxChars
-  return `${text.slice(0, maxChars)}\n[Tool output truncated for compaction: omitted ${omitted} chars]`
+  const headChars = Math.floor(maxChars * 0.6)
+  const tailChars = maxChars - headChars - 50
+  if (tailChars <= 0) return `${text.slice(0, maxChars)}\n[Tool output truncated: omitted ${omitted} chars]`
+  const head = text.slice(0, headChars)
+  const tail = text.slice(-tailChars)
+  return `${head}\n\n[... ${omitted} chars omitted ...]\n\n${tail}`
 }
 
 export const ToolStateError = Schema.Struct({

@@ -37,6 +37,7 @@ export const PRUNE_PROTECT = 40_000
 const TOOL_OUTPUT_MAX_CHARS = 2_000
 const PRUNE_PROTECTED_TOOLS = ["skill"]
 const DEFAULT_TAIL_TURNS = 2
+const EFFICIENT_TAIL_TURNS = 1
 const MIN_PRESERVE_RECENT_TOKENS = 2_000
 const MAX_PRESERVE_RECENT_TOKENS = 8_000
 const SUMMARY_TEMPLATE = `Output exactly the Markdown structure shown inside <template> and keep the section order unchanged. Do not include the <template> tags in your response.
@@ -75,6 +76,14 @@ Rules:
 - Use terse bullets, not prose paragraphs.
 - Preserve exact file paths, commands, error strings, and identifiers when known.
 - Do not mention the summary process or that context was compacted.`
+
+const SUMMARY_TEMPLATE_COMPACT = `Summarize the conversation in terse bullets. Preserve file paths, errors, identifiers. Structure:
+
+Goal: [one sentence]
+Done: [completed items]
+Next: [next actions]
+Context: [critical facts]
+Files: [relevant paths]`
 type Turn = {
   start: number
   end: number
@@ -120,7 +129,7 @@ function completedCompactions(messages: MessageV2.WithParts[]) {
   })
 }
 
-function buildPrompt(input: { previousSummary?: string; context: string[] }) {
+function buildPrompt(input: { previousSummary?: string; context: string[]; compact?: boolean }) {
   const anchor = input.previousSummary
     ? [
         "Update the anchored summary below using the conversation history above.",
@@ -130,7 +139,8 @@ function buildPrompt(input: { previousSummary?: string; context: string[] }) {
         "</previous-summary>",
       ].join("\n")
     : "Create a new anchored summary from the conversation history above."
-  return [anchor, SUMMARY_TEMPLATE, ...input.context].join("\n\n")
+  const template = input.compact ? SUMMARY_TEMPLATE_COMPACT : SUMMARY_TEMPLATE
+  return [anchor, template, ...input.context].join("\n\n")
 }
 
 function preserveRecentBudget(input: { cfg: Config.Info; model: Provider.Model }) {
@@ -246,8 +256,11 @@ export const layer = Layer.effect(
       messages: MessageV2.WithParts[]
       cfg: Config.Info
       model: Provider.Model
+      compact?: boolean
     }) {
-      const limit = input.cfg.compaction?.tail_turns ?? DEFAULT_TAIL_TURNS
+      const limit = input.compact
+        ? EFFICIENT_TAIL_TURNS
+        : (input.cfg.compaction?.tail_turns ?? DEFAULT_TAIL_TURNS)
       if (limit <= 0) return { head: input.messages, tail_start_id: undefined }
       const budget = preserveRecentBudget({ cfg: input.cfg, model: input.model })
       const all = turns(input.messages)
@@ -389,10 +402,12 @@ export const layer = Layer.effect(
       const prior = completedCompactions(history)
       const hidden = new Set(prior.flatMap((item) => [item.userIndex, item.assistantIndex]))
       const previousSummary = prior.at(-1)?.summary
+      const isCompact = cfg.awakenedCapabilities?.tokenMode === "efficient" || cfg.awakenedCapabilities?.tokenMode === "caveman"
       const selected = yield* select({
         messages: history.filter((_, index) => !hidden.has(index)),
         cfg,
         model,
+        compact: isCompact,
       })
       // Allow plugins to inject context or replace compaction prompt.
       const compacting = yield* plugin.trigger(
@@ -400,7 +415,7 @@ export const layer = Layer.effect(
         { sessionID: input.sessionID },
         { context: [], prompt: undefined },
       )
-      const nextPrompt = compacting.prompt ?? buildPrompt({ previousSummary, context: compacting.context })
+      const nextPrompt = compacting.prompt ?? buildPrompt({ previousSummary, context: compacting.context, compact: isCompact })
       const msgs = structuredClone(selected.head)
       yield* plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
       const modelMessages = yield* MessageV2.toModelMessagesEffect(msgs, model, {
