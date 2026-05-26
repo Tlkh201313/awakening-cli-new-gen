@@ -1517,9 +1517,9 @@
               <div class="eyebrow" id="stageEyebrow">Step 01</div>
               <h3 id="stageTitle">Clone and run.</h3>
               <p id="stageText">No web host needed. No accounts. Clone the repo, install dependencies, and run the TUI locally. Your code never leaves your machine.</p>
-              <pre id="stageCode">$ git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git
-$ cd awakening-cli-new-gen && bun install
-$ bun run --cwd packages/awakened src/index.ts</pre>
+              <pre id="stageCode">$ curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.sh | bash
+# or Windows: irm .../setup.ps1 | iex
+$ awakened</pre>
             </div>
           </div>
         </div>
@@ -1658,7 +1658,7 @@ $ bun run --cwd packages/awakened src/index.ts</pre>
         <div class="install-card reveal">
           <div class="eyebrow">Install path</div>
           <h2>Local-first. Zero cloud.</h2>
-          <p>Clone from source or install globally. The TUI runs entirely on your machine. No accounts, no API keys required for the runtime itself.</p>
+          <p>One command installs everything: clone, dependencies, and global registration. The TUI runs entirely on your machine. No accounts, no API keys required for the runtime itself.</p>
           <div class="hero-actions">
             <a class="btn btn-gold" href="https://github.com/Tlkh201313/awakening-cli-new-gen" target="_blank" rel="noopener">Open repo</a>
             <a class="btn btn-soft" href="https://github.com/anomalyco/opencode" target="_blank" rel="noopener">Upstream OpenCode</a>
@@ -1667,20 +1667,20 @@ $ bun run --cwd packages/awakened src/index.ts</pre>
 
         <div class="install-card dark reveal">
           <div class="commands">
-            <button class="copy" type="button" data-copy="git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git && cd awakening-cli-new-gen && bun install">
-              <span><strong>git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git && cd awakening-cli-new-gen && bun install</strong><span>Clone from source</span></span>
+            <button class="copy" type="button" data-copy="curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.sh | bash">
+              <span><strong>curl -fsSL .../setup.sh | bash</strong><span>One-line install (macOS / Linux)</span></span>
               <em>copy</em>
             </button>
-            <button class="copy" type="button" data-copy="bun run --cwd packages/awakened --conditions=browser src/index.ts">
-              <span><strong>bun run --cwd packages/awakened --conditions=browser src/index.ts</strong><span>Run from repo</span></span>
+            <button class="copy" type="button" data-copy="irm https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.ps1 | iex">
+              <span><strong>irm .../setup.ps1 | iex</strong><span>One-line install (Windows)</span></span>
               <em>copy</em>
             </button>
-            <button class="copy" type="button" data-copy="npm install -g awakened-ai">
-              <span><strong>npm install -g awakened-ai</strong><span>Global package path</span></span>
+            <button class="copy" type="button" data-copy="git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git && cd awakening-cli-new-gen && bun install && bun link">
+              <span><strong>git clone ... && bun install && bun link</strong><span>Manual from source</span></span>
               <em>copy</em>
             </button>
-            <button class="copy" type="button" data-copy="awakened serve">
-              <span><strong>awakened serve</strong><span>Headless local API</span></span>
+            <button class="copy" type="button" data-copy="awakened">
+              <span><strong>awakened</strong><span>Start the TUI</span></span>
               <em>copy</em>
             </button>
           </div>
@@ -1773,9 +1773,9 @@ $ bun run --cwd packages/awakened src/index.ts</pre>
     const workflow = [
       {
         eyebrow: "Step 01",
-        title: "Clone and run.",
-        text: "No web host needed. No accounts. Clone the repo, install dependencies, and run the TUI locally. Your code never leaves your machine.",
-        code: "$ git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git\n$ cd awakening-cli-new-gen && bun install\n$ bun run --cwd packages/awakened src/index.ts"
+        title: "One command to install.",
+        text: "No web host needed. No accounts. One curl command clones, installs, and registers 'awakened' globally. Your code never leaves your machine.",
+        code: "$ curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.sh | bash\n# or Windows: irm .../setup.ps1 | iex\n$ awakened"
       },
       {
         eyebrow: "Step 02",
