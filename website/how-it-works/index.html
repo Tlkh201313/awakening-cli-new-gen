@@ -1126,6 +1126,43 @@
       color: rgba(255, 248, 237, 0.7);
     }
 
+    .os-tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 1.1rem;
+      padding: 0.3rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .os-tab {
+      flex: 1;
+      padding: 0.55rem 0.8rem;
+      border-radius: 999px;
+      color: rgba(255, 248, 237, 0.56);
+      font-size: 0.84rem;
+      font-weight: 800;
+      text-align: center;
+      transition: color 180ms var(--ease), background 180ms var(--ease);
+    }
+
+    .os-tab:hover {
+      color: rgba(255, 248, 237, 0.82);
+    }
+
+    .os-tab.active {
+      color: var(--cream);
+      background: var(--charcoal);
+    }
+
+    .os-panel {
+      display: none;
+    }
+
+    .os-panel.active {
+      display: block;
+    }
+
     .commands {
       display: grid;
       gap: 0.75rem;
@@ -1666,23 +1703,59 @@ $ awakened</pre>
         </div>
 
         <div class="install-card dark reveal">
-          <div class="commands">
-            <button class="copy" type="button" data-copy="curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.sh | bash">
-              <span><strong>curl -fsSL .../setup.sh | bash</strong><span>One-line install (macOS / Linux)</span></span>
-              <em>copy</em>
-            </button>
-            <button class="copy" type="button" data-copy="irm https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.ps1 | iex">
-              <span><strong>irm .../setup.ps1 | iex</strong><span>One-line install (Windows)</span></span>
-              <em>copy</em>
-            </button>
-            <button class="copy" type="button" data-copy="git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git && cd awakening-cli-new-gen && bun install && bun link">
-              <span><strong>git clone ... && bun install && bun link</strong><span>Manual from source</span></span>
-              <em>copy</em>
-            </button>
-            <button class="copy" type="button" data-copy="awakened">
-              <span><strong>awakened</strong><span>Start the TUI</span></span>
-              <em>copy</em>
-            </button>
+          <div class="os-tabs" role="tablist" aria-label="Operating system">
+            <button class="os-tab active" type="button" data-os="macos" role="tab" aria-selected="true">macOS</button>
+            <button class="os-tab" type="button" data-os="linux" role="tab" aria-selected="false">Linux</button>
+            <button class="os-tab" type="button" data-os="windows" role="tab" aria-selected="false">Windows</button>
+          </div>
+          <div class="os-panel active" id="os-macos" role="tabpanel">
+            <div class="commands">
+              <button class="copy" type="button" data-copy="curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/master/setup.sh | bash">
+                <span><strong>curl -fsSL .../setup.sh | bash</strong><span>One-line install &mdash; clones, installs deps, registers globally</span></span>
+                <em>copy</em>
+              </button>
+              <button class="copy" type="button" data-copy="curl -fsSL https://bun.sh/install | bash">
+                <span><strong>curl -fsSL https://bun.sh/install | bash</strong><span>Install Bun (auto-installed by setup.sh if missing)</span></span>
+                <em>copy</em>
+              </button>
+              <button class="copy" type="button" data-copy="awakened">
+                <span><strong>awakened</strong><span>Start the TUI after install</span></span>
+                <em>copy</em>
+              </button>
+            </div>
+          </div>
+          <div class="os-panel" id="os-linux" role="tabpanel">
+            <div class="commands">
+              <button class="copy" type="button" data-copy="curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/master/setup.sh | bash">
+                <span><strong>curl -fsSL .../setup.sh | bash</strong><span>One-line install &mdash; clones, installs deps, registers globally</span></span>
+                <em>copy</em>
+              </button>
+              <button class="copy" type="button" data-copy="curl -fsSL https://bun.sh/install | bash">
+                <span><strong>curl -fsSL https://bun.sh/install | bash</strong><span>Install Bun (auto-installed by setup.sh if missing)</span></span>
+                <em>copy</em>
+              </button>
+              <button class="copy" type="button" data-copy="awakened">
+                <span><strong>awakened</strong><span>Start the TUI after install</span></span>
+                <em>copy</em>
+              </button>
+            </div>
+          </div>
+          <div class="os-panel" id="os-windows" role="tabpanel">
+            <div class="commands">
+              <button class="copy" type="button" data-copy="irm https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/master/setup.ps1 | iex">
+                <span><strong>irm .../setup.ps1 | iex</strong><span>One-line install (PowerShell) &mdash; clones, installs deps, registers globally</span></span>
+                <em>copy</em>
+              </button>
+              <button class="copy" type="button" data-copy="powershell -c &quot;irm https://bun.sh/install.ps1 | iex&quot;">
+                <span><strong>irm https://bun.sh/install.ps1 | iex</strong><span>Install Bun (auto-installed by setup.ps1 if missing)</span></span>
+                <em>copy</em>
+              </button>
+              <button class="copy" type="button" data-copy="awakened">
+                <span><strong>awakened</strong><span>Start the TUI after install</span></span>
+                <em>copy</em>
+              </button>
+            </div>
+            <p style="margin-top:0.8rem;color:rgba(255,248,237,0.56);font-size:0.82rem">Use Windows Terminal or PowerShell 7+ for best results.</p>
           </div>
         </div>
       </div>
@@ -1851,6 +1924,18 @@ $ awakened</pre>
       const wasOpen = item.classList.contains("open");
       document.querySelectorAll(".faq-item").forEach((faq) => faq.classList.remove("open"));
       if (!wasOpen) item.classList.add("open");
+    });
+
+    document.querySelector(".os-tabs").addEventListener("click", (event) => {
+      const tab = event.target.closest(".os-tab");
+      if (!tab) return;
+      const os = tab.dataset.os;
+      document.querySelectorAll(".os-tab").forEach((t) => {
+        t.classList.toggle("active", t === tab);
+        t.setAttribute("aria-selected", t === tab ? "true" : "false");
+      });
+      document.querySelectorAll(".os-panel").forEach((p) => p.classList.remove("active"));
+      document.getElementById(`os-${os}`).classList.add("active");
     });
 
     const revealObserver = new IntersectionObserver((entries) => {
