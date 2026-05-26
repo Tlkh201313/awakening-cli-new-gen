@@ -1,6 +1,6 @@
 {
   "name": "@gitlawb/awakened",
-  "version": "0.12.19",
+  "version": "1.0.0",
   "description": "Awakened — coding-agent CLI for any LLM (OpenAI, Gemini, DeepSeek, Ollama, 200+ models). `openclaude` bin kept as alias.",
   "type": "module",
   "bin": {
