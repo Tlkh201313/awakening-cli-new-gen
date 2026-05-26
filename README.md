@@ -16,9 +16,23 @@
 
 ## Install
 
-Requires **Bun** (to install deps and build), **Node.js 22+** (to run `dist/cli.mjs`), and **ripgrep** (`rg --version` in your PATH).
+### One-line setup (recommended)
 
-### From this repo (recommended)
+**macOS / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/master/setup.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/master/setup.ps1 | iex
+```
+
+This clones the repo, installs dependencies, and registers `awakened` globally. Bun is auto-installed if missing.
+
+### From this repo (manual)
+
+Requires **Bun** 1.3+ (to install deps and build), **Node.js 22+** (to run `dist/cli.mjs`), and **ripgrep** (`rg --version` in your PATH).
 
 ```bash
 git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git
