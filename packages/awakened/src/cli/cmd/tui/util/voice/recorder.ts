@@ -67,6 +67,12 @@ export async function startVoiceRecorder(device?: string) {
     file,
   ]
   const proc = Process.spawn(args, { stdout: "ignore", stderr: "pipe", stdin: "pipe" })
+  const cleanup = () => {
+    try {
+      proc.kill("SIGTERM")
+    } catch {}
+  }
+  process.on("exit", cleanup)
   await new Promise((resolve) => setTimeout(resolve, 300))
   if (proc.exitCode !== null) {
     const stderr = proc.stderr ? await readStream(proc.stderr) : ""
@@ -75,6 +81,7 @@ export async function startVoiceRecorder(device?: string) {
   return {
     file,
     stop: async () => {
+      process.removeListener("exit", cleanup)
       if (proc.exitCode === null) {
         proc.stdin?.write("q\n")
         proc.stdin?.end()

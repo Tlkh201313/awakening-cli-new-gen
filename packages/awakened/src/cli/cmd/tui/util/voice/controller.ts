@@ -55,6 +55,15 @@ function stopMeter() {
   meterIndex = 0
 }
 
+process.on("exit", () => {
+  if (meterTimer) clearInterval(meterTimer)
+  if (activeRecorder) {
+    try {
+      activeRecorder.stop()
+    } catch {}
+  }
+})
+
 function releaseRecordingKeys() {
   unregisterRecordingKeys?.()
   unregisterRecordingKeys = undefined
