@@ -46,6 +46,9 @@ target
 *.sqlite
 *.sqlite3
 
+# Husky internals (keep .husky/pre-push tracked)
+.husky/_
+
 # Local dev files
 awakened-dev
 UPCOMING_CHANGELOG.md
@@ -60,6 +63,9 @@ tsconfig.tsbuildinfo
 # Editor / IDE configuration directories
 .cursor/
 .zed/
+
+# Tool directories
+.ade/
 
 # Unrelated temporary directories
 antigravity_for_loop_src/
@@ -88,6 +94,7 @@ vscode-extension/
 # Non-core packages
 packages/awakened/config.json
 packages/awakened/Dockerfile
+packages/awakened/.test-cli/
 packages/containers/
 packages/storybook/
 packages/web/
