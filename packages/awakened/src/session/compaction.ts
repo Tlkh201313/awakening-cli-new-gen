@@ -280,7 +280,7 @@ export const layer = Layer.effect(
       let keep: Tail | undefined
       for (let i = recent.length - 1; i >= 0; i--) {
         const turn = recent[i]!
-        const size = sizes[i]
+        const size = sizes[i] ?? 0
         if (total + size <= budget) {
           total += size
           keep = { start: turn.start, id: turn.id }

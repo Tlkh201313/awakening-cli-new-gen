@@ -13,7 +13,6 @@ import type {
   IssuesEvent,
   PullRequestReviewCommentEvent,
   WorkflowDispatchEvent,
-  WorkflowRunEvent,
   PullRequestEvent,
 } from "@octokit/webhooks-types"
 import { UI } from "../ui"
@@ -468,7 +467,6 @@ export const GithubRunCommand = effectCmd({
         | IssuesEvent
         | PullRequestReviewCommentEvent
         | WorkflowDispatchEvent
-        | WorkflowRunEvent
         | PullRequestEvent
       const issueEvent = isIssueCommentEvent(payload) ? payload : undefined
       // workflow_dispatch has an actor (the user who triggered it), schedule does not
@@ -749,9 +747,8 @@ export const GithubRunCommand = effectCmd({
           | IssuesEvent
           | PullRequestReviewCommentEvent
           | WorkflowDispatchEvent
-          | WorkflowRunEvent
           | PullRequestEvent,
-      ): event is IssueCommentEvent {
+        ): event is IssueCommentEvent {
         return "issue" in event && "comment" in event
       }
 
