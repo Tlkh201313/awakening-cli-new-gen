@@ -9,8 +9,6 @@
     "dev": "bun run --conditions=browser packages/awakened/bin/awakened-dev.ts",
     "dev:desktop": "bun --cwd packages/desktop dev",
     "dev:web": "bun --cwd packages/app dev",
-    "dev:console": "ulimit -n 10240 2>/dev/null; bun run --cwd packages/console/app dev",
-    "dev:storybook": "bun --cwd packages/storybook storybook",
     "lint": "oxlint",
     "typecheck": "bun turbo typecheck",
     "upgrade-opentui": "bun run script/upgrade-opentui.ts",
@@ -23,9 +21,7 @@
   "workspaces": {
     "packages": [
       "packages/*",
-      "packages/console/*",
-      "packages/sdk/js",
-      "packages/slack"
+      "packages/sdk/js"
     ],
     "catalog": {
       "@effect/opentelemetry": "4.0.0-beta.66",
@@ -46,7 +42,6 @@
       "@types/semver": "7.7.1",
       "@tsconfig/node22": "22.0.2",
       "@tsconfig/bun": "1.0.9",
-      "@cloudflare/workers-types": "4.20251008.0",
       "@openauthjs/openauth": "0.0.0-20250322224806",
       "@pierre/diffs": "1.1.0-beta.18",
       "opentui-spinner": "0.0.6",
@@ -88,7 +83,6 @@
     }
   },
   "devDependencies": {
-    "@actions/artifact": "5.0.1",
     "@tsconfig/bun": "catalog:",
     "@types/mime-types": "3.0.1",
     "@typescript/native-preview": "catalog:",
@@ -98,11 +92,9 @@
     "oxlint-tsgolint": "0.21.0",
     "prettier": "3.6.2",
     "semver": "^7.6.0",
-    "sst": "4.13.1",
     "turbo": "2.8.13"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.933.0",
     "@awakened-ai/plugin": "workspace:*",
     "@awakened-ai/script": "workspace:*",
     "@awakened-ai/sdk": "workspace:*",
@@ -111,7 +103,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/anomalyco/awakened"
+    "url": "https://github.com/Tlkh201313/awakening-cli-new-gen"
   },
   "license": "MIT",
   "prettier": {

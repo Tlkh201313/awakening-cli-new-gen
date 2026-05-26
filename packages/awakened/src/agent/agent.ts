@@ -179,7 +179,7 @@ export const layer = Layer.effect(
           },
           general: {
             name: "general",
-            description: `General-purpose agent for researching complex questions and executing multi-step tasks. Use this agent to execute multiple units of work in parallel.`,
+            description: `General-purpose agent for executing multiple independent units of work in parallel. Do NOT use for codebase exploration (use explore instead) or multi-step orchestration (use orchestrator instead). Use general only when you have 2+ independent tasks that don't fit other specialists.`,
             permission: Permission.merge(
               defaults,
               Permission.fromConfig({
@@ -208,7 +208,7 @@ export const layer = Layer.effect(
               }),
               user,
             ),
-            description: `Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns (eg. "src/components/**/*.tsx"), search code for keywords (eg. "API endpoints"), or answer questions about the codebase (eg. "how do API endpoints work?"). When calling this agent, specify the desired thoroughness level: "quick" for basic searches, "medium" for moderate exploration, or "very thorough" for comprehensive analysis across multiple locations and naming conventions.`,
+            description: `Fast agent specialized for exploring and understanding codebases. Use this when you need to understand how the codebase works, map architecture, analyze module structure, find files by patterns (eg. "src/components/**/*.tsx"), search code for keywords (eg. "API endpoints"), or answer questions about the codebase (eg. "how do API endpoints work?", "understand the repo structure", "map the architecture"). This is the FIRST agent to call when the user asks to understand, explore, or map a codebase — do NOT use build, builder, or general for this. When calling this agent, specify the desired thoroughness level: "quick" for basic searches, "medium" for moderate exploration, or "very thorough" for comprehensive analysis across multiple locations and naming conventions.`,
             prompt: PROMPT_EXPLORE,
             options: {},
             mode: "subagent",
@@ -304,7 +304,7 @@ export const layer = Layer.effect(
               user,
             ),
             description:
-              "Subagent dispatcher. Use proactively for multi-step work — dispatches task tool to specialized agents instead of doing work inline.",
+              "Subagent dispatcher. Use proactively for multi-step work — dispatches task tool to specialized agents instead of doing work inline. Route to orchestrator when the task spans multiple domains, involves 3+ files, or when you are unsure which specialist to pick. Orchestrator will dispatch explore, builder, reviewer, etc. as needed.",
             prompt: PROMPT_ORCHESTRATOR,
             options: {},
             mode: "subagent",

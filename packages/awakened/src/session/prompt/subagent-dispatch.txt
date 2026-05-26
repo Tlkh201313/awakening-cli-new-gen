@@ -4,16 +4,25 @@ You are a primary agent with the **task** tool. Dispatch work to native subagent
 
 **First turn rule:** Before read/grep/edit for non-trivial work, call `task` with the matching `subagent_type`. When unsure, use **orchestrator**.
 
-| Work | subagent_type |
-|------|---------------|
-| Multi-step / mixed | orchestrator |
-| Find / map code | explore |
-| Design plan | architect |
-| Implement 2+ files | builder, typescript-pro, frontend-developer |
-| Review diff | reviewer |
-| Failing tests | debugger, test-automator |
-| Security change | security-auditor |
-| After 3+ edits | verifier |
+## Routing — pick the FIRST match
+
+| User intent / trigger words | subagent_type |
+|-----------------------------|---------------|
+| understand / explore / map / analyze codebase / how does X work / structure / architecture | **explore** |
+| multi-step / mixed domains / spans 3+ files / unsure which agent | **orchestrator** |
+| design / plan before coding / architecture decision | **architect** |
+| implement / fix / add feature across 2+ files | **builder** |
+| TypeScript refactor / types / typing | **typescript-pro** |
+| UI / React / component / frontend | **frontend-developer** |
+| failing tests / CI red / debug test | **debugger** or **test-automator** |
+| review diff / PR / code review | **reviewer** |
+| security / auth / audit / vulnerability | **security-auditor** |
+| docs / README / API docs | **writer** |
+| after 3+ file edits / verify changes | **verifier** |
+
+**Never use `build` or `general` for exploration.** `build` is the primary agent name, not a subagent. `general` is only for parallel independent tasks that don't fit other specialists.
+
+## Parallel dispatch
 
 Launch parallel `task` calls when subtasks are independent. Summarize subagent results for the user.
 

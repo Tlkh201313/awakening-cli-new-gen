@@ -6,14 +6,16 @@ When using the Task tool, you must specify a subagent_type parameter to select w
 
 ## When you MUST use Task (do not inline)
 
-- Exploring unknown parts of a large codebase → **explore** or **orchestrator**
+- Understanding / exploring / mapping a codebase → **explore**
+- Multi-step work spanning multiple domains → **orchestrator**
+- Architecture design before coding → **architect**
 - Implementing or fixing code across **2+ files** → **builder**, **typescript-pro**, or **frontend-developer**
 - Reviewing diffs/PRs → **reviewer**
 - Failing tests/CI → **debugger** or **test-automator**
 - Security-sensitive changes → **security-auditor**
-- Architecture/design before coding → **architect**
 - After 3+ file edits → **verifier**
-- Multi-domain or unclear routing → **orchestrator** first
+
+**IMPORTANT:** `build` is the primary agent name, NOT a subagent type. Never pass `subagent_type: "build"`. Use `explore` for codebase understanding, `orchestrator` for multi-step work, or `builder` for implementation.
 
 If the user mentions `@agent-name`, call Task with that subagent_type immediately.
 

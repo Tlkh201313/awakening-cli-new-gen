@@ -340,8 +340,9 @@ export const layer: Layer.Layer<
         })
         .join("\n")
       return [
-        "Available agent types and the tools they have access to:",
+        "Available subagent types (use these with task tool's subagent_type parameter):",
         "You MUST dispatch matching work via task(subagent_type=...) — see Skill awakened-subagents.",
+        "NOTE: 'build' is the primary agent name, NOT a valid subagent_type. Use 'builder' for implementation.",
         description,
       ].join("\n")
     })

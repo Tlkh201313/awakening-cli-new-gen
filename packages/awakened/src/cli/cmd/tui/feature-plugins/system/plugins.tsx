@@ -3,7 +3,7 @@ import type { InternalTuiPlugin } from "../../plugin/internal"
 import { useTerminalDimensions } from "@opentui/solid"
 import { fileURLToPath } from "url"
 import { DialogSelect, type DialogSelectOption } from "@tui/ui/dialog-select"
-import { Show, createEffect, createMemo, createSignal, For, onMount } from "solid-js"
+import { Show, Switch, Match, createEffect, createMemo, createSignal, For, onMount } from "solid-js"
 import { useBindings } from "../../keymap"
 import { ensureDefaultMarketplaces, loadAllMarketplaces, parseMarketplaceInput, addMarketplace, loadMarketplace, removeMarketplace, updateMarketplace, type LoadedMarketplace } from "@/plugin/marketplace"
 import { Locale } from "@/util/locale"
@@ -407,89 +407,87 @@ function MarketplaceBrowse(props: { api: TuiPluginApi }) {
     ],
   }))
 
-  if (busy()) {
-    return (
-      <box paddingLeft={2} paddingRight={2} paddingTop={2} paddingBottom={1} gap={1}>
-        <Spinner style="scanner">Loading marketplaces…</Spinner>
-        <text fg={props.api.theme.current.textMuted}>Fetching catalogs from configured sources</text>
-      </box>
-    )
-  }
-
-  if (!loaded().length) {
-    return (
-      <box paddingLeft={2} paddingRight={2} paddingTop={1} gap={1}>
-        <text fg={props.api.theme.current.text}>
-          <b>No marketplaces loaded</b>
-        </text>
-        <text fg={props.api.theme.current.textMuted}>
-          GitHub may be unreachable. Use a VPN/mirror or add a manifest URL manually.
-        </text>
-        <Show when={errors().length}>
-          <box gap={0} marginTop={1}>
-            <For each={errors()}>
-              {(item) => (
-                <text fg={props.api.theme.current.error}>
-                  {item.name}: {Locale.truncate(item.error.split("\n")[0] ?? item.error, 96)}
-                </text>
-              )}
-            </For>
-          </box>
-        </Show>
-        <box marginTop={1} flexDirection="row" gap={2}>
-          <text fg={props.api.theme.current.primary}>/plugin marketplace add owner/repo</text>
-          <text fg={props.api.theme.current.textMuted}>esc · back</text>
-        </box>
-      </box>
-    )
-  }
-
-  if (marketplace()) {
-    return (
-      <DialogSelect
-        title={`Marketplace: ${marketplace()}`}
-        options={pluginRows()}
-        footerHints={[
-          { title: "scope", label: global() ? "global" : "local", side: "left" },
-          { title: "tab", label: "toggle scope", side: "left" },
-        ]}
-        actions={[
-          {
-            title: "back",
-            command: "plugins.marketplace.back",
-            onTrigger: () => setMarketplace(undefined),
-          },
-        ]}
-        onSelect={(item) => {
-          setBusy(true)
-          void props.api.plugins
-            .install(item.value, { global: global() })
-            .then((out) => {
-              if (!out.ok) {
-                props.api.ui.toast({ variant: "error", message: out.message })
-                return
-              }
-              props.api.ui.toast({ variant: "success", message: `Installed ${item.title}` })
-              if (out.tui) return props.api.plugins.add(item.value.split("@")[0] ?? item.value)
-            })
-            .then(() => show(props.api))
-            .finally(() => setBusy(false))
-        }}
-      />
-    )
-  }
-
   return (
-    <DialogSelect
-      title="Plugin marketplaces"
-      options={marketplaceRows()}
-      onSelect={(item) => setMarketplace(item.value)}
-      footerHints={
-        errors().length
-          ? [{ title: "!", label: `${errors().length} marketplace(s) failed to load`, side: "left" }]
-          : undefined
-      }
-    />
+    <Switch>
+      <Match when={busy()}>
+        <box paddingLeft={2} paddingRight={2} paddingTop={2} paddingBottom={1} gap={1}>
+          <Spinner style="scanner">Loading marketplaces…</Spinner>
+          <text fg={props.api.theme.current.textMuted}>Fetching catalogs from configured sources</text>
+        </box>
+      </Match>
+
+      <Match when={!loaded().length}>
+        <box paddingLeft={2} paddingRight={2} paddingTop={1} gap={1}>
+          <text fg={props.api.theme.current.text}>
+            <b>No marketplaces loaded</b>
+          </text>
+          <text fg={props.api.theme.current.textMuted}>
+            GitHub may be unreachable. Use a VPN/mirror or add a manifest URL manually.
+          </text>
+          <Show when={errors().length}>
+            <box gap={0} marginTop={1}>
+              <For each={errors()}>
+                {(item) => (
+                  <text fg={props.api.theme.current.error}>
+                    {item.name}: {Locale.truncate(item.error.split("\n")[0] ?? item.error, 96)}
+                  </text>
+                )}
+              </For>
+            </box>
+          </Show>
+          <box marginTop={1} flexDirection="row" gap={2}>
+            <text fg={props.api.theme.current.primary}>/plugin marketplace add owner/repo</text>
+            <text fg={props.api.theme.current.textMuted}>esc · back</text>
+          </box>
+        </box>
+      </Match>
+
+      <Match when={marketplace()}>
+        <DialogSelect
+          title={`Marketplace: ${marketplace()}`}
+          options={pluginRows()}
+          footerHints={[
+            { title: "scope", label: global() ? "global" : "local", side: "left" },
+            { title: "tab", label: "toggle scope", side: "left" },
+          ]}
+          actions={[
+            {
+              title: "back",
+              command: "plugins.marketplace.back",
+              onTrigger: () => setMarketplace(undefined),
+            },
+          ]}
+          onSelect={(item) => {
+            setBusy(true)
+            void props.api.plugins
+              .install(item.value, { global: global() })
+              .then((out) => {
+                if (!out.ok) {
+                  props.api.ui.toast({ variant: "error", message: out.message })
+                  return
+                }
+                props.api.ui.toast({ variant: "success", message: `Installed ${item.title}` })
+                if (out.tui) return props.api.plugins.add(item.value.split("@")[0] ?? item.value)
+              })
+              .then(() => show(props.api))
+              .finally(() => setBusy(false))
+          }}
+        />
+      </Match>
+
+      <Match when={true}>
+        <DialogSelect
+          title="Plugin marketplaces"
+          options={marketplaceRows()}
+          onSelect={(item) => setMarketplace(item.value)}
+          footerHints={
+            errors().length
+              ? [{ title: "!", label: `${errors().length} marketplace(s) failed to load`, side: "left" }]
+              : undefined
+          }
+        />
+      </Match>
+    </Switch>
   )
 }
 

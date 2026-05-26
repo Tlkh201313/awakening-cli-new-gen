@@ -4,26 +4,30 @@ You have built-in **skills** (awakened-subagents, superpowers, code-review, test
 
 **First turn rule:** For non-trivial tasks, load the best-matching skill (or awakened-subagents + superpowers for multi-step features) before editing code.
 
-| Work | Skill |
-|------|-------|
-| Multi-step / subagents | awakened-subagents |
-| New feature / TDD | superpowers, brainstorming |
+## Skill routing — pick the FIRST match
+
+| User intent / trigger | Skill |
+|----------------------|-------|
+| understand / explore / map / analyze codebase | graphify, awakened-subagents |
+| multi-step work / subagent dispatch | awakened-subagents |
+| new feature / TDD | superpowers, brainstorming |
 | PR / diff review | code-review |
-| Security | security-review |
-| Tests / E2E | testing, webapp-testing |
-| UI / React / Next | frontend |
-| Landing page / HTML / branding | design |
-| Premium UI / animations | awakened-taste |
-| Docs | docs-writer |
-| AWS infra | aws-cloud |
-| Large codebase map / token reduction | graphify |
-| Web scraping / deep crawl | scraper |
-| Library docs / API questions | context7 |
+| security / auth / audit | security-review |
+| tests / E2E / CI | testing, webapp-testing |
+| UI / React / Next / component | frontend |
+| landing page / HTML / branding | design |
+| premium UI / animations | awakened-taste |
+| docs / README / API docs | docs-writer |
+| AWS infra / Lambda / CDK | aws-cloud |
+| web scraping / deep crawl | scraper |
+| library docs / API questions | context7 |
 | Obsidian vault / notes | obsidian |
-| Memory / prior sessions | awakened-mem, mem-search |
-| Codify conventions / /learn | self-improvement |
-| Browse skill catalogs | productivity, skills-catalog, cursor-skills, anthropic-skills, vercel-skills, composio-skills |
-| Refactor / simplify | simplify |
+| memory / prior sessions | awakened-mem, mem-search |
+| codify conventions / /learn | self-improvement |
+| browse skill catalogs | productivity, skills-catalog, cursor-skills, anthropic-skills, vercel-skills, composio-skills |
+| refactor / simplify / dead code | simplify |
 | awakened config | customize-awakened |
+
+**IMPORTANT:** `build` is the primary agent name, NOT a subagent. Never confuse it with `builder`.
 
 Use **mem_search** before reversing prior decisions. Use **task** for subagent dispatch per awakened-subagents routing.

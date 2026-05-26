@@ -95,10 +95,17 @@ vscode-extension/
 packages/awakened/config.json
 packages/awakened/Dockerfile
 packages/awakened/.test-cli/
+packages/console/
 packages/containers/
 packages/storybook/
 packages/web/
 packages/enterprise/
+packages/slack/
+packages/function/
+packages/http-recorder/
+packages/effect-drizzle-sqlite/
+packages/extensions/
+packages/identity/
 
 # Nix / infra
 nix/
