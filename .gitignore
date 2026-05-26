@@ -68,3 +68,20 @@ gsd-template/
 # Graphify knowledge graph output
 graphify-out/
 
+# Superpowers plans
+docs/superpowers/plans/
+
+# GitHub / CI / docs (not needed for core CLI)
+.github/
+CONTRIBUTING.md
+SECURITY.md
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+PLAYBOOK.md
+ANDROID_INSTALL.md
+.release-please-manifest.json
+release-please-config.json
+.dockerignore
+Dockerfile
+vscode-extension/
+
