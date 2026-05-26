@@ -1073,17 +1073,13 @@ export function Prompt(props: PromptProps) {
         mode,
       })
       props.onSubmit?.()
-      
-      // Do not clear the prompt if the command opened a GUI dialog
-      if (dialog.stack.length === 0) {
-        input.extmarks.clear()
-        setStore("prompt", {
-          input: "",
-          parts: [],
-        })
-        setStore("extmarkToPartIndex", new Map())
-        input.clear()
-      }
+      input.clear()
+      input.extmarks.clear()
+      setStore("prompt", {
+        input: "",
+        parts: [],
+      })
+      setStore("extmarkToPartIndex", new Map())
     }
 
     if (props.disabled) return false
@@ -1299,6 +1295,7 @@ export function Prompt(props: PromptProps) {
       ...store.prompt,
       mode: currentMode,
     })
+    input.clear()
     input.extmarks.clear()
     setStore("prompt", {
       input: "",
@@ -1317,7 +1314,6 @@ export function Prompt(props: PromptProps) {
         })
       }, 50)
     }
-    input.clear()
     return true
   }
   const exit = useExit()

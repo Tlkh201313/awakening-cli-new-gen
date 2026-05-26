@@ -380,6 +380,7 @@ export const layer = Layer.effect(
             }
             const toolCall = yield* ensureToolCall(value)
             const input = toolInput(value.input)
+            const inputJson = JSON.stringify(input)
             if (!toolCall.call.inputEnded) {
               // TODO(v2): Temporary dual-write while migrating session messages to v2 events.
               if (flags.experimentalEventSystem) {
@@ -410,10 +411,11 @@ export const layer = Layer.effect(
               tool: value.name,
               state:
                 match.state.status === "running"
-                  ? { ...match.state, input }
+                  ? { ...match.state, input, _inputJson: inputJson }
                   : {
                       status: "running",
                       input,
+                      _inputJson: inputJson,
                       time: { start: Date.now() },
                     },
               metadata: match.metadata?.providerExecuted
@@ -431,7 +433,7 @@ export const layer = Layer.effect(
                   part.type === "tool" &&
                   part.tool === value.name &&
                   part.state.status !== "pending" &&
-                  JSON.stringify(part.state.input) === JSON.stringify(input),
+                  (part.state as Record<string, unknown>)._inputJson === inputJson,
               )
             ) {
               return

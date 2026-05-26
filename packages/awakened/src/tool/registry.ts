@@ -82,6 +82,7 @@ type State = {
   builtin: Tool.Def[]
   task: TaskDef
   read: ReadDef
+  allCache: Tool.Def[] | null
 }
 
 export interface Interface {
@@ -288,13 +289,17 @@ export const layer: Layer.Layer<
           ],
           task: tool.task,
           read: tool.read,
+          allCache: null,
         }
       }),
     )
 
     const all: Interface["all"] = Effect.fn("ToolRegistry.all")(function* () {
       const s = yield* InstanceState.get(state)
-      return [...s.builtin, ...s.custom] as Tool.Def[]
+      if (!s.allCache) {
+        s.allCache = [...s.builtin, ...s.custom] as Tool.Def[]
+      }
+      return s.allCache
     })
 
     const ids: Interface["ids"] = Effect.fn("ToolRegistry.ids")(function* () {
