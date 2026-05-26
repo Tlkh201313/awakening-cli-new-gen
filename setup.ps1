@@ -82,10 +82,14 @@ if (Test-Path "$Dir\.git") {
 
 Set-Location $Dir
 
-# ── Step 3: Install dependencies ──────────────────────────────────────────────
+# ── Step 3: Install dependencies + build ──────────────────────────────────────
 Write-Host ""
 Write-Info "Installing dependencies..."
 bun install
+
+Write-Host ""
+Write-Info "Building CLI..."
+bun run build
 
 # ── Step 4: Register globally ─────────────────────────────────────────────────
 if (-not $SkipLink) {

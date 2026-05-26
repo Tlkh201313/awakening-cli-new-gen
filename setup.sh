@@ -87,10 +87,14 @@ fi
 
 cd "$INSTALL_DIR"
 
-# ── Step 3: Install dependencies ───────────────────────────────────────────────
+# ── Step 3: Install dependencies + build ───────────────────────────────────────
 echo ""
 info "Installing dependencies..."
 bun install
+
+echo ""
+info "Building CLI..."
+bun run build
 
 # ── Step 4: Register globally ──────────────────────────────────────────────────
 if [[ "$skip_link" == "false" ]]; then
