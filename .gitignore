@@ -85,3 +85,22 @@ release-please-config.json
 Dockerfile
 vscode-extension/
 
+# Non-core packages
+packages/awakened/config.json
+packages/awakened/Dockerfile
+packages/containers/
+packages/storybook/
+packages/web/
+packages/enterprise/
+
+# Nix / infra
+nix/
+flake.nix
+flake.lock
+
+# Misc non-core
+sdks/
+perf/
+specs/
+website/
+
