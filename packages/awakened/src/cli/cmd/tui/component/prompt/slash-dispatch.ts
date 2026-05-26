@@ -28,6 +28,15 @@ function collectSlashNames(keymap: OpenTuiKeymap): string[] {
         if (typeof alias === "string") names.push(alias)
       }
     }
+    const slash = entry.command.slash as { name?: string; aliases?: string[] } | undefined
+    if (slash) {
+      if (typeof slash.name === "string" && slash.name) names.push(slash.name)
+      if (Array.isArray(slash.aliases)) {
+        for (const alias of slash.aliases) {
+          if (typeof alias === "string") names.push(alias)
+        }
+      }
+    }
   }
   return names
 }
@@ -70,14 +79,25 @@ export function dispatchPromptSlash(keymap: OpenTuiKeymap, name: string, args?: 
 
   for (const entry of keymap.getCommandEntries({ visibility: "reachable" })) {
     const slashName = entry.command.slashName
-    if (typeof slashName !== "string" || !slashName) continue
-    const names = [slashName]
     const aliases = entry.command.slashAliases
+    const slash = entry.command.slash as { name?: string; aliases?: string[] } | undefined
+
+    const names: string[] = []
+    if (typeof slashName === "string" && slashName) names.push(slashName)
     if (Array.isArray(aliases)) {
       for (const alias of aliases) {
         if (typeof alias === "string") names.push(alias)
       }
     }
+    if (slash) {
+      if (typeof slash.name === "string" && slash.name) names.push(slash.name)
+      if (Array.isArray(slash.aliases)) {
+        for (const alias of slash.aliases) {
+          if (typeof alias === "string") names.push(alias)
+        }
+      }
+    }
+
     if (!names.includes(name)) continue
     keymap.dispatchCommand(entry.command.name)
     return true
