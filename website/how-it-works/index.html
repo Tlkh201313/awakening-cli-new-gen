@@ -1126,43 +1126,6 @@
       color: rgba(255, 248, 237, 0.7);
     }
 
-    .os-tabs {
-      display: flex;
-      gap: 0.35rem;
-      margin-bottom: 1.1rem;
-      padding: 0.3rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-    }
-
-    .os-tab {
-      flex: 1;
-      padding: 0.55rem 0.8rem;
-      border-radius: 999px;
-      color: rgba(255, 248, 237, 0.56);
-      font-size: 0.84rem;
-      font-weight: 800;
-      text-align: center;
-      transition: color 180ms var(--ease), background 180ms var(--ease);
-    }
-
-    .os-tab:hover {
-      color: rgba(255, 248, 237, 0.82);
-    }
-
-    .os-tab.active {
-      color: var(--cream);
-      background: var(--charcoal);
-    }
-
-    .os-panel {
-      display: none;
-    }
-
-    .os-panel.active {
-      display: block;
-    }
-
     .commands {
       display: grid;
       gap: 0.75rem;
@@ -1554,8 +1517,9 @@
               <div class="eyebrow" id="stageEyebrow">Step 01</div>
               <h3 id="stageTitle">Clone and run.</h3>
               <p id="stageText">No web host needed. No accounts. Clone the repo, install dependencies, and run the TUI locally. Your code never leaves your machine.</p>
-              <pre id="stageCode">$ curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.sh | bash
-# or Windows: irm .../setup.ps1 | iex
+              <pre id="stageCode">$ git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git
+$ cd awakening-cli-new-gen
+$ bun install && bun run build && bun link
 $ awakened</pre>
             </div>
           </div>
@@ -1695,7 +1659,7 @@ $ awakened</pre>
         <div class="install-card reveal">
           <div class="eyebrow">Install path</div>
           <h2>Local-first. Zero cloud.</h2>
-          <p>One command installs everything: clone, dependencies, and global registration. The TUI runs entirely on your machine. No accounts, no API keys required for the runtime itself.</p>
+          <p>Clone from source, build, and run. The TUI runs entirely on your machine. No accounts, no API keys required for the runtime itself.</p>
           <div class="hero-actions">
             <a class="btn btn-gold" href="https://github.com/Tlkh201313/awakening-cli-new-gen" target="_blank" rel="noopener">Open repo</a>
             <a class="btn btn-soft" href="https://github.com/anomalyco/opencode" target="_blank" rel="noopener">Upstream OpenCode</a>
@@ -1703,59 +1667,23 @@ $ awakened</pre>
         </div>
 
         <div class="install-card dark reveal">
-          <div class="os-tabs" role="tablist" aria-label="Operating system">
-            <button class="os-tab active" type="button" data-os="macos" role="tab" aria-selected="true">macOS</button>
-            <button class="os-tab" type="button" data-os="linux" role="tab" aria-selected="false">Linux</button>
-            <button class="os-tab" type="button" data-os="windows" role="tab" aria-selected="false">Windows</button>
-          </div>
-          <div class="os-panel active" id="os-macos" role="tabpanel">
-            <div class="commands">
-              <button class="copy" type="button" data-copy="curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/master/setup.sh | bash">
-                <span><strong>curl -fsSL .../setup.sh | bash</strong><span>One-line install &mdash; clones, installs deps, registers globally</span></span>
-                <em>copy</em>
-              </button>
-              <button class="copy" type="button" data-copy="curl -fsSL https://bun.sh/install | bash">
-                <span><strong>curl -fsSL https://bun.sh/install | bash</strong><span>Install Bun (auto-installed by setup.sh if missing)</span></span>
-                <em>copy</em>
-              </button>
-              <button class="copy" type="button" data-copy="awakened">
-                <span><strong>awakened</strong><span>Start the TUI after install</span></span>
-                <em>copy</em>
-              </button>
-            </div>
-          </div>
-          <div class="os-panel" id="os-linux" role="tabpanel">
-            <div class="commands">
-              <button class="copy" type="button" data-copy="curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/master/setup.sh | bash">
-                <span><strong>curl -fsSL .../setup.sh | bash</strong><span>One-line install &mdash; clones, installs deps, registers globally</span></span>
-                <em>copy</em>
-              </button>
-              <button class="copy" type="button" data-copy="curl -fsSL https://bun.sh/install | bash">
-                <span><strong>curl -fsSL https://bun.sh/install | bash</strong><span>Install Bun (auto-installed by setup.sh if missing)</span></span>
-                <em>copy</em>
-              </button>
-              <button class="copy" type="button" data-copy="awakened">
-                <span><strong>awakened</strong><span>Start the TUI after install</span></span>
-                <em>copy</em>
-              </button>
-            </div>
-          </div>
-          <div class="os-panel" id="os-windows" role="tabpanel">
-            <div class="commands">
-              <button class="copy" type="button" data-copy="irm https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/master/setup.ps1 | iex">
-                <span><strong>irm .../setup.ps1 | iex</strong><span>One-line install (PowerShell) &mdash; clones, installs deps, registers globally</span></span>
-                <em>copy</em>
-              </button>
-              <button class="copy" type="button" data-copy="powershell -c &quot;irm https://bun.sh/install.ps1 | iex&quot;">
-                <span><strong>irm https://bun.sh/install.ps1 | iex</strong><span>Install Bun (auto-installed by setup.ps1 if missing)</span></span>
-                <em>copy</em>
-              </button>
-              <button class="copy" type="button" data-copy="awakened">
-                <span><strong>awakened</strong><span>Start the TUI after install</span></span>
-                <em>copy</em>
-              </button>
-            </div>
-            <p style="margin-top:0.8rem;color:rgba(255,248,237,0.56);font-size:0.82rem">Use Windows Terminal or PowerShell 7+ for best results.</p>
+          <div class="commands">
+            <button class="copy" type="button" data-copy="git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git && cd awakening-cli-new-gen">
+              <span><strong>git clone ... && cd awakening-cli-new-gen</strong><span>Clone the repo</span></span>
+              <em>copy</em>
+            </button>
+            <button class="copy" type="button" data-copy="bun install">
+              <span><strong>bun install</strong><span>Install dependencies (requires Bun 1.3+)</span></span>
+              <em>copy</em>
+            </button>
+            <button class="copy" type="button" data-copy="bun run --cwd packages/awakened build && bun link">
+              <span><strong>bun run build && bun link</strong><span>Build and register globally</span></span>
+              <em>copy</em>
+            </button>
+            <button class="copy" type="button" data-copy="awakened">
+              <span><strong>awakened</strong><span>Start the TUI from any directory</span></span>
+              <em>copy</em>
+            </button>
           </div>
         </div>
       </div>
@@ -1846,9 +1774,9 @@ $ awakened</pre>
     const workflow = [
       {
         eyebrow: "Step 01",
-        title: "One command to install.",
-        text: "No web host needed. No accounts. One curl command clones, installs, and registers 'awakened' globally. Your code never leaves your machine.",
-        code: "$ curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.sh | bash\n# or Windows: irm .../setup.ps1 | iex\n$ awakened"
+        title: "Clone and run.",
+        text: "No web host needed. No accounts. Clone the repo, install dependencies, build, and run the TUI locally. Your code never leaves your machine.",
+        code: "$ git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git\n$ cd awakening-cli-new-gen\n$ bun install && bun run build && bun link\n$ awakened"
       },
       {
         eyebrow: "Step 02",
@@ -1924,18 +1852,6 @@ $ awakened</pre>
       const wasOpen = item.classList.contains("open");
       document.querySelectorAll(".faq-item").forEach((faq) => faq.classList.remove("open"));
       if (!wasOpen) item.classList.add("open");
-    });
-
-    document.querySelector(".os-tabs").addEventListener("click", (event) => {
-      const tab = event.target.closest(".os-tab");
-      if (!tab) return;
-      const os = tab.dataset.os;
-      document.querySelectorAll(".os-tab").forEach((t) => {
-        t.classList.toggle("active", t === tab);
-        t.setAttribute("aria-selected", t === tab ? "true" : "false");
-      });
-      document.querySelectorAll(".os-panel").forEach((p) => p.classList.remove("active"));
-      document.getElementById(`os-${os}`).classList.add("active");
     });
 
     const revealObserver = new IntersectionObserver((entries) => {

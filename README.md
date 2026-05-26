@@ -49,39 +49,15 @@
 
 ## Installation
 
-### One-line setup (recommended)
-
-Requires [Bun](https://bun.sh) 1.3+ (auto-installed if missing).
-
-**macOS / Linux:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.sh | bash
-```
-
-**Windows (PowerShell):**
-```powershell
-irm https://raw.githubusercontent.com/Tlkh201313/awakening-cli-new-gen/dev/setup.ps1 | iex
-```
-
-This clones the repo, installs dependencies, and registers `awakened` globally via `bun link`. Options:
-
-```bash
-# macOS / Linux — custom directory or standalone build
-curl -fsSL ... | bash -s -- --dir ./my-awakened
-curl -fsSL ... | bash -s -- --build
-
-# Windows — same flags
-.\setup.ps1 -Dir "C:\Tools\awakened" -Build
-```
-
-### From source (manual)
+Requires [Bun](https://bun.sh) 1.3+.
 
 ```bash
 git clone https://github.com/Tlkh201313/awakening-cli-new-gen.git
 cd awakening-cli-new-gen
 bun install
-bun link              # register 'awakened' globally
-awakened              # run the TUI
+bun run --cwd packages/awakened build
+bun link
+awakened
 ```
 
 ### From release binaries
