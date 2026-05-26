@@ -21,6 +21,22 @@ import { EffectBridge } from "@/effect/bridge"
 
 const log = Log.create({ service: "session.tools" })
 
+const schemaCache = new Map<string, ReturnType<typeof ProviderTransform.schema>>()
+const SCHEMA_CACHE_MAX = 200
+
+function cachedSchema(model: Provider.Model, item: { id: string }) {
+  const key = `${model.api.id}:${item.id}`
+  const cached = schemaCache.get(key)
+  if (cached) return cached
+  const schema = ProviderTransform.schema(model, ToolJsonSchema.fromTool(item as Parameters<typeof ToolJsonSchema.fromTool>[0]))
+  if (schemaCache.size >= SCHEMA_CACHE_MAX) {
+    const first = schemaCache.keys().next().value
+    if (first !== undefined) schemaCache.delete(first)
+  }
+  schemaCache.set(key, schema)
+  return schema
+}
+
 export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
   agent: Agent.Info
   model: Provider.Model
@@ -77,7 +93,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
     providerID: input.model.providerID,
     agent: input.agent,
   })) {
-    const schema = ProviderTransform.schema(input.model, ToolJsonSchema.fromTool(item))
+    const schema = cachedSchema(input.model, item as { id: string })
     tools[item.id] = tool({
       description: item.description,
       inputSchema: jsonSchema(schema),
@@ -120,7 +136,16 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
     if (!execute) continue
 
     const schema = yield* Effect.promise(() => Promise.resolve(asSchema(item.inputSchema).jsonSchema))
-    const transformed = ProviderTransform.schema(input.model, schema)
+    const mcpKey = `mcp:${input.model.api.id}:${key}`
+    let transformed = schemaCache.get(mcpKey) as ReturnType<typeof ProviderTransform.schema> | undefined
+    if (!transformed) {
+      transformed = ProviderTransform.schema(input.model, schema)
+      if (schemaCache.size >= SCHEMA_CACHE_MAX) {
+        const first = schemaCache.keys().next().value
+        if (first !== undefined) schemaCache.delete(first)
+      }
+      schemaCache.set(mcpKey, transformed)
+    }
     item.inputSchema = jsonSchema(transformed)
     item.execute = (args, opts) =>
       run.promise(
