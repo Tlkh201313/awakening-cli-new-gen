@@ -14,21 +14,15 @@ The implementation follows a clean separation of concerns:
   - Processes prompts and returns responses
   - Properly implements ACP protocol v1
 
-- **`client.ts`** - Implements the `Client` interface for client-side capabilities
-  - File operations (`readTextFile`, `writeTextFile`)
-  - Permission requests (auto-approves for now)
-  - Terminal support (stub implementation)
-
 - **`session.ts`** - Session state management
   - Creates and tracks ACP sessions
   - Maps ACP sessions to internal awakened sessions
   - Maintains working directory context
   - Handles MCP server configurations
 
-- **`server.ts`** - ACP server startup and lifecycle
-  - Sets up JSON-RPC over stdio using the official library
-  - Manages graceful shutdown on SIGTERM/SIGINT
-  - Provides Instance context for the agent
+- **`runtime.ts`** - Effect runtime bridge for ACP
+  - Loads project instances and provides InstanceRef context
+  - Bridges between ACP and awakened's Effect service layer
 
 - **`types.ts`** - Type definitions for internal use
 
@@ -56,11 +50,7 @@ Enable this only for ACP clients that support interactive question prompts.
 
 ### Programmatic
 
-```typescript
-import { ACPServer } from "./acp/server"
-
-await ACPServer.start()
-```
+The ACP agent is implemented in `agent.ts` and uses `runtime.ts` for Effect service access.
 
 ### Integration with Zed
 

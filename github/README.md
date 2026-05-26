@@ -27,7 +27,7 @@ Leave the following comment on a GitHub issue. awakened will create a new branch
 Leave the following comment on a GitHub PR. awakened will implement the requested change and commit it to the same PR.
 
 ```
-Delete the attachment from S3 when the note is removed /oc
+Delete the attachment from S3 when the note is removed /awakened
 ```
 
 #### Review specific code lines
@@ -36,7 +36,7 @@ Leave a comment directly on code lines in the PR's "Files" tab. awakened will au
 
 ```
 [Comment on specific lines in Files tab]
-/oc add error handling here
+/awakened add error handling here
 ```
 
 When commenting on specific lines, awakened receives:
@@ -88,13 +88,13 @@ This will walk you through installing the GitHub app, creating the workflow, and
               persist-credentials: false
 
           - name: Run awakened
-           uses: Tlkh201313/awakening-cli-new-gen/github@latest
-           env:
-             ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-           with:
-             model: anthropic/claude-sonnet-4-20250514
-             use_github_token: true
+            uses: Tlkh201313/awakening-cli-new-gen/github@latest
+            env:
+              ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            with:
+              model: anthropic/claude-sonnet-4-20250514
+              use_github_token: true
    ```
 
 3. Store the API keys in secrets. In your organization or project **settings**, expand **Secrets and variables** on the left and select **Actions**. Add the required API keys.

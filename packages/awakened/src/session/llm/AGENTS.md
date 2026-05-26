@@ -18,6 +18,7 @@ src/session/
     ai-sdk.ts               AI SDK fullStream -> @awakened-ai/llm LLMEvent adapter
     native-request.ts       awakened/AI SDK-shaped input -> @awakened-ai/llm LLMRequest
     native-runtime.ts       native runtime gate, tool bridge, and LLMClient handoff
+    request.ts              LLM request preparation — system prompt assembly, param merging, tool filtering
 ```
 
 Integration points:
