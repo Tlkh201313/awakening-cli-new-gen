@@ -212,7 +212,6 @@ export const GithubInstallCommand = effectCmd({
 
         const provider = await promptProvider()
         const model = await promptModel()
-        //const key = await promptKey()
 
         await addWorkflowFiles()
         printNextSteps()
@@ -683,14 +682,12 @@ export const GithubRunCommand = effectCmd({
             await removeReaction(commentType)
           }
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         exitCode = 1
         console.error(e instanceof Error ? e.message : String(e))
-        let msg = e
+        let msg = e instanceof Error ? e.message : String(e)
         if (e instanceof Process.RunFailedError) {
           msg = e.stderr.toString()
-        } else if (e instanceof Error) {
-          msg = e.message
         }
         if (isUserEvent) {
           await createComment(`${msg}${footer()}`)
@@ -899,7 +896,6 @@ export const GithubRunCommand = effectCmd({
         await runLocalEffect(
           busSvc.subscribeCallback(MessageV2.Event.PartUpdated, (evt) => {
             if (evt.properties.part.sessionID !== session.id) return
-            //if (evt.properties.part.messageID === messageID) return
             const part = evt.properties.part
 
             if (part.type === "tool" && part.state.status === "completed") {

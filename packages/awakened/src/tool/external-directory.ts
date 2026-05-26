@@ -43,7 +43,3 @@ export const assertExternalDirectoryEffect = Effect.fn("Tool.assertExternalDirec
     },
   })
 })
-
-export async function assertExternalDirectory(ctx: Tool.Context, target?: string, options?: Options) {
-  return Effect.runPromise(assertExternalDirectoryEffect(ctx, target, options).pipe(Effect.provide(EffectLogger.layer)))
-}

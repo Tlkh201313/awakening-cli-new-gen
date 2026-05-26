@@ -59,7 +59,6 @@ export class Service extends Context.Service<Service, Interface>()("@awakened/Tu
 
 function pluginScope(file: string, ctx: { directory: string }): ConfigPlugin.Scope {
   if (Filesystem.contains(ctx.directory, file)) return "local"
-  // if (ctx.worktree !== "/" && Filesystem.contains(ctx.worktree, file)) return "local"
   return "global"
 }
 

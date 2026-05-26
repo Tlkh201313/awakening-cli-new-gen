@@ -46,19 +46,6 @@ export class Info extends Schema.Class<Info>("Session.Info")({
     archived: optionalOmitUndefined(V2Schema.DateTimeUtcFromMillis),
   }),
   title: Schema.String,
-  /*
-  slug: Schema.String,
-  directory: Schema.String,
-  path: optionalOmitUndefined(Schema.String),
-  parentID: optionalOmitUndefined(SessionID),
-  summary: optionalOmitUndefined(Summary),
-  share: optionalOmitUndefined(Share),
-  title: Schema.String,
-  version: Schema.String,
-  time: Time,
-  permission: optionalOmitUndefined(Permission.Ruleset),
-  revert: optionalOmitUndefined(Revert),
-  */
 }) {}
 
 export class NotFoundError extends Schema.TaggedErrorClass<NotFoundError>()("Session.NotFoundError", {
@@ -189,7 +176,7 @@ export const layer = Layer.effect(
 
     const result = Service.of({
       create: Effect.fn("V2Session.create")(function* (_input) {
-        return {} as any
+        throw new Error("V2Session.create is not implemented")
       }),
       get: Effect.fn("V2Session.get")(function* (sessionID) {
         const row = Database.use((db) => db.select().from(SessionTable).where(eq(SessionTable.id, sessionID)).get())
